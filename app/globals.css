@@ -29,7 +29,7 @@ button { font-family: inherit; cursor: pointer; }
 .btn.ghost { background: var(--surface-2); color: #fff; }
 
 /* intro */
-.intro-mid { flex: 1; display: flex; flex-direction: column; justify-content: center; padding-bottom: 40px; }
+.intro-mid { flex: 1; display: flex; flex-direction: column; justify-content: center; padding-bottom: 14vh; }
 .kick { color: var(--accent); font-size: 12px; font-weight: 700; letter-spacing: 0.06em; margin-bottom: 16px; }
 .intro-mid h1 { font-size: 33px; line-height: 1.3; font-weight: 700; letter-spacing: -0.02em; }
 .intro-mid h1 b { color: var(--accent); }

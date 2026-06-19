@@ -1,0 +1,42 @@
+name: Refresh data bundle
+
+# 매일 미국장 마감 이후 Yahoo(가격) + FRED(환율)를 다시 받아 번들 갱신.
+# public/data/*.json이 바뀌면 커밋·push → Vercel git 연동이 자동 재배포.
+on:
+  schedule:
+    - cron: "30 22 * * *" # 매일 22:30 UTC (미국장 마감 이후)
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: refresh-data
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Build bundle (Yahoo + FRED)
+        run: pnpm gen
+      - name: Commit & push if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/data
+          if git diff --staged --quiet; then
+            echo "변경 없음 — skip"
+          else
+            git commit -m "chore(data): refresh bundle ($(date -u +%Y-%m-%d))"
+            git push
+          fi
