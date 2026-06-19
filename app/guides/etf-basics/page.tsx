@@ -1,14 +1,17 @@
 import type { Metadata } from "next";
 import { ContentShell } from "@/components/ContentShell";
+import { JsonLd, guideLd } from "@/components/JsonLd";
 
 export const metadata: Metadata = {
   title: "ETF가 뭔가요? 초보자 가이드 · 10-eok",
   description: "ETF(상장지수펀드)의 개념, 펀드·개별주식과의 차이, 장단점을 처음 접하는 사람도 알기 쉽게 정리했어요.",
+  alternates: { canonical: "/guides/etf-basics" },
 };
 
 export default function Page() {
   return (
     <ContentShell title="ETF가 뭔가요?" desc="상장지수펀드를 처음부터" crumb="가이드 · ETF 기초">
+      <JsonLd data={guideLd({ path: "/guides/etf-basics", title: "ETF가 뭔가요?", description: "ETF(상장지수펀드)의 개념, 펀드·개별주식과의 차이, 장단점을 처음 접하는 사람도 알기 쉽게 정리했어요.", name: "ETF가 뭔가요?" })} />
       <p>
         ETF는 영어 Exchange Traded Fund의 약자로, 우리말로는 <strong>상장지수펀드</strong>입니다.
         이름이 어렵지만 핵심은 간단합니다. <strong>여러 종목을 한 바구니에 담아 두고, 그 바구니

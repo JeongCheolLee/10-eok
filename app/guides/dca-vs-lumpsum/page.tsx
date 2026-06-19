@@ -1,14 +1,17 @@
 import type { Metadata } from "next";
 import { ContentShell } from "@/components/ContentShell";
+import { JsonLd, guideLd } from "@/components/JsonLd";
 
 export const metadata: Metadata = {
   title: "적립식 vs 거치식, 뭐가 나을까 · 10-eok",
   description: "목돈을 한 번에 넣는 거치식과 매달 나눠 넣는 적립식, 둘의 차이와 상황별 선택 기준을 정리했어요.",
+  alternates: { canonical: "/guides/dca-vs-lumpsum" },
 };
 
 export default function Page() {
   return (
     <ContentShell title="적립식 vs 거치식" desc="한 번에 넣을까, 나눠 넣을까" crumb="가이드 · 적립 vs 거치">
+      <JsonLd data={guideLd({ path: "/guides/dca-vs-lumpsum", title: "적립식 vs 거치식, 뭐가 나을까", description: "목돈을 한 번에 넣는 거치식과 매달 나눠 넣는 적립식, 둘의 차이와 상황별 선택 기준을 정리했어요.", name: "적립식 vs 거치식" })} />
       <p>
         같은 돈을 투자해도 <strong>방법</strong>이 다릅니다. <strong>거치식</strong>은 목돈을 한 번에
         넣는 방식, <strong>적립식</strong>은 매달 나눠 넣는 방식입니다. 어느 쪽이 정답일까요?

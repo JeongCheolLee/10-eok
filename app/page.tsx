@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { BacktestApp } from "@/components/BacktestApp";
+import { JsonLd, webSiteLd, softwareAppLd } from "@/components/JsonLd";
 import { TICKERS, tickerName } from "@/lib/tickers";
 
 type SP = Record<string, string | string[] | undefined>;
@@ -21,12 +22,13 @@ function parseInitial(sp: SP) {
 
 export async function generateMetadata({ searchParams }: { searchParams: Promise<SP> }): Promise<Metadata> {
   const init = parseInitial(await searchParams);
-  if (!init) return {};
+  if (!init) return { alternates: { canonical: "/" } };
   const q = `t=${init.ticker}&m=${init.amount}&d=${init.buyDay}&g=${init.target}`;
   const title = `${tickerName(init.ticker)}(${init.ticker})에 매달 ${init.amount}만원 모았다면 — ${init.target}억까지?`;
   const img = `/api/og?${q}`;
   return {
     title,
+    alternates: { canonical: "/" },
     openGraph: { title, images: [{ url: img, width: 1200, height: 630 }] },
     twitter: { card: "summary_large_image", title, images: [img] },
   };
@@ -34,5 +36,11 @@ export async function generateMetadata({ searchParams }: { searchParams: Promise
 
 export default async function Home({ searchParams }: { searchParams: Promise<SP> }) {
   const sp = await searchParams;
-  return <BacktestApp initial={parseInitial(sp)} />;
+  return (
+    <>
+      <JsonLd data={webSiteLd()} />
+      <JsonLd data={softwareAppLd()} />
+      <BacktestApp initial={parseInitial(sp)} />
+    </>
+  );
 }

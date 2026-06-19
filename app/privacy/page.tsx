@@ -4,6 +4,7 @@ import { ContentShell } from "@/components/ContentShell";
 export const metadata: Metadata = {
   title: "개인정보처리방침 · 10-eok",
   description: "10-eok의 개인정보 수집·이용, 쿠키, 광고(Google AdSense) 관련 처리방침입니다.",
+  alternates: { canonical: "/privacy" },
 };
 
 export default function Page() {

@@ -4,6 +4,7 @@ import { ContentShell } from "@/components/ContentShell";
 export const metadata: Metadata = {
   title: "문의 · 10-eok",
   description: "10-eok에 대한 문의, 오류 제보, 종목 추가 요청은 이메일로 보내주세요.",
+  alternates: { canonical: "/contact" },
 };
 
 export default function Page() {

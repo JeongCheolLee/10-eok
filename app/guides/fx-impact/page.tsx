@@ -1,14 +1,17 @@
 import type { Metadata } from "next";
 import { ContentShell } from "@/components/ContentShell";
+import { JsonLd, guideLd } from "@/components/JsonLd";
 
 export const metadata: Metadata = {
   title: "환율이 수익률에 미치는 영향 · 10-eok",
   description: "원화로 달러 자산(QLD)을 살 때 환율이 수익을 어떻게 더하거나 깎는지, 10-eok이 이를 어떻게 반영하는지 설명합니다.",
+  alternates: { canonical: "/guides/fx-impact" },
 };
 
 export default function Page() {
   return (
     <ContentShell title="환율이 수익률에 미치는 영향" desc="원화로 달러 자산을 살 때 생기는 또 하나의 변수" crumb="가이드 · 환율">
+      <JsonLd data={guideLd({ path: "/guides/fx-impact", title: "환율이 수익률에 미치는 영향", description: "원화로 달러 자산(QLD)을 살 때 환율이 수익을 어떻게 더하거나 깎는지, 10-eok이 이를 어떻게 반영하는지 설명합니다.", name: "환율이 수익률에 미치는 영향" })} />
       <p>
         QLD는 <strong>달러로 거래되는</strong> 미국 ETF입니다. 그런데 우리가 적립하는 돈은 원화이고,
         목표인 "10억"도 원화입니다. 그래서 한국 투자자의 실제 수익은 <strong>주가 변동</strong>과

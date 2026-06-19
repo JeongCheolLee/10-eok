@@ -4,6 +4,7 @@ import { ContentShell } from "@/components/ContentShell";
 export const metadata: Metadata = {
   title: "이용약관 · 10-eok",
   description: "10-eok 서비스 이용에 관한 약관과 면책 조항입니다.",
+  alternates: { canonical: "/terms" },
 };
 
 export default function Page() {

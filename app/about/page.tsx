@@ -4,6 +4,7 @@ import { ContentShell } from "@/components/ContentShell";
 export const metadata: Metadata = {
   title: "소개 · 10-eok",
   description: "10-eok은 '과거에 매달 모았다면 10억까지 얼마나 걸렸을까'를 실제 데이터로 보여주는 백테스트 서비스입니다.",
+  alternates: { canonical: "/about" },
 };
 
 export default function Page() {

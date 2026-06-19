@@ -1,14 +1,17 @@
 import type { Metadata } from "next";
 import { ContentShell } from "@/components/ContentShell";
+import { JsonLd, guideLd } from "@/components/JsonLd";
 
 export const metadata: Metadata = {
   title: "적립식 투자(DCA)의 원리 · 10-eok",
   description: "매달 일정 금액을 꾸준히 사는 적립식 투자가 왜 마음 편한 방법인지, 장점과 한계를 정리했어요.",
+  alternates: { canonical: "/guides/dca" },
 };
 
 export default function Page() {
   return (
     <ContentShell title="적립식 투자(DCA)의 원리" desc="매달 같은 금액을 꾸준히" crumb="가이드 · 적립식">
+      <JsonLd data={guideLd({ path: "/guides/dca", title: "적립식 투자(DCA)의 원리", description: "매달 일정 금액을 꾸준히 사는 적립식 투자가 왜 마음 편한 방법인지, 장점과 한계를 정리했어요.", name: "적립식 투자(DCA)의 원리" })} />
       <p>
         적립식 투자(영어로 Dollar-Cost Averaging, 줄여서 DCA)는 <strong>가격이 오르든 내리든 매달 같은
         금액을 정해진 날에 사는</strong> 방식입니다. 한 번에 목돈을 넣는 거치식과 달리, 시점을 나눠

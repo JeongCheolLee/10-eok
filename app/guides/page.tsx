@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ContentShell } from "@/components/ContentShell";
+import { JsonLd, pageBreadcrumbLd } from "@/components/JsonLd";
 
 export const metadata: Metadata = {
   title: "투자 가이드 · 10-eok",
   description: "QLD, 적립식 투자, 레버리지 ETF의 위험, 환율이 수익률에 미치는 영향을 쉽게 정리했어요.",
+  alternates: { canonical: "/guides" },
 };
 
 const GUIDES = [
@@ -20,6 +22,7 @@ const GUIDES = [
 export default function GuidesIndex() {
   return (
     <ContentShell title="투자 가이드" desc="10-eok의 백테스트를 더 잘 이해하기 위한 배경 지식이에요." crumb="가이드">
+      <JsonLd data={pageBreadcrumbLd("가이드", "/guides")} />
       <div className="cardlinks">
         {GUIDES.map((g) => (
           <Link key={g.slug} href={`/guides/${g.slug}`} className="cardlink">

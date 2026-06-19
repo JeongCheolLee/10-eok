@@ -1,14 +1,17 @@
 import type { Metadata } from "next";
 import { ContentShell } from "@/components/ContentShell";
+import { JsonLd, guideLd } from "@/components/JsonLd";
 
 export const metadata: Metadata = {
   title: "레버리지 ETF의 위험 · 10-eok",
   description: "2배의 수익만큼 2배의 손실, 그리고 '변동성 끌림(volatility decay)'이라는 숨은 위험을 쉽게 설명합니다.",
+  alternates: { canonical: "/guides/leverage-etf-risk" },
 };
 
 export default function Page() {
   return (
     <ContentShell title="레버리지 ETF의 위험" desc="2배는 수익에도, 손실에도 적용됩니다" crumb="가이드 · 위험">
+      <JsonLd data={guideLd({ path: "/guides/leverage-etf-risk", title: "레버리지 ETF의 위험", description: "2배의 수익만큼 2배의 손실, 그리고 '변동성 끌림(volatility decay)'이라는 숨은 위험을 쉽게 설명합니다.", name: "레버리지 ETF의 위험" })} />
       <p>
         QLD 같은 2배 레버리지 ETF는 상승장에서 빛나지만, 그만큼 위험도 큽니다. 백테스트의 좋은
         결과만 보고 들어가기 전에 아래 위험을 꼭 이해해야 합니다.

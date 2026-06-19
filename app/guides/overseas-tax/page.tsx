@@ -1,14 +1,17 @@
 import type { Metadata } from "next";
 import { ContentShell } from "@/components/ContentShell";
+import { JsonLd, guideLd } from "@/components/JsonLd";
 
 export const metadata: Metadata = {
   title: "해외주식·ETF 세금 기초 · 10-eok",
   description: "미국 주식·ETF 투자 시 내는 양도소득세와 배당소득세, 국내 상장 종목과의 차이를 쉽게 정리했어요.",
+  alternates: { canonical: "/guides/overseas-tax" },
 };
 
 export default function Page() {
   return (
     <ContentShell title="해외주식·ETF 세금 기초" desc="양도세·배당세, 뭐가 다른가" crumb="가이드 · 세금">
+      <JsonLd data={guideLd({ path: "/guides/overseas-tax", title: "해외주식·ETF 세금 기초", description: "미국 주식·ETF 투자 시 내는 양도소득세와 배당소득세, 국내 상장 종목과의 차이를 쉽게 정리했어요.", name: "해외주식·ETF 세금 기초" })} />
       <p>
         해외 종목(미국 ETF·주식)에 투자하면 두 가지 세금이 관계됩니다. <strong>양도소득세</strong>(팔아서
         차익이 났을 때)와 <strong>배당소득세</strong>(배당을 받을 때)입니다. 헷갈리기 쉬워 기본만 정리합니다.
