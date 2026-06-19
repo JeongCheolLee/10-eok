@@ -130,10 +130,11 @@ button { font-family: inherit; cursor: pointer; }
 .hero .lead, .hero .num, .hero .span { position: relative; z-index: 1; }
 .num.pop { animation: pop 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both; animation-delay: 0.2s; }
 @keyframes pop { 0% { opacity: 0; transform: scale(0.72); } 60% { opacity: 1; transform: scale(1.07); } 100% { opacity: 1; transform: scale(1); } }
-.confetti { position: absolute; left: 0; right: 0; top: 0; height: 0; pointer-events: none; z-index: 2; }
-.confetti span { position: absolute; left: 50%; top: 24px; width: 8px; height: 8px; background: var(--accent); border-radius: 1px; opacity: 0; --x: calc((var(--n) - 7.5) * 26px); animation: conf 1.5s ease-out forwards; animation-delay: calc(var(--n) * 28ms); }
+/* 텍스트 뒤(z-index 0)로 보내 결과 문구를 가리지 않게 + 낙하 범위 축소 */
+.confetti { position: absolute; left: 0; right: 0; top: 0; height: 0; pointer-events: none; z-index: 0; }
+.confetti span { position: absolute; left: 50%; top: 10px; width: 8px; height: 8px; background: var(--accent); border-radius: 1px; opacity: 0; --x: calc((var(--n) - 7.5) * 30px); animation: conf 1.4s ease-out forwards; animation-delay: calc(var(--n) * 26ms); }
 .confetti span:nth-child(even) { background: #fff; width: 6px; height: 6px; }
-@keyframes conf { 0% { opacity: 1; transform: translate(0, 0) rotate(0) scale(1); } 100% { opacity: 0; transform: translate(var(--x), 190px) rotate(420deg) scale(0.5); } }
+@keyframes conf { 0% { opacity: 0.9; transform: translate(0, 0) rotate(0) scale(1); } 100% { opacity: 0; transform: translate(var(--x), 96px) rotate(420deg) scale(0.5); } }
 
 /* 종목 가로 스크롤 선택 */
 .ticker-scroll { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; -webkit-overflow-scrolling: touch; }
