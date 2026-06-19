@@ -40,7 +40,7 @@ export default function Page() {
       <p>본 약관은 변경될 수 있으며, 변경 시 본 페이지에 게시합니다. 변경 후 서비스를 계속 이용하면 변경에 동의한 것으로 봅니다.</p>
 
       <p className="note">
-        문의: <a href="mailto:bliss@welldoneproduct.com">bliss@welldoneproduct.com</a>
+        문의: <a href="mailto:jclee7503@gmail.com">jclee7503@gmail.com</a>
       </p>
     </ContentShell>
   );

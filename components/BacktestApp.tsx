@@ -9,19 +9,19 @@ import { Compare } from "@/components/Compare";
 import { eok, eok1, pct, ym } from "@/lib/format";
 import { TICKERS, DEFAULT_TICKER, tickerName } from "@/lib/tickers";
 
-const TARGET = 1_000_000_000;
 const DAYS = [1, 5, 10, 15, 25];
 
 type Screen = "intro" | "chat" | "loading" | "result" | "compare";
-type Initial = { ticker: string; amount: number; buyDay: number } | null;
+type Initial = { ticker: string; amount: number; buyDay: number; target: number } | null;
 
 export function BacktestApp({ initial }: { initial: Initial }) {
   const [ticker, setTicker] = useState(initial?.ticker ?? DEFAULT_TICKER);
   const [amount, setAmount] = useState(initial?.amount ?? 100); // 만원
   const [buyDay, setBuyDay] = useState(initial?.buyDay ?? 1);
+  const [target, setTarget] = useState(initial?.target ?? 10); // 억
   const [screen, setScreen] = useState<Screen>(initial ? "result" : "intro");
   const [answers, setAnswers] = useState<string[]>([]);
-  const [editMode, setEditMode] = useState<null | "amount" | "day" | "ticker">(null);
+  const [editMode, setEditMode] = useState<null | "amount" | "day" | "ticker" | "target">(null);
   const [tipOpen, setTipOpen] = useState(false);
   const [toast, setToast] = useState("");
   const [revealKey, setRevealKey] = useState(0);
@@ -43,16 +43,17 @@ export function BacktestApp({ initial }: { initial: Initial }) {
     return () => { cancel = true; };
   }, [ticker]);
 
+  const targetKRW = target * 100_000_000;
   const result = useMemo(
-    () => (rows ? runToToday(rows, { monthlyKRW: amount * 10000, buyDay, targetKRW: TARGET }) : null),
-    [rows, amount, buyDay],
+    () => (rows ? runToToday(rows, { monthlyKRW: amount * 10000, buyDay, targetKRW }) : null),
+    [rows, amount, buyDay, targetKRW],
   );
 
   // 결과 화면 진입/갱신 시 애니메이션 재트리거 + 공유용 URL 동기화
   useEffect(() => {
     if (screen === "result" && result) {
       setRevealKey((k) => k + 1);
-      window.history.replaceState(null, "", `/?t=${ticker}&m=${amount}&d=${buyDay}`);
+      window.history.replaceState(null, "", `/?t=${ticker}&m=${amount}&d=${buyDay}&g=${target}`);
     }
   }, [screen, result?.reachedDate, result?.months]); // eslint-disable-line
 
@@ -74,12 +75,13 @@ export function BacktestApp({ initial }: { initial: Initial }) {
   function bump(dir: number) {
     if (editMode === "amount") setAmount((a) => Math.max(10, a + dir * 10));
     else if (editMode === "day") setBuyDay((d) => { const i = DAYS.indexOf(d); return DAYS[Math.max(0, Math.min(DAYS.length - 1, i + dir))]; });
+    else if (editMode === "target") setTarget((g) => Math.max(1, Math.min(100, g + dir)));
   }
   function share() {
-    const url = `${location.origin}/?t=${ticker}&m=${amount}&d=${buyDay}`;
+    const url = `${location.origin}/?t=${ticker}&m=${amount}&d=${buyDay}&g=${target}`;
     const text = reached
-      ? `${tickerName(ticker)}에 매달 ${amount}만원씩 모았다면 10억까지 ${result!.years}년 ${result!.monthsRem}개월!`
-      : `${tickerName(ticker)} 적립 백테스트 — 10억까지 얼마나 걸릴까?`;
+      ? `${tickerName(ticker)}에 매달 ${amount}만원씩 모았다면 ${target}억까지 ${result!.years}년 ${result!.monthsRem}개월!`
+      : `${tickerName(ticker)} 적립 백테스트 — ${target}억까지 얼마나 걸릴까?`;
     if (navigator.share) { navigator.share({ title: "10-eok", text, url }).catch(() => {}); }
     else { navigator.clipboard?.writeText(`${text} ${url}`); setToast("링크가 복사됐어요"); window.setTimeout(() => setToast(""), 2000); }
   }
@@ -139,12 +141,15 @@ export function BacktestApp({ initial }: { initial: Initial }) {
             <button className="chip rv" style={{ ["--i" as string]: 0 }} onClick={() => setEditMode("day")}>
               <div className="k">매수일</div><div className="v">{buyDay}일</div>
             </button>
+            <button className="chip rv" style={{ ["--i" as string]: 0 }} onClick={() => setEditMode("target")}>
+              <div className="k">목표</div><div className="v">{target}억</div>
+            </button>
           </div>
 
           <div className="hero">
             <div className="hero-glow" />
             <div className={"lead rv" + (reached ? "" : " under")} style={{ ["--i" as string]: 1 }}>
-              {reached ? "지금 10억이 되려면" : "전 구간 모아도"}
+              {reached ? `지금 ${target}억이 되려면` : "전 구간 모아도"}
             </div>
             <div className="num pop" style={{ ["--i" as string]: 2 }}>
               {Math.floor(heroMonths / 12)}<span className="u">년</span> {heroMonths % 12}<span className="u">개월</span>
@@ -153,16 +158,16 @@ export function BacktestApp({ initial }: { initial: Initial }) {
             <div className="span rv" style={{ ["--i" as string]: 3 }}>
               {reached
                 ? `${result.series[0] ? ym(result.series[0].date) : ""}부터 모았으면 지금 ${eok(result.valueKRW)}`
-                : `${result.series[0] ? ym(result.series[0].date) : ""}부터 모아도 지금 ${eok1(result.valueKRW)} · 10억까진 멀어요`}
+                : `${result.series[0] ? ym(result.series[0].date) : ""}부터 모아도 지금 ${eok1(result.valueKRW)} · ${target}억까진 멀어요`}
             </div>
             {reached && <Confetti />}
           </div>
 
           <div className="card rv" style={{ ["--i" as string]: 4 }}>
-            <div className="clab"><span>자산 성장 (KRW)</span><span>목표 10억</span></div>
+            <div className="clab"><span>자산 성장 (KRW)</span><span>목표 {target}억</span></div>
             <GrowthChart
               series={reached ? sliceToReached(result.series, result.reachedDate!) : result.series}
-              target={TARGET} reached={reached}
+              target={targetKRW} reached={reached}
             />
             <div className="stats">
               <div className="stat"><div className="k">원금</div><div className="v">{eok(animPrincipal)}</div></div>
@@ -190,10 +195,10 @@ export function BacktestApp({ initial }: { initial: Initial }) {
                 </div>
               ) : (
                 <>
-                  <span className="lab">{editMode === "amount" ? "매달" : "매수일"}</span>
+                  <span className="lab">{editMode === "amount" ? "매달" : editMode === "day" ? "매수일" : "목표"}</span>
                   <div className="stepper" style={{ flex: 1, background: "transparent", padding: 0 }}>
                     <button onClick={() => bump(-1)}>−</button>
-                    <div className="val">{editMode === "amount" ? `${amount}만원` : `${buyDay}일`}</div>
+                    <div className="val">{editMode === "amount" ? `${amount}만원` : editMode === "day" ? `${buyDay}일` : `${target}억`}</div>
                     <button onClick={() => bump(1)}>+</button>
                   </div>
                 </>

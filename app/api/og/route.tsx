@@ -6,7 +6,6 @@ import { eok } from "@/lib/format";
 
 export const runtime = "nodejs";
 
-const TARGET = 1_000_000_000;
 const DAYS = [1, 5, 10, 15, 25];
 
 function ymK(iso: string) {
@@ -20,26 +19,28 @@ export async function GET(req: Request) {
   const t = (url.searchParams.get("t") || "QLD").toUpperCase();
   const m = parseInt(url.searchParams.get("m") || "100", 10);
   const d = parseInt(url.searchParams.get("d") || "1", 10);
+  let g = parseInt(url.searchParams.get("g") || "10", 10);
+  if (!Number.isFinite(g) || g < 1 || g > 100) g = 10;
 
   const font = await fetch(`${origin}/fonts/Pretendard-Bold.otf`).then((r) => r.arrayBuffer());
 
   const valid = TICKERS.some((x) => x.symbol === t) && Number.isFinite(m) && m >= 10 && DAYS.includes(d);
   let lead = "과거에 매달 모았다면";
-  let big = "10억까지 얼마나?";
+  let big = `${g}억까지 얼마나?`;
   let sub = "실제 과거 가격 + 그날 환율로 백테스트";
   let color = tickerInfo(t).color;
 
   if (valid) {
     try {
       const b: Bundle = await fetch(`${origin}/data/${t.toLowerCase()}.json`).then((r) => r.json());
-      const res = runToToday(bundleToRows(b), { monthlyKRW: m * 10000, buyDay: d, targetKRW: TARGET });
+      const res = runToToday(bundleToRows(b), { monthlyKRW: m * 10000, buyDay: d, targetKRW: g * 100_000_000 });
       if (res.reached) {
-        lead = "지금 10억이 되려면";
+        lead = `지금 ${g}억이 되려면`;
         big = `${res.years}년 ${res.monthsRem}개월 전부터`;
         sub = `${tickerName(t)}(${t}) · 매달 ${m}만원 · ${res.series[0] ? ymK(res.series[0].date) : ""}부터 → 지금 ${eok(res.valueKRW)}`;
       } else {
         lead = `${tickerName(t)}(${t}) · 매달 ${m}만원`;
-        big = "아직 10억은 멀어요";
+        big = `아직 ${g}억은 멀어요`;
         sub = `전 구간 모아도 지금 ${eok(res.valueKRW)}`;
       }
     } catch { /* 기본 카드 유지 */ }

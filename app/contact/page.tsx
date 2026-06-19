@@ -12,7 +12,7 @@ export default function Page() {
       <p>아래 이메일로 연락 주세요. 보통 영업일 기준 며칠 안에 답변드립니다.</p>
       <p>
         <strong>이메일:</strong>{" "}
-        <a href="mailto:bliss@welldoneproduct.com">bliss@welldoneproduct.com</a>
+        <a href="mailto:jclee7503@gmail.com">jclee7503@gmail.com</a>
       </p>
 
       <h2>이런 내용을 보내주시면 좋아요</h2>

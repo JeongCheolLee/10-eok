@@ -13,14 +13,16 @@ function parseInitial(sp: SP) {
   if (!TICKERS.some((x) => x.symbol === t)) return null;
   if (!Number.isFinite(m) || m < 10) return null;
   if (!DAYS.includes(d)) return null;
-  return { ticker: t, amount: m, buyDay: d };
+  let g = typeof sp.g === "string" ? parseInt(sp.g, 10) : 10;
+  if (!Number.isFinite(g) || g < 1 || g > 100) g = 10;
+  return { ticker: t, amount: m, buyDay: d, target: g };
 }
 
 export async function generateMetadata({ searchParams }: { searchParams: Promise<SP> }): Promise<Metadata> {
   const init = parseInitial(await searchParams);
   if (!init) return {};
-  const q = `t=${init.ticker}&m=${init.amount}&d=${init.buyDay}`;
-  const title = `${tickerName(init.ticker)}(${init.ticker})에 매달 ${init.amount}만원 모았다면 — 10억까지?`;
+  const q = `t=${init.ticker}&m=${init.amount}&d=${init.buyDay}&g=${init.target}`;
+  const title = `${tickerName(init.ticker)}(${init.ticker})에 매달 ${init.amount}만원 모았다면 — ${init.target}억까지?`;
   const img = `/api/og?${q}`;
   return {
     title,
