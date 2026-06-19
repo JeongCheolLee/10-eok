@@ -11,7 +11,7 @@ export default function Page() {
     <ContentShell title="계산 방법 & 자주 묻는 질문" desc="10-eok이 결과를 어떻게 만들어내는지" crumb="계산 방법">
       <h2>한눈에 보는 계산 절차</h2>
       <ol>
-        <li>선택한 종목(현재 QLD)의 <strong>일별 수정주가</strong>와 <strong>일별 원/달러 환율</strong>을 가져옵니다.</li>
+        <li>선택한 종목의 <strong>일별 수정주가</strong>와 <strong>일별 원/달러 환율</strong>을 가져옵니다.</li>
         <li>매달 지정한 <strong>매수일</strong>(휴장일이면 다음 거래일)에, 지정한 <strong>원화 금액</strong>을 그날 환율로 달러로 바꿔 종목을 삽니다.</li>
         <li>거래일마다 보유 수량 × 그날 주가 × 그날 환율로 <strong>원화 평가액</strong>을 계산합니다.</li>
         <li>평가액이 처음으로 <strong>10억 원</strong>을 넘는 날을 찾아 "며칠 걸렸는지"를 보여줍니다.</li>

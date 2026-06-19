@@ -120,6 +120,33 @@ button { font-family: inherit; cursor: pointer; }
 .site-footer a:hover { color: #fff; }
 .site-footer .disc { color: #6f6f6f; font-size: 12px; line-height: 1.6; }
 
+/* 극적 리빌 연출 */
+.reveal .rv { opacity: 0; animation: rvIn 0.5s ease forwards; animation-delay: calc(var(--i, 0) * 90ms); }
+@keyframes rvIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+.hero { position: relative; }
+.hero-glow { position: absolute; left: 50%; top: 42%; width: 360px; height: 360px; transform: translate(-50%, -50%) scale(0.6); background: radial-gradient(circle, rgba(30, 215, 96, 0.30), transparent 62%); opacity: 0; pointer-events: none; z-index: 0; animation: glowIn 1.1s ease forwards 0.1s; }
+@keyframes glowIn { to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
+.hero .lead, .hero .num, .hero .span { position: relative; z-index: 1; }
+.num.pop { opacity: 0; animation: pop 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; animation-delay: 0.2s; }
+@keyframes pop { 0% { opacity: 0; transform: scale(0.72); } 60% { opacity: 1; transform: scale(1.07); } 100% { transform: scale(1); } }
+.confetti { position: absolute; left: 0; right: 0; top: 0; height: 0; pointer-events: none; z-index: 2; }
+.confetti span { position: absolute; left: 50%; top: 24px; width: 8px; height: 8px; background: var(--accent); border-radius: 1px; opacity: 0; --x: calc((var(--n) - 7.5) * 26px); animation: conf 1.5s ease-out forwards; animation-delay: calc(var(--n) * 28ms); }
+.confetti span:nth-child(even) { background: #fff; width: 6px; height: 6px; }
+@keyframes conf { 0% { opacity: 1; transform: translate(0, 0) rotate(0) scale(1); } 100% { opacity: 0; transform: translate(var(--x), 190px) rotate(420deg) scale(0.5); } }
+
+/* 종목 가로 스크롤 선택 */
+.ticker-scroll { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; -webkit-overflow-scrolling: touch; }
+.ticker-scroll::-webkit-scrollbar { height: 0; }
+.pick.tall { flex: 0 0 auto; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 11px 15px; border-radius: 14px; }
+.pick.tall .pn { font-size: 14px; font-weight: 700; }
+.pick.tall .ps { font-size: 11px; color: var(--muted); font-weight: 400; }
+.pick.tall.sel .ps { color: rgba(0, 0, 0, 0.55); }
+.editbar .ticker-scroll { flex: 1; }
+
+/* 공유 토스트 */
+.toast { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); background: #fff; color: #000; font-weight: 700; font-size: 14px; padding: 12px 18px; border-radius: 500px; z-index: 40; box-shadow: rgba(0,0,0,0.4) 0 8px 24px; animation: rvIn 0.3s ease; }
+
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }
+  .reveal .rv, .num.pop, .hero-glow { opacity: 1 !important; transform: none !important; }
 }

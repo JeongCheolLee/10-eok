@@ -6,8 +6,10 @@ import { writeFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { alignSeries, type PricePoint, type FxPoint } from "../lib/backtest/align";
 import type { Bundle } from "../lib/backtest/types";
+import { TICKERS } from "../lib/tickers";
 
-const TICKER = process.env.TICKER ?? "QLD";
+// TICKER env 지정 시 그 종목만, 없으면 레지스트리 전체.
+const ONLY = process.env.TICKER;
 const UA = "Mozilla/5.0 (compatible; 10-eok-bot/0.1)";
 
 async function fetchPrices(ticker: string): Promise<PricePoint[]> {
@@ -53,24 +55,28 @@ function round(n: number, d: number): number {
 }
 
 async function main() {
-  console.log(`[build-bundle] ${TICKER}: 가격(Yahoo) + 환율(FRED) 수집…`);
-  const [prices, fx] = await Promise.all([fetchPrices(TICKER), fetchFx()]);
-  console.log(`  prices=${prices.length}, fx=${fx.length}`);
-
-  const rows = alignSeries(prices, fx); // 정렬+forward-fill+검증 (이상 시 throw → 빌드 실패)
-  const bundle: Bundle = {
-    ticker: TICKER,
-    currencyTarget: "KRW",
-    start: rows[0].date,
-    generatedAt: new Date().toISOString(),
-    rows: rows.map((r) => [r.date, r.price, r.fx]),
-  };
+  const symbols = ONLY ? [ONLY] : TICKERS.map((t) => t.symbol);
+  console.log(`[build-bundle] 환율(FRED) 수집…`);
+  const fx = await fetchFx();
+  console.log(`  fx=${fx.length}`);
 
   const dir = join(process.cwd(), "public", "data");
   mkdirSync(dir, { recursive: true });
-  const file = join(dir, `${TICKER.toLowerCase()}.json`);
-  writeFileSync(file, JSON.stringify(bundle));
-  console.log(`[build-bundle] ${file} 작성: ${rows.length}행, ${bundle.start} ~ ${rows[rows.length - 1].date}`);
+
+  for (const ticker of symbols) {
+    const prices = await fetchPrices(ticker);
+    const rows = alignSeries(prices, fx); // 정렬+forward-fill+검증 (이상 시 throw → 빌드 실패)
+    const bundle: Bundle = {
+      ticker,
+      currencyTarget: "KRW",
+      start: rows[0].date,
+      generatedAt: new Date().toISOString(),
+      rows: rows.map((r) => [r.date, r.price, r.fx]),
+    };
+    const file = join(dir, `${ticker.toLowerCase()}.json`);
+    writeFileSync(file, JSON.stringify(bundle));
+    console.log(`  ${ticker}: ${rows.length}행, ${bundle.start} ~ ${rows[rows.length - 1].date}`);
+  }
 }
 
 main().catch((e) => {
