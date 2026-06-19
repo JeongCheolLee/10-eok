@@ -6,7 +6,7 @@ import { writeFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { alignSeries, type PricePoint, type FxPoint } from "../lib/backtest/align";
 import type { Bundle } from "../lib/backtest/types";
-import { TICKERS } from "../lib/tickers";
+import { TICKERS, tickerCurrency } from "../lib/tickers";
 
 // TICKER env 지정 시 그 종목만, 없으면 레지스트리 전체.
 const ONLY = process.env.TICKER;
@@ -65,7 +65,11 @@ async function main() {
 
   for (const ticker of symbols) {
     const prices = await fetchPrices(ticker);
-    const rows = alignSeries(prices, fx); // 정렬+forward-fill+검증 (이상 시 throw → 빌드 실패)
+    // 한국 종목은 원화 자산 → 환율=1 (1900년 더미 1점을 forward-fill). 미국은 실제 환율.
+    const rows =
+      tickerCurrency(ticker) === "KRW"
+        ? alignSeries(prices, [{ date: "1900-01-01", rate: 1 }])
+        : alignSeries(prices, fx); // 정렬+forward-fill+검증 (이상 시 throw → 빌드 실패)
     const bundle: Bundle = {
       ticker,
       currencyTarget: "KRW",

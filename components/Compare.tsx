@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { bundleToRows, type Bundle, type Row, type BacktestResult } from "@/lib/backtest/types";
 import { runToToday } from "@/lib/backtest/simulate";
 import { TickerLogo } from "@/components/TickerLogo";
-import { TICKERS, tickerName } from "@/lib/tickers";
+import { TICKERS, tickerTitle, tickerSubtitle } from "@/lib/tickers";
 import { eok } from "@/lib/format";
 
 const TARGET = 1_000_000_000;
@@ -70,7 +70,7 @@ export function Compare({
       <div className="ticker-scroll cmp-pick">
         {TICKERS.map((t) => (
           <button key={t.symbol} className={"pick logo-pick" + (symbols.includes(t.symbol) ? " sel" : "")} onClick={() => toggle(t.symbol)}>
-            <TickerLogo symbol={t.symbol} size={20} />{t.symbol}
+            <TickerLogo symbol={t.symbol} size={20} />{tickerTitle(t.symbol)}
           </button>
         ))}
       </div>
@@ -81,8 +81,8 @@ export function Compare({
             <div className="cmp-rank">{r.res?.reached ? i + 1 : "—"}</div>
             <TickerLogo symbol={r.symbol} size={34} />
             <div className="cmp-name">
-              <div className="cmp-sym">{r.symbol}</div>
-              <div className="cmp-kr">{tickerName(r.symbol)}</div>
+              <div className="cmp-sym">{tickerTitle(r.symbol)}</div>
+              <div className="cmp-kr">{tickerSubtitle(r.symbol)}</div>
             </div>
             <div className="cmp-right">
               {!r.res ? (

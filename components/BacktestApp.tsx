@@ -7,7 +7,7 @@ import { GrowthChart } from "@/components/GrowthChart";
 import { TickerLogo } from "@/components/TickerLogo";
 import { Compare } from "@/components/Compare";
 import { eok, eok1, pct, ym } from "@/lib/format";
-import { TICKERS, DEFAULT_TICKER, tickerName } from "@/lib/tickers";
+import { TICKERS, DEFAULT_TICKER, tickerName, tickerTitle, tickerSubtitle } from "@/lib/tickers";
 
 const DAYS = [1, 5, 10, 15, 25];
 
@@ -133,7 +133,7 @@ export function BacktestApp({ initial }: { initial: Initial }) {
         <div className="reveal" key={revealKey}>
           <div className="chips">
             <button className="chip rv" style={{ ["--i" as string]: 0 }} onClick={() => setEditMode("ticker")}>
-              <div className="k">종목</div><div className="v vrow"><TickerLogo symbol={ticker} size={18} />{ticker}</div>
+              <div className="k">종목</div><div className="v vrow"><TickerLogo symbol={ticker} size={18} />{tickerTitle(ticker)}</div>
             </button>
             <button className="chip rv" style={{ ["--i" as string]: 0 }} onClick={() => setEditMode("amount")}>
               <div className="k">매달</div><div className="v">{amount}만원</div>
@@ -189,7 +189,7 @@ export function BacktestApp({ initial }: { initial: Initial }) {
                 <div className="ticker-scroll">
                   {TICKERS.map((t) => (
                     <button key={t.symbol} className={"pick logo-pick" + (t.symbol === ticker ? " sel" : "")} onClick={() => setTicker(t.symbol)}>
-                      <TickerLogo symbol={t.symbol} size={20} />{t.symbol}
+                      <TickerLogo symbol={t.symbol} size={20} />{tickerTitle(t.symbol)}
                     </button>
                   ))}
                 </div>
@@ -270,11 +270,11 @@ function Chat({
               {TICKERS.map((t) => (
                 <button key={t.symbol} className={"pick tall" + (t.symbol === ticker ? " sel" : "")} onClick={() => onTicker(t.symbol)}>
                   <TickerLogo symbol={t.symbol} size={32} />
-                  <span className="pcol"><span className="pn">{t.symbol}</span><span className="ps">{t.name}</span></span>
+                  <span className="pcol"><span className="pn">{tickerTitle(t.symbol)}</span><span className="ps">{tickerSubtitle(t.symbol)}</span></span>
                 </button>
               ))}
             </div>
-            <button className="btn" onClick={() => onAnswer(ticker)}>다음</button>
+            <button className="btn" onClick={() => onAnswer(tickerTitle(ticker))}>다음</button>
           </>
         )}
         {step === 1 && (
