@@ -13,12 +13,16 @@ export function runBacktest(rows: Row[], input: BacktestInput): BacktestResult {
   // 매수 실행일 → 그날 투입 KRW (같은 거래일에 겹치면 합산)
   const buyKRWByIndex = new Map<number, number>();
   let [y, m] = ymOf(maxDate(startDate, rows[0].date));
+  const baseIdx = input.cpi ? cpiIndexAt(input.cpi, `${y}-${pad(m)}`) : 1; // 물가연동 base = 시작월
   while (true) {
     const cal = calDate(y, m, buyDay);
     if (cal > endDate) break;
     if (cal >= startDate) {
       const idx = lowerBound(rows, cal); // cal 이상인 첫 거래일 (다음 거래일 롤)
-      if (idx !== -1) buyKRWByIndex.set(idx, (buyKRWByIndex.get(idx) ?? 0) + input.monthlyKRW);
+      if (idx !== -1) {
+        const amt = input.cpi ? input.monthlyKRW * (cpiIndexAt(input.cpi, `${y}-${pad(m)}`) / baseIdx) : input.monthlyKRW;
+        buyKRWByIndex.set(idx, (buyKRWByIndex.get(idx) ?? 0) + amt);
+      }
     }
     m++;
     if (m > 12) { m = 1; y++; }
@@ -132,6 +136,17 @@ export function runToToday(rows: Row[], input: BacktestInput): BacktestResult {
     valueKRW: r.valueKRW,
     cagr: r.cagr,
   };
+}
+
+/** ym("YYYY-MM") 이하의 마지막 CPI 값 (오름차순 가정, 없으면 첫 값). 데이터 끝 이후는 마지막값 유지. */
+export function cpiIndexAt(cpi: { ym: string; idx: number }[], ym: string): number {
+  let lo = 0, hi = cpi.length - 1, ans = -1;
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1;
+    if (cpi[mid].ym <= ym) { ans = mid; lo = mid + 1; }
+    else hi = mid - 1;
+  }
+  return cpi[ans >= 0 ? ans : 0]?.idx ?? 1;
 }
 
 // ---- helpers ----

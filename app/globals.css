@@ -174,6 +174,16 @@ button { font-family: inherit; cursor: pointer; }
 .cmp-val { color: var(--muted); font-size: 12px; }
 .cmp-note { color: #6f6f6f; font-size: 12px; line-height: 1.5; margin-top: 14px; padding-bottom: 24px; }
 
+/* 결과 옵션 토글 (물가/배당/세금) */
+.opts { display: flex; flex-direction: column; gap: 8px; margin: 18px 0 6px; }
+.opt { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--surface); border-radius: 12px; padding: 12px 14px; cursor: pointer; }
+.opt > span { font-size: 14px; font-weight: 700; }
+.opt > span i { display: block; font-size: 11px; font-weight: 400; color: var(--muted); font-style: normal; margin-top: 2px; }
+.opt input { -webkit-appearance: none; appearance: none; width: 44px; height: 26px; background: #3a3a3a; border-radius: 13px; position: relative; cursor: pointer; transition: background 0.2s; flex: 0 0 auto; }
+.opt input:checked { background: var(--accent); }
+.opt input::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: transform 0.2s; }
+.opt input:checked::after { transform: translateX(18px); }
+
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }
   .reveal .rv, .num.pop, .hero-glow { opacity: 1 !important; transform: none !important; }

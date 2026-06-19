@@ -28,6 +28,8 @@ export type BacktestInput = {
   startDate?: string;
   /** 목표액 KRW. 생략 시 10억. */
   targetKRW?: number;
+  /** 물가연동 적립용 월별 CPI (오름차순). 주면 적립액 = base × CPI(매수월)/CPI(시작월). */
+  cpi?: { ym: string; idx: number }[];
 };
 
 export type BacktestResult = {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { runBacktest, runToToday, monthsBetween, lowerBound, clampBuyDay } from "./simulate";
+import { runBacktest, runToToday, monthsBetween, lowerBound, clampBuyDay, cpiIndexAt } from "./simulate";
 import type { Row } from "./types";
 
 function row(date: string, price: number, fx: number): Row {
@@ -80,6 +80,30 @@ describe("runToToday — 오늘 기준 역산", () => {
     const r2 = runToToday(rows, { monthlyKRW: 1_000_000, buyDay: 1, targetKRW: 99_000_000 });
     expect(r2.reached).toBe(false);
     expect(r2.series[0].date).toBe("2020-01-01"); // 데이터 전 구간
+  });
+});
+
+describe("물가연동 적립 (CPI)", () => {
+  // price=1, fx=1000, 2020-01~12. CPI: 1~6월 100, 7~12월 200(2배).
+  // 적립액: 1~6월 100만 ×(100/100)=100만, 7~12월 100만 ×(200/100)=200만.
+  // principal = 6×100만 + 6×200만 = 1800만.
+  const rows: Row[] = [];
+  for (let m = 1; m <= 12; m++) rows.push(row(`2020-${String(m).padStart(2, "0")}-01`, 1, 1000));
+  const cpi = [{ ym: "2020-01", idx: 100 }, { ym: "2020-07", idx: 200 }];
+
+  it("적립액이 물가지수 비율로 인상된다", () => {
+    const res = runBacktest(rows, { monthlyKRW: 1_000_000, buyDay: 1, targetKRW: 9_999_999_999, cpi });
+    expect(res.principalKRW).toBeCloseTo(18_000_000, 4);
+  });
+  it("cpi 없으면 정액(1200만)", () => {
+    const res = runBacktest(rows, { monthlyKRW: 1_000_000, buyDay: 1, targetKRW: 9_999_999_999 });
+    expect(res.principalKRW).toBe(12_000_000);
+  });
+  it("cpiIndexAt: 이하 최신값, 경계 처리", () => {
+    expect(cpiIndexAt(cpi, "2020-03")).toBe(100);
+    expect(cpiIndexAt(cpi, "2020-08")).toBe(200);
+    expect(cpiIndexAt(cpi, "2019-12")).toBe(100); // 첫값 이전 → 첫값
+    expect(cpiIndexAt(cpi, "2099-01")).toBe(200); // 마지막 이후 → 마지막
   });
 });
 

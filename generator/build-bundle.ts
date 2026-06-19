@@ -46,6 +46,23 @@ async function fetchFx(): Promise<FxPoint[]> {
   return out;
 }
 
+async function fetchCpiKr(): Promise<{ ym: string; idx: number }[]> {
+  // FRED 한국 CPI(월별, 키 없는 CSV). 물가연동 적립 옵션에 사용.
+  const url = "https://fred.stlouisfed.org/graph/fredgraph.csv?id=KORCPIALLMINMEI";
+  const res = await fetch(url, { headers: { "User-Agent": UA } });
+  if (!res.ok) throw new Error(`FRED CPI HTTP ${res.status}`);
+  const text = await res.text();
+  const out: { ym: string; idx: number }[] = [];
+  for (const line of text.split("\n").slice(1)) {
+    const [date, val] = line.split(",");
+    if (!date || val == null) continue;
+    const idx = Number(val.trim());
+    if (!Number.isFinite(idx) || idx <= 0) continue;
+    out.push({ ym: date.trim().slice(0, 7), idx: round(idx, 3) }); // YYYY-MM
+  }
+  return out;
+}
+
 function isoUTC(epochSec: number): string {
   return new Date(epochSec * 1000).toISOString().slice(0, 10);
 }
@@ -81,6 +98,11 @@ async function main() {
     writeFileSync(file, JSON.stringify(bundle));
     console.log(`  ${ticker}: ${rows.length}행, ${bundle.start} ~ ${rows[rows.length - 1].date}`);
   }
+
+  // 한국 CPI (물가연동 적립용) — 종목 무관, 1회
+  const cpi = await fetchCpiKr();
+  writeFileSync(join(dir, "cpi-kr.json"), JSON.stringify({ base: cpi[0]?.ym, series: cpi.map((c) => [c.ym, c.idx]) }));
+  console.log(`  cpi-kr: ${cpi.length}개월, ${cpi[0]?.ym} ~ ${cpi[cpi.length - 1]?.ym}`);
 }
 
 main().catch((e) => {

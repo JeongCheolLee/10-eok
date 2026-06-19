@@ -12,13 +12,15 @@ import { TICKERS, DEFAULT_TICKER, tickerName, tickerTitle, tickerSubtitle } from
 const DAYS = [1, 5, 10, 15, 25];
 
 type Screen = "intro" | "chat" | "loading" | "result" | "compare";
-type Initial = { ticker: string; amount: number; buyDay: number; target: number } | null;
+type Initial = { ticker: string; amount: number; buyDay: number; target: number; infl: boolean } | null;
 
 export function BacktestApp({ initial }: { initial: Initial }) {
   const [ticker, setTicker] = useState(initial?.ticker ?? DEFAULT_TICKER);
   const [amount, setAmount] = useState(initial?.amount ?? 100); // 만원
   const [buyDay, setBuyDay] = useState(initial?.buyDay ?? 1);
   const [target, setTarget] = useState(initial?.target ?? 10); // 억
+  const [infl, setInfl] = useState(initial?.infl ?? false);
+  const [cpi, setCpi] = useState<{ ym: string; idx: number }[] | null>(null);
   const [screen, setScreen] = useState<Screen>(initial ? "result" : "intro");
   const [answers, setAnswers] = useState<string[]>([]);
   const [editMode, setEditMode] = useState<null | "amount" | "day" | "ticker" | "target">(null);
@@ -43,17 +45,25 @@ export function BacktestApp({ initial }: { initial: Initial }) {
     return () => { cancel = true; };
   }, [ticker]);
 
+  // 물가연동용 CPI 1회 로드
+  useEffect(() => {
+    fetch("/data/cpi-kr.json")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => { if (j?.series) setCpi(j.series.map(([ym, idx]: [string, number]) => ({ ym, idx }))); })
+      .catch(() => {});
+  }, []);
+
   const targetKRW = target * 100_000_000;
   const result = useMemo(
-    () => (rows ? runToToday(rows, { monthlyKRW: amount * 10000, buyDay, targetKRW }) : null),
-    [rows, amount, buyDay, targetKRW],
+    () => (rows ? runToToday(rows, { monthlyKRW: amount * 10000, buyDay, targetKRW, cpi: infl && cpi ? cpi : undefined }) : null),
+    [rows, amount, buyDay, targetKRW, infl, cpi],
   );
 
   // 결과 화면 진입/갱신 시 애니메이션 재트리거 + 공유용 URL 동기화
   useEffect(() => {
     if (screen === "result" && result) {
       setRevealKey((k) => k + 1);
-      window.history.replaceState(null, "", `/?t=${ticker}&m=${amount}&d=${buyDay}&g=${target}`);
+      window.history.replaceState(null, "", `/?t=${ticker}&m=${amount}&d=${buyDay}&g=${target}${infl ? "&infl=1" : ""}`);
     }
   }, [screen, result?.reachedDate, result?.months]); // eslint-disable-line
 
@@ -180,7 +190,14 @@ export function BacktestApp({ initial }: { initial: Initial }) {
 
           {tipOpen && <div id="tip">연평균 {pct(result.cagr)}는 1년에 평균 이만큼씩 늘었다는 뜻이에요. (과거 수익률 기준)</div>}
 
-          <button className="btn share rv" style={{ ["--i" as string]: 5 }} onClick={share}>결과 공유하기</button>
+          <div className="opts rv" style={{ ["--i" as string]: 5 }}>
+            <label className="opt">
+              <span>물가만큼 매년 인상 <i>적립액을 물가지수만큼 올림</i></span>
+              <input type="checkbox" checked={infl} onChange={(e) => setInfl(e.target.checked)} />
+            </label>
+          </div>
+
+          <button className="btn share rv" style={{ ["--i" as string]: 6 }} onClick={share}>결과 공유하기</button>
           <button className="btn ghost rv" style={{ ["--i" as string]: 6, marginTop: 10, marginBottom: 24 }} onClick={() => setScreen("compare")}>다른 종목과 비교하기</button>
 
           {editMode && (
