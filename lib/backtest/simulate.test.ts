@@ -107,6 +107,21 @@ describe("물가연동 적립 (CPI)", () => {
   });
 });
 
+describe("양도세 (taxMode)", () => {
+  // 3개월 매수(price1, fx1000), 마지막 fx 5000으로 점프.
+  // shares: Jan 1000 + Feb 1000 + Mar(usd 1e6/5000=200) 200 = 2200, principal 300만.
+  // gross = 2200 × 1 × 5000 = 1,100만. gain 800만. tax=22%×(800만−250만)=121만. 세후 979만.
+  const rows = [row("2020-01-01", 1, 1000), row("2020-02-01", 1, 1000), row("2020-03-01", 1, 5000)];
+  it("세후 = gross − 22%×(gain−250만)", () => {
+    const t = runBacktest(rows, { monthlyKRW: 1_000_000, buyDay: 1, targetKRW: 9_999_999_999, taxMode: true });
+    expect(t.valueKRW).toBeCloseTo(9_790_000, 2);
+  });
+  it("taxMode 없으면 세전 1,100만", () => {
+    const g = runBacktest(rows, { monthlyKRW: 1_000_000, buyDay: 1, targetKRW: 9_999_999_999 });
+    expect(g.valueKRW).toBeCloseTo(11_000_000, 2);
+  });
+});
+
 describe("helpers", () => {
   it("monthsBetween 일자 보정", () => {
     expect(monthsBetween("2020-01-01", "2020-10-01")).toBe(9);

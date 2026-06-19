@@ -62,7 +62,9 @@ export function runBacktest(rows: Row[], input: BacktestInput): BacktestResult {
   const firstDate = rows[firstBuyIdx].date;
   const endIdx = reachIdx >= 0 ? reachIdx : rows.length - 1;
   const months = monthsBetween(firstDate, rows[endIdx].date);
-  const valueKRW = reachedDate ? valueAtReach : series[series.length - 1].valueKRW;
+  let valueKRW = reachedDate ? valueAtReach : series[series.length - 1].valueKRW;
+  // 양도세(해외주식 22%, 연 250만 공제 1회 단순화). taxMode일 때만, 통화 분기는 호출부에서.
+  if (input.taxMode) valueKRW -= 0.22 * Math.max(0, valueKRW - principal - 2_500_000);
 
   // 자산 연복리 수익률: 첫 매수일 ~ 도달(또는 마지막) 구간의 (price*fx) 성장률.
   const a0 = px(rows[firstBuyIdx]) * rows[firstBuyIdx].fx;

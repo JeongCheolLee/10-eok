@@ -7,12 +7,12 @@ import { GrowthChart } from "@/components/GrowthChart";
 import { TickerLogo } from "@/components/TickerLogo";
 import { Compare } from "@/components/Compare";
 import { eok, eok1, pct, ym } from "@/lib/format";
-import { TICKERS, DEFAULT_TICKER, tickerName, tickerTitle, tickerSubtitle } from "@/lib/tickers";
+import { TICKERS, DEFAULT_TICKER, tickerName, tickerTitle, tickerSubtitle, tickerCurrency } from "@/lib/tickers";
 
 const DAYS = [1, 5, 10, 15, 25];
 
 type Screen = "intro" | "chat" | "loading" | "result" | "compare";
-type Initial = { ticker: string; amount: number; buyDay: number; target: number; infl: boolean; reinvest: boolean } | null;
+type Initial = { ticker: string; amount: number; buyDay: number; target: number; infl: boolean; reinvest: boolean; tax: boolean } | null;
 
 export function BacktestApp({ initial }: { initial: Initial }) {
   const [ticker, setTicker] = useState(initial?.ticker ?? DEFAULT_TICKER);
@@ -21,6 +21,7 @@ export function BacktestApp({ initial }: { initial: Initial }) {
   const [target, setTarget] = useState(initial?.target ?? 10); // 억
   const [infl, setInfl] = useState(initial?.infl ?? false);
   const [reinvest, setReinvest] = useState(initial?.reinvest ?? true);
+  const [tax, setTax] = useState(initial?.tax ?? false);
   const [cpi, setCpi] = useState<{ ym: string; idx: number }[] | null>(null);
   const [screen, setScreen] = useState<Screen>(initial ? "result" : "intro");
   const [answers, setAnswers] = useState<string[]>([]);
@@ -56,15 +57,15 @@ export function BacktestApp({ initial }: { initial: Initial }) {
 
   const targetKRW = target * 100_000_000;
   const result = useMemo(
-    () => (rows ? runToToday(rows, { monthlyKRW: amount * 10000, buyDay, targetKRW, cpi: infl && cpi ? cpi : undefined, reinvestDividends: reinvest }) : null),
-    [rows, amount, buyDay, targetKRW, infl, cpi, reinvest],
+    () => (rows ? runToToday(rows, { monthlyKRW: amount * 10000, buyDay, targetKRW, cpi: infl && cpi ? cpi : undefined, reinvestDividends: reinvest, taxMode: tax && tickerCurrency(ticker) === "USD" }) : null),
+    [rows, amount, buyDay, targetKRW, infl, cpi, reinvest, tax, ticker],
   );
 
   // 결과 화면 진입/갱신 시 애니메이션 재트리거 + 공유용 URL 동기화
   useEffect(() => {
     if (screen === "result" && result) {
       setRevealKey((k) => k + 1);
-      window.history.replaceState(null, "", `/?t=${ticker}&m=${amount}&d=${buyDay}&g=${target}${infl ? "&infl=1" : ""}${!reinvest ? "&div=0" : ""}`);
+      window.history.replaceState(null, "", `/?t=${ticker}&m=${amount}&d=${buyDay}&g=${target}${infl ? "&infl=1" : ""}${!reinvest ? "&div=0" : ""}${tax ? "&tax=1" : ""}`);
     }
   }, [screen, result?.reachedDate, result?.months]); // eslint-disable-line
 
@@ -199,6 +200,10 @@ export function BacktestApp({ initial }: { initial: Initial }) {
             <label className="opt">
               <span>배당 재투자 <i>끄면 주가만(가격수익), 배당 제외</i></span>
               <input type="checkbox" checked={reinvest} onChange={(e) => setReinvest(e.target.checked)} />
+            </label>
+            <label className="opt">
+              <span>양도세 반영 <i>해외주식 22%(250만 공제) · 국내주식 비과세</i></span>
+              <input type="checkbox" checked={tax} onChange={(e) => setTax(e.target.checked)} />
             </label>
           </div>
 
