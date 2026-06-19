@@ -5,13 +5,14 @@ import { runToToday } from "@/lib/backtest/simulate";
 import { useAnimatedNumber } from "@/lib/useAnimatedNumber";
 import { GrowthChart } from "@/components/GrowthChart";
 import { TickerLogo } from "@/components/TickerLogo";
+import { Compare } from "@/components/Compare";
 import { eok, eok1, pct, ym } from "@/lib/format";
 import { TICKERS, DEFAULT_TICKER, tickerName } from "@/lib/tickers";
 
 const TARGET = 1_000_000_000;
 const DAYS = [1, 5, 10, 15, 25];
 
-type Screen = "intro" | "chat" | "loading" | "result";
+type Screen = "intro" | "chat" | "loading" | "result" | "compare";
 type Initial = { ticker: string; amount: number; buyDay: number } | null;
 
 export function BacktestApp({ initial }: { initial: Initial }) {
@@ -103,6 +104,15 @@ export function BacktestApp({ initial }: { initial: Initial }) {
 
       {screen === "intro" && <Intro onStart={() => setScreen("chat")} />}
 
+      {screen === "compare" && (
+        <Compare
+          initial={[ticker, ...TICKERS.map((t) => t.symbol).filter((s) => s !== ticker)].slice(0, 3)}
+          amount={amount}
+          buyDay={buyDay}
+          onBack={() => setScreen("result")}
+        />
+      )}
+
       {screen === "chat" && (
         <Chat
           answers={answers} ticker={ticker} amount={amount} buyDay={buyDay}
@@ -166,6 +176,7 @@ export function BacktestApp({ initial }: { initial: Initial }) {
           {tipOpen && <div id="tip">연평균 {pct(result.cagr)}는 1년에 평균 이만큼씩 늘었다는 뜻이에요. (과거 수익률 기준)</div>}
 
           <button className="btn share rv" style={{ ["--i" as string]: 5 }} onClick={share}>결과 공유하기</button>
+          <button className="btn ghost rv" style={{ ["--i" as string]: 6, marginTop: 10, marginBottom: 24 }} onClick={() => setScreen("compare")}>다른 종목과 비교하기</button>
 
           {editMode && (
             <div className="editbar">

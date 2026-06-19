@@ -154,6 +154,26 @@ button { font-family: inherit; cursor: pointer; }
 /* 공유 토스트 */
 .toast { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); background: #fff; color: #000; font-weight: 700; font-size: 14px; padding: 12px 18px; border-radius: 500px; z-index: 40; box-shadow: rgba(0,0,0,0.4) 0 8px 24px; animation: rvIn 0.3s ease; }
 
+/* 종목 비교 */
+.cmp-head { display: flex; align-items: center; gap: 10px; padding: 18px 0 12px; }
+.back { width: 36px; height: 36px; border-radius: 50%; border: 0; background: var(--surface-2); color: #fff; font-size: 18px; flex: 0 0 auto; }
+.cmp-title { font-size: 18px; font-weight: 700; }
+.cmp-sub { color: var(--muted); font-size: 13px; margin-left: auto; }
+.cmp-pick { margin-bottom: 14px; }
+.cmp-list { display: flex; flex-direction: column; gap: 8px; }
+.cmp-row { display: flex; align-items: center; gap: 12px; background: var(--surface); border-radius: 12px; padding: 12px 14px; }
+.cmp-rank { width: 16px; text-align: center; color: var(--muted); font-weight: 700; font-size: 13px; flex: 0 0 auto; }
+.cmp-name { flex: 0 0 auto; min-width: 60px; }
+.cmp-sym { font-weight: 700; font-size: 14px; }
+.cmp-kr { color: var(--muted); font-size: 11px; }
+.cmp-right { flex: 1; min-width: 0; text-align: right; }
+.cmp-dur { font-weight: 700; font-size: 16px; font-variant-numeric: tabular-nums; }
+.cmp-dur.muted { color: var(--muted); font-weight: 400; font-size: 13px; }
+.cmp-bar { height: 5px; border-radius: 3px; background: #2a2a2a; margin: 6px 0 4px; overflow: hidden; }
+.cmp-bar span { display: block; height: 100%; background: var(--accent); border-radius: 3px; }
+.cmp-val { color: var(--muted); font-size: 12px; }
+.cmp-note { color: #6f6f6f; font-size: 12px; line-height: 1.5; margin-top: 14px; padding-bottom: 24px; }
+
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }
   .reveal .rv, .num.pop, .hero-glow { opacity: 1 !important; transform: none !important; }
