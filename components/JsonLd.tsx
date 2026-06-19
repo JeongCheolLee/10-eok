@@ -83,3 +83,17 @@ export function guideLd({ path, title, description, name }: { path: string; titl
 export function pageBreadcrumbLd(name: string, path: string) {
   return { "@context": "https://schema.org", ...breadcrumbLd([{ name: "홈", path: "/" }, { name, path }]) };
 }
+
+// 범용 Article
+export function articleLd({ path, title, description }: { path: string; title: string; description: string }) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: title,
+    description,
+    inLanguage: "ko",
+    mainEntityOfPage: `${SITE_URL}${path}`,
+    author: ORG,
+    publisher: ORG,
+  };
+}
