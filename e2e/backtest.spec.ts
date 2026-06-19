@@ -27,9 +27,9 @@ test("대화식 입력 → 결과 → 칩 수정 재계산", async ({ page }) =>
 
   // 칩 수정: 매달 금액 올리면 도달 기간이 바뀐다
   await page.getByText("매달", { exact: false }).first().click();
-  await expect(page.locator(".editbar")).toBeVisible();
-  for (let i = 0; i < 5; i++) await page.locator(".editbar .stepper button").last().click();
-  await page.getByRole("button", { name: "완료" }).click();
+  await expect(page.locator(".chip-dropdown")).toBeVisible();
+  for (let i = 0; i < 5; i++) await page.locator(".chip-dropdown .stepper button").last().click();
+  await page.locator(".hero .num").click();
 
   // 금액이 늘면 기간(hero)이 달라져야 함
   await expect(async () => {

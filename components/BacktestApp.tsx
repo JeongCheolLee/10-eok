@@ -26,6 +26,7 @@ export function BacktestApp({ initial }: { initial: Initial }) {
   const [tipOpen, setTipOpen] = useState(false);
   const [toast, setToast] = useState("");
   const [revealKey, setRevealKey] = useState(0);
+  const chipsRef = useRef<HTMLDivElement>(null);
 
   const [rows, setRows] = useState<Row[] | null>(initial ? null : null);
   const [loadErr, setLoadErr] = useState(false);
@@ -65,6 +66,15 @@ export function BacktestApp({ initial }: { initial: Initial }) {
       window.history.replaceState(null, "", `/?t=${ticker}&m=${amount}&d=${buyDay}&g=${target}${infl ? "&infl=1" : ""}${!reinvest ? "&div=0" : ""}${tax ? "&tax=1" : ""}`);
     }
   }, [screen, result?.reachedDate, result?.months]); // eslint-disable-line
+
+  useEffect(() => {
+    if (!editMode) return;
+    function onDown(e: MouseEvent) {
+      if (chipsRef.current && !chipsRef.current.contains(e.target as Node)) setEditMode(null);
+    }
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [editMode]);
 
   const months = result?.months ?? 0;
   const animMonths = useAnimatedNumber(months, screen === "result" ? 1000 : 0);
@@ -108,7 +118,7 @@ export function BacktestApp({ initial }: { initial: Initial }) {
           </g>
         </svg>
         <div className="brand">10-eok</div>
-        {screen === "result" && <div className="tag">탭하면 수정</div>}
+        {screen === "result" && <div className="tag">탭하면 변경</div>}
       </div>
 
       {screen === "intro" && <Intro onStart={() => setScreen("form")} />}
@@ -129,19 +139,46 @@ export function BacktestApp({ initial }: { initial: Initial }) {
 
       {screen === "result" && result && (
         <div className="reveal" key={revealKey}>
-          <div className="chips">
-            <button className="chip rv" style={{ ["--i" as string]: 0 }} onClick={() => setEditMode("ticker")}>
-              <div className="k">종목</div><div className="v vrow"><TickerLogo symbol={ticker} size={18} />{tickerTitle(ticker)}</div>
-            </button>
-            <button className="chip rv" style={{ ["--i" as string]: 0 }} onClick={() => setEditMode("amount")}>
-              <div className="k">매달</div><div className="v">{amount}만원</div>
-            </button>
-            <button className="chip rv" style={{ ["--i" as string]: 0 }} onClick={() => setEditMode("day")}>
-              <div className="k">매수일</div><div className="v">{buyDay}일</div>
-            </button>
-            <button className="chip rv" style={{ ["--i" as string]: 0 }} onClick={() => setEditMode("target")}>
-              <div className="k">목표</div><div className="v">{target}억</div>
-            </button>
+          <div className="chips-wrap" ref={chipsRef}>
+            <div className="chips">
+              <button className={"chip rv" + (editMode === "ticker" ? " open" : "")} style={{ ["--i" as string]: 0 }} onClick={() => setEditMode((m) => (m === "ticker" ? null : "ticker"))}>
+                <div className="k">종목</div><div className="v vrow"><TickerLogo symbol={ticker} size={18} />{tickerTitle(ticker)}</div>
+              </button>
+              <button className={"chip rv" + (editMode === "amount" ? " open" : "")} style={{ ["--i" as string]: 0 }} onClick={() => setEditMode((m) => (m === "amount" ? null : "amount"))}>
+                <div className="k">매달</div><div className="v">{amount}만원</div>
+              </button>
+              <button className={"chip rv" + (editMode === "day" ? " open" : "")} style={{ ["--i" as string]: 0 }} onClick={() => setEditMode((m) => (m === "day" ? null : "day"))}>
+                <div className="k">매수일</div><div className="v">{buyDay}일</div>
+              </button>
+              <button className={"chip rv" + (editMode === "target" ? " open" : "")} style={{ ["--i" as string]: 0 }} onClick={() => setEditMode((m) => (m === "target" ? null : "target"))}>
+                <div className="k">목표</div><div className="v">{target}억</div>
+              </button>
+            </div>
+            {editMode && (
+              <div className="chip-dropdown rv" style={{ ["--i" as string]: 0 }}>
+                {editMode === "ticker" && (
+                  <TickerSelect value={ticker} onChange={(s) => { setTicker(s); setEditMode(null); }} />
+                )}
+                {editMode === "amount" && (
+                  <div className="chip-dropdown-field">
+                    <div className="chip-dropdown-label">매달 적립 금액</div>
+                    <StepInput value={amount} onChange={setAmount} min={10} max={100000} step={10} suffix="만원" />
+                  </div>
+                )}
+                {editMode === "day" && (
+                  <div className="chip-dropdown-field">
+                    <div className="chip-dropdown-label">매수일 (매달 며칠)</div>
+                    <StepInput value={buyDay} onChange={setBuyDay} min={1} max={31} step={1} suffix="일" />
+                  </div>
+                )}
+                {editMode === "target" && (
+                  <div className="chip-dropdown-field">
+                    <div className="chip-dropdown-label">목표 금액</div>
+                    <StepInput value={target} onChange={setTarget} min={1} max={100} step={1} suffix="억" />
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="hero">
@@ -196,30 +233,6 @@ export function BacktestApp({ initial }: { initial: Initial }) {
           </div>
 
           <button className="btn share rv" style={{ ["--i" as string]: 6, marginBottom: 24 }} onClick={share}>결과 공유하기</button>
-
-          {editMode && (
-            <div className="editbar">
-              {editMode === "ticker" ? (
-                <div className="ticker-scroll">
-                  {TICKERS.map((t) => (
-                    <button key={t.symbol} className={"pick logo-pick" + (t.symbol === ticker ? " sel" : "")} onClick={() => setTicker(t.symbol)}>
-                      <TickerLogo symbol={t.symbol} size={20} />{tickerTitle(t.symbol)}
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <>
-                  <span className="lab">{editMode === "amount" ? "매달" : editMode === "day" ? "매수일" : "목표"}</span>
-                  <div style={{ flex: 1 }}>
-                    {editMode === "amount" && <StepInput value={amount} onChange={setAmount} min={10} max={100000} step={10} suffix="만원" bare />}
-                    {editMode === "day" && <StepInput value={buyDay} onChange={setBuyDay} min={1} max={31} step={1} suffix="일" bare />}
-                    {editMode === "target" && <StepInput value={target} onChange={setTarget} min={1} max={100} step={1} suffix="억" bare />}
-                  </div>
-                </>
-              )}
-              <button className="pick sel" onClick={() => setEditMode(null)}>완료</button>
-            </div>
-          )}
         </div>
       )}
 
