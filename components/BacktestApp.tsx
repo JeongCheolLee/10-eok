@@ -14,16 +14,19 @@ const DAYS = [1, 5, 10, 15, 25];
 type Screen = "intro" | "chat" | "loading" | "result" | "compare";
 type Initial = { ticker: string; amount: number; buyDay: number; target: number; infl: boolean; reinvest: boolean; tax: boolean } | null;
 
-export function BacktestApp({ initial }: { initial: Initial }) {
+type InitialCompare = { symbols: string[]; amount: number; buyDay: number } | null;
+
+export function BacktestApp({ initial, initialCompare }: { initial: Initial; initialCompare?: InitialCompare }) {
   const [ticker, setTicker] = useState(initial?.ticker ?? DEFAULT_TICKER);
-  const [amount, setAmount] = useState(initial?.amount ?? 100); // 만원
-  const [buyDay, setBuyDay] = useState(initial?.buyDay ?? 1);
+  const [amount, setAmount] = useState(initial?.amount ?? initialCompare?.amount ?? 100); // 만원
+  const [buyDay, setBuyDay] = useState(initial?.buyDay ?? initialCompare?.buyDay ?? 1);
+  const [compareSyms, setCompareSyms] = useState<string[] | null>(initialCompare?.symbols ?? null);
   const [target, setTarget] = useState(initial?.target ?? 10); // 억
   const [infl, setInfl] = useState(initial?.infl ?? false);
   const [reinvest, setReinvest] = useState(initial?.reinvest ?? true);
   const [tax, setTax] = useState(initial?.tax ?? false);
   const [cpi, setCpi] = useState<{ ym: string; idx: number }[] | null>(null);
-  const [screen, setScreen] = useState<Screen>(initial ? "result" : "intro");
+  const [screen, setScreen] = useState<Screen>(initial ? "result" : initialCompare ? "compare" : "intro");
   const [answers, setAnswers] = useState<string[]>([]);
   const [editMode, setEditMode] = useState<null | "amount" | "day" | "ticker" | "target">(null);
   const [tipOpen, setTipOpen] = useState(false);
@@ -68,6 +71,13 @@ export function BacktestApp({ initial }: { initial: Initial }) {
       window.history.replaceState(null, "", `/?t=${ticker}&m=${amount}&d=${buyDay}&g=${target}${infl ? "&infl=1" : ""}${!reinvest ? "&div=0" : ""}${tax ? "&tax=1" : ""}`);
     }
   }, [screen, result?.reachedDate, result?.months]); // eslint-disable-line
+
+  // 비교 화면 URL 동기화(공유 가능)
+  useEffect(() => {
+    if (screen === "compare" && compareSyms && compareSyms.length) {
+      window.history.replaceState(null, "", `/?compare=${compareSyms.join(",")}&m=${amount}&d=${buyDay}`);
+    }
+  }, [screen, compareSyms, amount, buyDay]);
 
   const months = result?.months ?? 0;
   const animMonths = useAnimatedNumber(months, screen === "result" ? 1000 : 0);
@@ -120,10 +130,11 @@ export function BacktestApp({ initial }: { initial: Initial }) {
 
       {screen === "compare" && (
         <Compare
-          initial={[ticker, ...TICKERS.map((t) => t.symbol).filter((s) => s !== ticker)].slice(0, 3)}
+          initial={compareSyms ?? [ticker, ...TICKERS.map((t) => t.symbol).filter((s) => s !== ticker)].slice(0, 3)}
           amount={amount}
           buyDay={buyDay}
           onBack={() => setScreen("result")}
+          onChange={setCompareSyms}
         />
       )}
 
@@ -208,7 +219,7 @@ export function BacktestApp({ initial }: { initial: Initial }) {
           </div>
 
           <button className="btn share rv" style={{ ["--i" as string]: 6 }} onClick={share}>결과 공유하기</button>
-          <button className="btn ghost rv" style={{ ["--i" as string]: 6, marginTop: 10, marginBottom: 24 }} onClick={() => setScreen("compare")}>다른 종목과 비교하기</button>
+          <button className="btn ghost rv" style={{ ["--i" as string]: 6, marginTop: 10, marginBottom: 24 }} onClick={() => { setCompareSyms([ticker, ...TICKERS.map((t) => t.symbol).filter((s) => s !== ticker)].slice(0, 3)); setScreen("compare"); }}>다른 종목과 비교하기</button>
 
           {editMode && (
             <div className="editbar">

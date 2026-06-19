@@ -34,7 +34,18 @@ export async function generateMetadata({ searchParams }: { searchParams: Promise
   };
 }
 
+function parseCompare(sp: SP) {
+  if (typeof sp.compare !== "string") return null;
+  const syms = sp.compare.split(",").map((s) => s.trim().toUpperCase()).filter((s) => TICKERS.some((t) => t.symbol === s));
+  if (syms.length < 2) return null;
+  let m = typeof sp.m === "string" ? parseInt(sp.m, 10) : 100;
+  if (!Number.isFinite(m) || m < 10) m = 100;
+  let d = typeof sp.d === "string" ? parseInt(sp.d, 10) : 1;
+  if (!DAYS.includes(d)) d = 1;
+  return { symbols: syms.slice(0, 4), amount: m, buyDay: d };
+}
+
 export default async function Home({ searchParams }: { searchParams: Promise<SP> }) {
   const sp = await searchParams;
-  return <BacktestApp initial={parseInitial(sp)} />;
+  return <BacktestApp initial={parseInitial(sp)} initialCompare={parseCompare(sp)} />;
 }

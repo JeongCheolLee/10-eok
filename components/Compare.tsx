@@ -11,12 +11,13 @@ const TARGET = 1_000_000_000;
 type Row2 = { symbol: string; res: BacktestResult | null };
 
 export function Compare({
-  initial, amount, buyDay, onBack,
+  initial, amount, buyDay, onBack, onChange,
 }: {
   initial: string[];
   amount: number;
   buyDay: number;
   onBack: () => void;
+  onChange?: (s: string[]) => void;
 }) {
   const [symbols, setSymbols] = useState<string[]>(initial.slice(0, 4));
   const [rowsBySym, setRowsBySym] = useState<Record<string, Row[]>>({});
@@ -54,9 +55,11 @@ export function Compare({
   const maxMonths = Math.max(1, ...results.map((r) => r.res?.months ?? 0));
 
   function toggle(sym: string) {
-    setSymbols((cur) =>
-      cur.includes(sym) ? (cur.length > 2 ? cur.filter((s) => s !== sym) : cur) : cur.length < 4 ? [...cur, sym] : cur,
-    );
+    setSymbols((cur) => {
+      const next = cur.includes(sym) ? (cur.length > 2 ? cur.filter((s) => s !== sym) : cur) : cur.length < 4 ? [...cur, sym] : cur;
+      onChange?.(next);
+      return next;
+    });
   }
 
   return (
