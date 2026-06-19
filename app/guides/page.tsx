@@ -8,10 +8,13 @@ export const metadata: Metadata = {
 };
 
 const GUIDES = [
+  { slug: "etf-basics", t: "ETF가 뭔가요? (초보자)", d: "상장지수펀드의 개념과 개별주식·펀드와의 차이를 처음부터 쉽게." },
   { slug: "qld", t: "QLD란 무엇인가", d: "나스닥100을 하루 2배로 추종하는 레버리지 ETF, QLD를 기초부터 정리합니다." },
   { slug: "dca", t: "적립식 투자(DCA)의 원리", d: "매달 일정 금액을 꾸준히 사는 방식이 왜 마음 편한 투자인지 설명합니다." },
+  { slug: "dca-vs-lumpsum", t: "적립식 vs 거치식", d: "한 번에 넣을까 나눠 넣을까 — 둘의 차이와 상황별 선택 기준." },
   { slug: "leverage-etf-risk", t: "레버리지 ETF의 위험", d: "2배의 수익만큼 2배의 손실, 그리고 '변동성 끌림'이라는 숨은 함정." },
   { slug: "fx-impact", t: "환율이 수익률에 미치는 영향", d: "원화로 달러 자산을 살 때, 환율이 어떻게 수익을 더하거나 깎는지." },
+  { slug: "overseas-tax", t: "해외주식·ETF 세금 기초", d: "양도소득세·배당소득세와 국내 상장 종목과의 차이." },
 ];
 
 export default function GuidesIndex() {
