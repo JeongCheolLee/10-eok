@@ -2,8 +2,6 @@ import type { Metadata } from "next";
 import { BacktestApp } from "@/components/BacktestApp";
 import { TICKERS, tickerName } from "@/lib/tickers";
 
-const DAYS = [1, 5, 10, 15, 25];
-
 type SP = Record<string, string | string[] | undefined>;
 
 function parseInitial(sp: SP) {
@@ -12,7 +10,7 @@ function parseInitial(sp: SP) {
   const d = typeof sp.d === "string" ? parseInt(sp.d, 10) : NaN;
   if (!TICKERS.some((x) => x.symbol === t)) return null;
   if (!Number.isFinite(m) || m < 10) return null;
-  if (!DAYS.includes(d)) return null;
+  if (!Number.isFinite(d) || d < 1 || d > 31) return null;
   let g = typeof sp.g === "string" ? parseInt(sp.g, 10) : 10;
   if (!Number.isFinite(g) || g < 1 || g > 100) g = 10;
   const infl = sp.infl === "1" || sp.infl === "true";
@@ -34,18 +32,7 @@ export async function generateMetadata({ searchParams }: { searchParams: Promise
   };
 }
 
-function parseCompare(sp: SP) {
-  if (typeof sp.compare !== "string") return null;
-  const syms = sp.compare.split(",").map((s) => s.trim().toUpperCase()).filter((s) => TICKERS.some((t) => t.symbol === s));
-  if (syms.length < 2) return null;
-  let m = typeof sp.m === "string" ? parseInt(sp.m, 10) : 100;
-  if (!Number.isFinite(m) || m < 10) m = 100;
-  let d = typeof sp.d === "string" ? parseInt(sp.d, 10) : 1;
-  if (!DAYS.includes(d)) d = 1;
-  return { symbols: syms.slice(0, 4), amount: m, buyDay: d };
-}
-
 export default async function Home({ searchParams }: { searchParams: Promise<SP> }) {
   const sp = await searchParams;
-  return <BacktestApp initial={parseInitial(sp)} initialCompare={parseCompare(sp)} />;
+  return <BacktestApp initial={parseInitial(sp)} />;
 }

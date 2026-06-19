@@ -9,15 +9,12 @@ export type TickerInfo = {
   short?: string; // 모노그램에 표시할 짧은 라벨 (없으면 symbol)
 };
 
+// ETF만 (단일 종목 제외). 검색 가능한 드롭다운으로 고르며, 추후 ETF 추가 용이.
 export const TICKERS: TickerInfo[] = [
   { symbol: "QLD", name: "나스닥100 2배", color: "#5e6ad2" },
   { symbol: "TQQQ", name: "나스닥100 3배", color: "#e0467c" },
   { symbol: "QQQ", name: "나스닥100", color: "#3b82f6" },
   { symbol: "SPY", name: "S&P 500", color: "#e11d48" },
-  { symbol: "NVDA", name: "엔비디아", color: "#5a8f00" },
-  { symbol: "TSLA", name: "테슬라", color: "#d33a3f" },
-  { symbol: "AAPL", name: "애플", color: "#8a9197" },
-  { symbol: "005930.KS", name: "삼성전자", color: "#1f4fd0", currency: "KRW", short: "삼성" },
   { symbol: "069500.KS", name: "KODEX 200", color: "#c0392b", currency: "KRW", short: "K200" },
 ];
 

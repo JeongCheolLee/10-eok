@@ -18,5 +18,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/guides/fx-impact",
     "/guides/overseas-tax",
   ];
-  return paths.map((p) => ({ url: `${BASE}${p}`, changeFrequency: "weekly", priority: p === "" ? 1 : 0.7 }));
+  const lastModified = new Date();
+  return paths.map((p) => ({ url: `${BASE}${p}`, lastModified, changeFrequency: "weekly", priority: p === "" ? 1 : 0.7 }));
 }
