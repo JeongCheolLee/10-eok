@@ -20,12 +20,14 @@ async function fetchPrices(ticker: string): Promise<PricePoint[]> {
   const r = json?.chart?.result?.[0];
   const ts: number[] | undefined = r?.timestamp;
   const adj: (number | null)[] | undefined = r?.indicators?.adjclose?.[0]?.adjclose;
+  const close: (number | null)[] | undefined = r?.indicators?.quote?.[0]?.close;
   if (!ts || !adj) throw new Error(`Yahoo ${ticker}: adjclose 없음`);
   const out: PricePoint[] = [];
   for (let i = 0; i < ts.length; i++) {
     const v = adj[i];
     if (v == null || !Number.isFinite(v)) continue;
-    out.push({ date: isoUTC(ts[i]), price: round(v, 4) });
+    const rawV = close?.[i];
+    out.push({ date: isoUTC(ts[i]), price: round(v, 4), raw: rawV != null && Number.isFinite(rawV) ? round(rawV, 4) : round(v, 4) });
   }
   return out;
 }
@@ -92,7 +94,7 @@ async function main() {
       currencyTarget: "KRW",
       start: rows[0].date,
       generatedAt: new Date().toISOString(),
-      rows: rows.map((r) => [r.date, r.price, r.fx]),
+      rows: rows.map((r) => [r.date, r.price, r.fx, r.raw ?? r.price] as [string, number, number, number]),
     };
     const file = join(dir, `${ticker.toLowerCase()}.json`);
     writeFileSync(file, JSON.stringify(bundle));

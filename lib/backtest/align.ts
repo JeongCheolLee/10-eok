@@ -1,7 +1,7 @@
 // 거래일 정렬 + 환율 forward-fill + 검증. 생성기(EC2)와 프론트가 공유하는 단일 소스.
 import type { Row } from "./types";
 
-export type PricePoint = { date: string; price: number };
+export type PricePoint = { date: string; price: number; raw?: number };
 export type FxPoint = { date: string; rate: number };
 
 /**
@@ -26,7 +26,7 @@ export function alignSeries(prices: PricePoint[], fx: FxPoint[]): Row[] {
       fi++;
     }
     if (!Number.isFinite(lastFx)) continue; // 환율 이력 시작 전 → 제외
-    rows.push({ date: p.date, price: p.price, fx: lastFx });
+    rows.push({ date: p.date, price: p.price, fx: lastFx, raw: p.raw });
   }
   validateRows(rows);
   return rows;

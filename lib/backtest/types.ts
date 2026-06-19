@@ -8,6 +8,8 @@ export type Row = {
   price: number;
   /** 그날 USD/KRW 환율 (1달러 = N원) */
   fx: number;
+  /** 미수정 종가 (배당 미반영, 가격수익용). 없으면 price로 폴백. */
+  raw?: number;
 };
 
 /** EC2 생성기가 만들어 프론트가 받는 파생 번들. rows = [date, price, fx][] */
@@ -16,7 +18,8 @@ export type Bundle = {
   currencyTarget: "KRW";
   start: string;
   generatedAt: string;
-  rows: [string, number, number][];
+  /** [date, adjClose, fx, rawClose?] */
+  rows: [string, number, number, number?][];
 };
 
 export type BacktestInput = {
@@ -30,6 +33,10 @@ export type BacktestInput = {
   targetKRW?: number;
   /** 물가연동 적립용 월별 CPI (오름차순). 주면 적립액 = base × CPI(매수월)/CPI(시작월). */
   cpi?: { ym: string; idx: number }[];
+  /** 배당 재투자 여부(기본 true). false면 미수정 종가(가격수익)로 계산. */
+  reinvestDividends?: boolean;
+  /** 양도세 반영(기본 false). 미국 종목만 22%×max(0,gain−250만). */
+  taxMode?: boolean;
 };
 
 export type BacktestResult = {
@@ -50,5 +57,5 @@ export type BacktestResult = {
 };
 
 export function bundleToRows(b: Bundle): Row[] {
-  return b.rows.map(([date, price, fx]) => ({ date, price, fx }));
+  return b.rows.map(([date, price, fx, raw]) => ({ date, price, fx, raw: raw ?? price }));
 }

@@ -16,7 +16,8 @@ function parseInitial(sp: SP) {
   let g = typeof sp.g === "string" ? parseInt(sp.g, 10) : 10;
   if (!Number.isFinite(g) || g < 1 || g > 100) g = 10;
   const infl = sp.infl === "1" || sp.infl === "true";
-  return { ticker: t, amount: m, buyDay: d, target: g, infl };
+  const reinvest = sp.div !== "0";
+  return { ticker: t, amount: m, buyDay: d, target: g, infl, reinvest };
 }
 
 export async function generateMetadata({ searchParams }: { searchParams: Promise<SP> }): Promise<Metadata> {

@@ -40,15 +40,17 @@ export function runBacktest(rows: Row[], input: BacktestInput): BacktestResult {
   }
   const firstBuyIdx = Math.min(...buyKRWByIndex.keys());
 
+  // 배당 재투자 OFF면 미수정 종가(가격수익)로 평가/매수
+  const px = (r: Row) => (input.reinvestDividends === false ? r.raw ?? r.price : r.price);
   for (let i = firstBuyIdx; i < rows.length; i++) {
     const r = rows[i];
     const invest = buyKRWByIndex.get(i);
     if (invest) {
       const usd = invest / r.fx;
-      shares += usd / r.price;
+      shares += usd / px(r);
       principal += invest;
     }
-    const valueKRW = shares * r.price * r.fx;
+    const valueKRW = shares * px(r) * r.fx;
     series.push({ date: r.date, valueKRW });
     if (reachedDate === null && valueKRW >= target) {
       reachedDate = r.date;
@@ -63,8 +65,8 @@ export function runBacktest(rows: Row[], input: BacktestInput): BacktestResult {
   const valueKRW = reachedDate ? valueAtReach : series[series.length - 1].valueKRW;
 
   // 자산 연복리 수익률: 첫 매수일 ~ 도달(또는 마지막) 구간의 (price*fx) 성장률.
-  const a0 = rows[firstBuyIdx].price * rows[firstBuyIdx].fx;
-  const a1 = rows[endIdx].price * rows[endIdx].fx;
+  const a0 = px(rows[firstBuyIdx]) * rows[firstBuyIdx].fx;
+  const a1 = px(rows[endIdx]) * rows[endIdx].fx;
   const yrs = months / 12;
   const cagr = yrs > 0 && a0 > 0 ? Math.pow(a1 / a0, 1 / yrs) - 1 : 0;
 
@@ -110,8 +112,9 @@ export function runToToday(rows: Row[], input: BacktestInput): BacktestResult {
   }
 
   // 그 시작일로 끝까지 적립했을 때 마지막날 평가액 (시작이 늦을수록 단조 감소)
+  // ...input 으로 cpi/reinvestDividends/taxMode 등 모든 옵션을 내부 시뮬에 전달
   const sim = (startDate: string) =>
-    runBacktest(rows, { monthlyKRW: input.monthlyKRW, buyDay, startDate, targetKRW: Number.MAX_SAFE_INTEGER });
+    runBacktest(rows, { ...input, buyDay, startDate, targetKRW: Number.MAX_SAFE_INTEGER });
 
   // target 도달하는 가장 늦은 시작(=최단 기간)을 이분 탐색
   let lo = 0, hi = starts.length - 1, ans = -1;

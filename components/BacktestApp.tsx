@@ -12,7 +12,7 @@ import { TICKERS, DEFAULT_TICKER, tickerName, tickerTitle, tickerSubtitle } from
 const DAYS = [1, 5, 10, 15, 25];
 
 type Screen = "intro" | "chat" | "loading" | "result" | "compare";
-type Initial = { ticker: string; amount: number; buyDay: number; target: number; infl: boolean } | null;
+type Initial = { ticker: string; amount: number; buyDay: number; target: number; infl: boolean; reinvest: boolean } | null;
 
 export function BacktestApp({ initial }: { initial: Initial }) {
   const [ticker, setTicker] = useState(initial?.ticker ?? DEFAULT_TICKER);
@@ -20,6 +20,7 @@ export function BacktestApp({ initial }: { initial: Initial }) {
   const [buyDay, setBuyDay] = useState(initial?.buyDay ?? 1);
   const [target, setTarget] = useState(initial?.target ?? 10); // 억
   const [infl, setInfl] = useState(initial?.infl ?? false);
+  const [reinvest, setReinvest] = useState(initial?.reinvest ?? true);
   const [cpi, setCpi] = useState<{ ym: string; idx: number }[] | null>(null);
   const [screen, setScreen] = useState<Screen>(initial ? "result" : "intro");
   const [answers, setAnswers] = useState<string[]>([]);
@@ -55,15 +56,15 @@ export function BacktestApp({ initial }: { initial: Initial }) {
 
   const targetKRW = target * 100_000_000;
   const result = useMemo(
-    () => (rows ? runToToday(rows, { monthlyKRW: amount * 10000, buyDay, targetKRW, cpi: infl && cpi ? cpi : undefined }) : null),
-    [rows, amount, buyDay, targetKRW, infl, cpi],
+    () => (rows ? runToToday(rows, { monthlyKRW: amount * 10000, buyDay, targetKRW, cpi: infl && cpi ? cpi : undefined, reinvestDividends: reinvest }) : null),
+    [rows, amount, buyDay, targetKRW, infl, cpi, reinvest],
   );
 
   // 결과 화면 진입/갱신 시 애니메이션 재트리거 + 공유용 URL 동기화
   useEffect(() => {
     if (screen === "result" && result) {
       setRevealKey((k) => k + 1);
-      window.history.replaceState(null, "", `/?t=${ticker}&m=${amount}&d=${buyDay}&g=${target}${infl ? "&infl=1" : ""}`);
+      window.history.replaceState(null, "", `/?t=${ticker}&m=${amount}&d=${buyDay}&g=${target}${infl ? "&infl=1" : ""}${!reinvest ? "&div=0" : ""}`);
     }
   }, [screen, result?.reachedDate, result?.months]); // eslint-disable-line
 
@@ -194,6 +195,10 @@ export function BacktestApp({ initial }: { initial: Initial }) {
             <label className="opt">
               <span>물가만큼 매년 인상 <i>적립액을 물가지수만큼 올림</i></span>
               <input type="checkbox" checked={infl} onChange={(e) => setInfl(e.target.checked)} />
+            </label>
+            <label className="opt">
+              <span>배당 재투자 <i>끄면 주가만(가격수익), 배당 제외</i></span>
+              <input type="checkbox" checked={reinvest} onChange={(e) => setReinvest(e.target.checked)} />
             </label>
           </div>
 
