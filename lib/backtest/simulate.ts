@@ -84,6 +84,56 @@ export function runBacktest(rows: Row[], input: BacktestInput): BacktestResult {
   }
 }
 
+/**
+ * 오늘(최신 데이터일) 기준 역산: "지금 10억이 되려면 언제부터 모았어야 했나".
+ * 끝(to)을 마지막 거래일로 고정하고, target에 도달하는 가장 늦은 시작월(=최단 기간)을 찾는다.
+ * months = 그 시작일부터 오늘까지의 기간. 미달이면 데이터 시작부터 모아도 부족한 경우.
+ */
+export function runToToday(rows: Row[], input: BacktestInput): BacktestResult {
+  if (rows.length === 0) throw new Error("rows가 비어있음");
+  const target = input.targetKRW ?? DEFAULT_TARGET;
+  const buyDay = clampBuyDay(input.buyDay);
+  const endDate = rows[rows.length - 1].date;
+
+  // 후보 시작월(1일) 목록: 데이터 시작월 ~ 마지막월
+  const [y0, m0] = ymOf(rows[0].date);
+  const [yT, mT] = ymOf(endDate);
+  const starts: string[] = [];
+  for (let y = y0, m = m0; y < yT || (y === yT && m <= mT); ) {
+    starts.push(calDate(y, m, 1));
+    m++;
+    if (m > 12) { m = 1; y++; }
+  }
+
+  // 그 시작일로 끝까지 적립했을 때 마지막날 평가액 (시작이 늦을수록 단조 감소)
+  const sim = (startDate: string) =>
+    runBacktest(rows, { monthlyKRW: input.monthlyKRW, buyDay, startDate, targetKRW: Number.MAX_SAFE_INTEGER });
+
+  // target 도달하는 가장 늦은 시작(=최단 기간)을 이분 탐색
+  let lo = 0, hi = starts.length - 1, ans = -1;
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1;
+    if (sim(starts[mid]).valueKRW >= target) { ans = mid; lo = mid + 1; }
+    else hi = mid - 1;
+  }
+
+  const chosen = ans >= 0 ? starts[ans] : starts[0];
+  const r = sim(chosen);
+  const startBuy = r.series.length ? r.series[0].date : chosen;
+  const months = monthsBetween(startBuy, endDate);
+  return {
+    reached: ans >= 0,
+    reachedDate: ans >= 0 ? endDate : null,
+    months,
+    years: Math.floor(months / 12),
+    monthsRem: months % 12,
+    series: r.series,
+    principalKRW: r.principalKRW,
+    valueKRW: r.valueKRW,
+    cagr: r.cagr,
+  };
+}
+
 // ---- helpers ----
 export function clampBuyDay(d: number): number {
   if (!Number.isFinite(d)) return 1;

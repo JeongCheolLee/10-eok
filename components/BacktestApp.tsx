@@ -1,9 +1,10 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { bundleToRows, type Bundle, type Row } from "@/lib/backtest/types";
-import { runBacktest } from "@/lib/backtest/simulate";
+import { runToToday } from "@/lib/backtest/simulate";
 import { useAnimatedNumber } from "@/lib/useAnimatedNumber";
 import { GrowthChart } from "@/components/GrowthChart";
+import { TickerLogo } from "@/components/TickerLogo";
 import { eok, eok1, pct, ym } from "@/lib/format";
 import { TICKERS, DEFAULT_TICKER, tickerName } from "@/lib/tickers";
 
@@ -42,7 +43,7 @@ export function BacktestApp({ initial }: { initial: Initial }) {
   }, [ticker]);
 
   const result = useMemo(
-    () => (rows ? runBacktest(rows, { monthlyKRW: amount * 10000, buyDay, targetKRW: TARGET }) : null),
+    () => (rows ? runToToday(rows, { monthlyKRW: amount * 10000, buyDay, targetKRW: TARGET }) : null),
     [rows, amount, buyDay],
   );
 
@@ -120,7 +121,7 @@ export function BacktestApp({ initial }: { initial: Initial }) {
         <div className="reveal" key={revealKey}>
           <div className="chips">
             <button className="chip rv" style={{ ["--i" as string]: 0 }} onClick={() => setEditMode("ticker")}>
-              <div className="k">종목</div><div className="v">{tickerName(ticker)}</div>
+              <div className="k">종목</div><div className="v vrow"><TickerLogo symbol={ticker} size={18} />{ticker}</div>
             </button>
             <button className="chip rv" style={{ ["--i" as string]: 0 }} onClick={() => setEditMode("amount")}>
               <div className="k">매달</div><div className="v">{amount}만원</div>
@@ -133,15 +134,16 @@ export function BacktestApp({ initial }: { initial: Initial }) {
           <div className="hero">
             <div className="hero-glow" />
             <div className={"lead rv" + (reached ? "" : " under")} style={{ ["--i" as string]: 1 }}>
-              {reached ? "10억 모으기까지" : "아직 10억은 멀어요"}
+              {reached ? "지금 10억이 되려면" : "전 구간 모아도"}
             </div>
             <div className="num pop" style={{ ["--i" as string]: 2 }}>
               {Math.floor(heroMonths / 12)}<span className="u">년</span> {heroMonths % 12}<span className="u">개월</span>
+              {reached && <span className="u"> 전부터</span>}
             </div>
             <div className="span rv" style={{ ["--i" as string]: 3 }}>
-              {reached && result.reachedDate
-                ? `${ym(result.series[0].date)}부터 모았다면, ${ym(result.reachedDate)}에 달성`
-                : `지금까지 ${eok1(result.valueKRW)} · 계속 모으는 중`}
+              {reached
+                ? `${result.series[0] ? ym(result.series[0].date) : ""}부터 모았으면 지금 ${eok(result.valueKRW)}`
+                : `${result.series[0] ? ym(result.series[0].date) : ""}부터 모아도 지금 ${eok1(result.valueKRW)} · 10억까진 멀어요`}
             </div>
             {reached && <Confetti />}
           </div>
@@ -170,7 +172,9 @@ export function BacktestApp({ initial }: { initial: Initial }) {
               {editMode === "ticker" ? (
                 <div className="ticker-scroll">
                   {TICKERS.map((t) => (
-                    <button key={t.symbol} className={"pick" + (t.symbol === ticker ? " sel" : "")} onClick={() => setTicker(t.symbol)}>{t.name}</button>
+                    <button key={t.symbol} className={"pick logo-pick" + (t.symbol === ticker ? " sel" : "")} onClick={() => setTicker(t.symbol)}>
+                      <TickerLogo symbol={t.symbol} size={20} />{t.symbol}
+                    </button>
                   ))}
                 </div>
               ) : (
@@ -249,11 +253,12 @@ function Chat({
             <div className="ticker-scroll">
               {TICKERS.map((t) => (
                 <button key={t.symbol} className={"pick tall" + (t.symbol === ticker ? " sel" : "")} onClick={() => onTicker(t.symbol)}>
-                  <span className="pn">{t.name}</span><span className="ps">{t.sub}</span>
+                  <TickerLogo symbol={t.symbol} size={32} />
+                  <span className="pcol"><span className="pn">{t.symbol}</span><span className="ps">{t.name}</span></span>
                 </button>
               ))}
             </div>
-            <button className="btn" onClick={() => onAnswer(tickerName(ticker))}>다음</button>
+            <button className="btn" onClick={() => onAnswer(ticker)}>다음</button>
           </>
         )}
         {step === 1 && (

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { runBacktest, monthsBetween, lowerBound, clampBuyDay } from "./simulate";
+import { runBacktest, runToToday, monthsBetween, lowerBound, clampBuyDay } from "./simulate";
 import type { Row } from "./types";
 
 function row(date: string, price: number, fx: number): Row {
@@ -59,6 +59,27 @@ describe("runBacktest — 비거래일 매수일 롤", () => {
   it("매수가 다음 거래일로 굴러간다", () => {
     expect(res.series.map((s) => s.date)).toEqual(["2020-01-01", "2020-02-03", "2020-03-02"]);
     expect(res.principalKRW).toBe(3_000_000);
+  });
+});
+
+describe("runToToday — 오늘 기준 역산", () => {
+  // price=1, fx=1000 고정, 매달 100만원 → 매수마다 shares+=1000, 마지막날 평가액 = (#매수) × 100만.
+  // 12개월 데이터, target=500만 → #매수>=5 필요. 끝(12월)에서 역산하면 8월 시작(매수 5회)이 경계.
+  const rows: Row[] = [];
+  for (let m = 1; m <= 12; m++) rows.push(row(`2020-${String(m).padStart(2, "0")}-01`, 1, 1000));
+  const res = runToToday(rows, { monthlyKRW: 1_000_000, buyDay: 1, targetKRW: 5_000_000 });
+
+  it("가장 늦은 시작(최단 기간)을 찾는다", () => {
+    expect(res.reached).toBe(true);
+    expect(res.series[0].date).toBe("2020-08-01"); // 8월부터 = 매수 5회
+    expect(res.valueKRW).toBeCloseTo(5_000_000, 6);
+    expect(res.months).toBe(4); // 8월→12월
+  });
+
+  it("전 구간 모아도 부족하면 미달", () => {
+    const r2 = runToToday(rows, { monthlyKRW: 1_000_000, buyDay: 1, targetKRW: 99_000_000 });
+    expect(r2.reached).toBe(false);
+    expect(r2.series[0].date).toBe("2020-01-01"); // 데이터 전 구간
   });
 });
 
