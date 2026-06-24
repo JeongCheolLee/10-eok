@@ -83,6 +83,31 @@ describe("runToToday — 오늘 기준 역산", () => {
   });
 });
 
+describe("시작 목돈 거치 (initialKRW)", () => {
+  // price=1, fx=1000 고정. 매달 100만, 시작 목돈 1000만(거치).
+  // m1: 매수 1000만+100만=1100만 → usd 11000, shares 11000, value 1100만
+  // m2: +100만 → shares 12000, value 1200만
+  const rows = [
+    row("2020-01-01", 1, 1000),
+    row("2020-02-01", 1, 1000),
+  ];
+  it("첫 매수일에 목돈이 일시 투입되고 원금에 합산된다", () => {
+    const res = runBacktest(rows, { monthlyKRW: 1_000_000, initialKRW: 10_000_000, buyDay: 1, targetKRW: 9_999_999_999 });
+    expect(res.principalKRW).toBe(12_000_000); // 1000만 + 100만×2
+    expect(res.series.map((s) => Math.round(s.valueKRW))).toEqual([11_000_000, 12_000_000]);
+  });
+  it("목돈 덕에 목표 도달이 앞당겨진다", () => {
+    // 목표 1100만: 목돈 있으면 첫 달에 도달.
+    const res = runBacktest(rows, { monthlyKRW: 1_000_000, initialKRW: 10_000_000, buyDay: 1, targetKRW: 11_000_000 });
+    expect(res.reached).toBe(true);
+    expect(res.reachedDate).toBe("2020-01-01");
+  });
+  it("initialKRW 없으면 매달 적립만(원금 200만)", () => {
+    const res = runBacktest(rows, { monthlyKRW: 1_000_000, buyDay: 1, targetKRW: 9_999_999_999 });
+    expect(res.principalKRW).toBe(2_000_000);
+  });
+});
+
 describe("물가연동 적립 (CPI)", () => {
   // price=1, fx=1000, 2020-01~12. CPI: 1~6월 100, 7~12월 200(2배).
   // 적립액: 1~6월 100만 ×(100/100)=100만, 7~12월 100만 ×(200/100)=200만.

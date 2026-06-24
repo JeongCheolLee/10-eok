@@ -14,17 +14,20 @@ function parseInitial(sp: SP) {
   if (!Number.isFinite(d) || d < 1 || d > 31) return null;
   let g = typeof sp.g === "string" ? parseInt(sp.g, 10) : 10;
   if (!Number.isFinite(g) || g < 1 || g > 100) g = 10;
+  let lump = typeof sp.i === "string" ? parseInt(sp.i, 10) : 0;
+  if (!Number.isFinite(lump) || lump < 0 || lump > 1_000_000) lump = 0;
   const infl = sp.infl === "1" || sp.infl === "true";
   const reinvest = sp.div !== "0";
   const tax = sp.tax === "1" || sp.tax === "true";
-  return { ticker: t, amount: m, buyDay: d, target: g, infl, reinvest, tax };
+  return { ticker: t, amount: m, lump, buyDay: d, target: g, infl, reinvest, tax };
 }
 
 export async function generateMetadata({ searchParams }: { searchParams: Promise<SP> }): Promise<Metadata> {
   const init = parseInitial(await searchParams);
   if (!init) return { alternates: { canonical: "/" } };
-  const q = `t=${init.ticker}&m=${init.amount}&d=${init.buyDay}&g=${init.target}`;
-  const title = `${tickerName(init.ticker)}(${init.ticker})에 매달 ${init.amount}만원 모았다면 — ${init.target}억까지?`;
+  const q = `t=${init.ticker}&m=${init.amount}&d=${init.buyDay}&g=${init.target}${init.lump > 0 ? `&i=${init.lump}` : ""}`;
+  const lumpPart = init.lump > 0 ? `처음 ${init.lump.toLocaleString()}만원 + ` : "";
+  const title = `${tickerName(init.ticker)}(${init.ticker})에 ${lumpPart}매달 ${init.amount}만원 모았다면 — ${init.target}억까지?`;
   const img = `/api/og?${q}`;
   return {
     title,
