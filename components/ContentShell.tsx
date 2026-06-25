@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AppLogo } from "@/components/AppLogo";
 
 export function ContentShell({
   title,
@@ -15,7 +16,7 @@ export function ContentShell({
     <main className="content">
       <div className="content-top">
         <Link href="/" className="home">
-          <span style={{ width: 22, height: 22, borderRadius: "50%", background: "var(--accent)", display: "inline-block" }} />
+          <AppLogo />
           10-eok
         </Link>
         {crumb && <span className="crumb">{crumb}</span>}
