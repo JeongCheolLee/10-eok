@@ -40,6 +40,11 @@ export function runBacktest(rows: Row[], input: BacktestInput): BacktestResult {
   }
   const firstBuyIdx = Math.min(...buyKRWByIndex.keys());
 
+  // 최초 납입금(목돈): 첫 매수일에 1회 합산 투입
+  if (input.initialKRW && input.initialKRW > 0) {
+    buyKRWByIndex.set(firstBuyIdx, (buyKRWByIndex.get(firstBuyIdx) ?? 0) + input.initialKRW);
+  }
+
   // 배당 재투자 OFF면 미수정 종가(가격수익)로 평가/매수
   const px = (r: Row) => (input.reinvestDividends === false ? r.raw ?? r.price : r.price);
   for (let i = firstBuyIdx; i < rows.length; i++) {

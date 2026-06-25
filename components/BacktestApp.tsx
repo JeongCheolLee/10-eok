@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { bundleToRows, type Bundle, type Row } from "@/lib/backtest/types";
 import { runToToday } from "@/lib/backtest/simulate";
 import { useAnimatedNumber } from "@/lib/useAnimatedNumber";
+import { AppLogo } from "@/components/AppLogo";
 import { GrowthChart } from "@/components/GrowthChart";
 import { TickerLogo } from "@/components/TickerLogo";
 import { eok, eok1, pct, ym } from "@/lib/format";
@@ -10,11 +11,12 @@ import { TICKERS, DEFAULT_TICKER, tickerName, tickerTitle, tickerSubtitle, ticke
 
 
 type Screen = "intro" | "form" | "loading" | "result";
-type Initial = { ticker: string; amount: number; buyDay: number; target: number; infl: boolean; reinvest: boolean; tax: boolean } | null;
+type Initial = { ticker: string; amount: number; lump: number; buyDay: number; target: number; infl: boolean; reinvest: boolean; tax: boolean } | null;
 
 export function BacktestApp({ initial }: { initial: Initial }) {
   const [ticker, setTicker] = useState(initial?.ticker ?? DEFAULT_TICKER);
   const [amount, setAmount] = useState(initial?.amount ?? 100); // 만원
+  const [lump, setLump] = useState(initial?.lump ?? 0); // 초기 투자금 (만원)
   const [buyDay, setBuyDay] = useState(initial?.buyDay ?? 1);
   const [target, setTarget] = useState(initial?.target ?? 10); // 억
   const [infl, setInfl] = useState(initial?.infl ?? false);
@@ -22,7 +24,7 @@ export function BacktestApp({ initial }: { initial: Initial }) {
   const [tax, setTax] = useState(initial?.tax ?? false);
   const [cpi, setCpi] = useState<{ ym: string; idx: number }[] | null>(null);
   const [screen, setScreen] = useState<Screen>(initial ? "result" : "intro");
-  const [editMode, setEditMode] = useState<null | "amount" | "day" | "ticker" | "target">(null);
+  const [editMode, setEditMode] = useState<null | "amount" | "lump" | "day" | "ticker" | "target">(null);
   const [tipOpen, setTipOpen] = useState(false);
   const [toast, setToast] = useState("");
   const [revealKey, setRevealKey] = useState(0);
@@ -55,15 +57,15 @@ export function BacktestApp({ initial }: { initial: Initial }) {
 
   const targetKRW = target * 100_000_000;
   const result = useMemo(
-    () => (rows ? runToToday(rows, { monthlyKRW: amount * 10000, buyDay, targetKRW, cpi: infl && cpi ? cpi : undefined, reinvestDividends: reinvest, taxMode: tax && tickerCurrency(ticker) === "USD" }) : null),
-    [rows, amount, buyDay, targetKRW, infl, cpi, reinvest, tax, ticker],
+    () => (rows ? runToToday(rows, { monthlyKRW: amount * 10000, initialKRW: lump * 10000, buyDay, targetKRW, cpi: infl && cpi ? cpi : undefined, reinvestDividends: reinvest, taxMode: tax && tickerCurrency(ticker) === "USD" }) : null),
+    [rows, amount, lump, buyDay, targetKRW, infl, cpi, reinvest, tax, ticker],
   );
 
   // 결과 화면 진입/갱신 시 애니메이션 재트리거 + 공유용 URL 동기화
   useEffect(() => {
     if (screen === "result" && result) {
       setRevealKey((k) => k + 1);
-      window.history.replaceState(null, "", `/?t=${ticker}&m=${amount}&d=${buyDay}&g=${target}${infl ? "&infl=1" : ""}${!reinvest ? "&div=0" : ""}${tax ? "&tax=1" : ""}`);
+      window.history.replaceState(null, "", `/?t=${ticker}&m=${amount}${lump > 0 ? `&i=${lump}` : ""}&d=${buyDay}&g=${target}${infl ? "&infl=1" : ""}${!reinvest ? "&div=0" : ""}${tax ? "&tax=1" : ""}`);
     }
   }, [screen, result?.reachedDate, result?.months]); // eslint-disable-line
 
@@ -88,9 +90,9 @@ export function BacktestApp({ initial }: { initial: Initial }) {
     window.setTimeout(() => setScreen("result"), reduce ? 0 : 900);
   }
   function share() {
-    const url = `${location.origin}/?t=${ticker}&m=${amount}&d=${buyDay}&g=${target}`;
+    const url = `${location.origin}/?t=${ticker}&m=${amount}${lump > 0 ? `&i=${lump}` : ""}&d=${buyDay}&g=${target}`;
     const text = reached
-      ? `${tickerName(ticker)}에 매달 ${amount}만원씩 모았다면 ${target}억까지 ${result!.years}년 ${result!.monthsRem}개월!`
+      ? `${tickerName(ticker)}에${lump > 0 ? ` ${lump}만원으로 시작해` : ""} 매달 ${amount}만원씩 모았다면 ${target}억까지 ${result!.years}년 ${result!.monthsRem}개월!`
       : `${tickerName(ticker)} 적립 백테스트 — ${target}억까지 얼마나 걸릴까?`;
     if (navigator.share) { navigator.share({ title: "10-eok", text, url }).catch(() => {}); }
     else { navigator.clipboard?.writeText(`${text} ${url}`); setToast("링크가 복사됐어요"); window.setTimeout(() => setToast(""), 2000); }
@@ -108,15 +110,7 @@ export function BacktestApp({ initial }: { initial: Initial }) {
   return (
     <main className="app">
       <div className="top">
-        <svg className="logo" viewBox="0 0 64 64" aria-hidden>
-          <rect width="64" height="64" rx="15" fill="#1ed760" />
-          <g fill="none" stroke="#0b0b0b" strokeWidth="5.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M16 26 l6 -4 v24" />
-            <path d="M49 35 a11 11 0 1 0 -4 8" />
-            <path d="M33 43 l6 -6 4 4 8 -9" />
-            <path d="M46 27 h5 v5" />
-          </g>
-        </svg>
+        <AppLogo />
         <div className="brand">10-eok</div>
         {screen === "result" && <div className="tag">탭하면 변경</div>}
       </div>
@@ -125,8 +119,8 @@ export function BacktestApp({ initial }: { initial: Initial }) {
 
       {screen === "form" && (
         <Form
-          ticker={ticker} amount={amount} buyDay={buyDay}
-          onTicker={setTicker} onAmount={setAmount} onDay={setBuyDay} onSubmit={submit}
+          ticker={ticker} amount={amount} lump={lump} buyDay={buyDay}
+          onTicker={setTicker} onAmount={setAmount} onLump={setLump} onDay={setBuyDay} onSubmit={submit}
         />
       )}
 
@@ -147,6 +141,9 @@ export function BacktestApp({ initial }: { initial: Initial }) {
               <button className={"chip rv" + (editMode === "amount" ? " open" : "")} style={{ ["--i" as string]: 0 }} onClick={() => setEditMode((m) => (m === "amount" ? null : "amount"))}>
                 <div className="k">매달</div><div className="v">{amount}만원</div>
               </button>
+              <button className={"chip rv" + (editMode === "lump" ? " open" : "")} style={{ ["--i" as string]: 0 }} onClick={() => setEditMode((m) => (m === "lump" ? null : "lump"))}>
+                <div className="k">초기금</div><div className="v">{lump > 0 ? `${lump}만원` : "없음"}</div>
+              </button>
               <button className={"chip rv" + (editMode === "day" ? " open" : "")} style={{ ["--i" as string]: 0 }} onClick={() => setEditMode((m) => (m === "day" ? null : "day"))}>
                 <div className="k">매수일</div><div className="v">{buyDay}일</div>
               </button>
@@ -163,6 +160,12 @@ export function BacktestApp({ initial }: { initial: Initial }) {
                   <div className="chip-dropdown-field">
                     <div className="chip-dropdown-label">매달 적립 금액</div>
                     <StepInput value={amount} onChange={setAmount} min={10} max={100000} step={10} suffix="만원" />
+                  </div>
+                )}
+                {editMode === "lump" && (
+                  <div className="chip-dropdown-field">
+                    <div className="chip-dropdown-label">초기 투자금</div>
+                    <StepInput value={lump} onChange={setLump} min={0} max={1000000} step={100} suffix="만원" />
                   </div>
                 )}
                 {editMode === "day" && (
@@ -184,7 +187,7 @@ export function BacktestApp({ initial }: { initial: Initial }) {
           <div className="hero">
             <div className="hero-glow" />
             <div className={"lead rv" + (reached ? "" : " under")} style={{ ["--i" as string]: 1 }}>
-              {reached ? `매달 ${amount}만원씩이면` : "전 구간 모아도"}
+              {reached ? `${lump > 0 ? `${lump}만원으로 시작해 ` : ""}매달 ${amount}만원씩이면` : "전 구간 모아도"}
             </div>
             <div className="num pop" style={{ ["--i" as string]: 2 }}>
               {Math.floor(heroMonths / 12)}<span className="u">년</span> {heroMonths % 12}<span className="u">개월</span>
@@ -300,10 +303,10 @@ function Intro({ onStart }: { onStart: () => void }) {
 }
 
 function Form({
-  ticker, amount, buyDay, onTicker, onAmount, onDay, onSubmit,
+  ticker, amount, lump, buyDay, onTicker, onAmount, onLump, onDay, onSubmit,
 }: {
-  ticker: string; amount: number; buyDay: number;
-  onTicker: (v: string) => void; onAmount: (v: number) => void; onDay: (v: number) => void; onSubmit: () => void;
+  ticker: string; amount: number; lump: number; buyDay: number;
+  onTicker: (v: string) => void; onAmount: (v: number) => void; onLump: (v: number) => void; onDay: (v: number) => void; onSubmit: () => void;
 }) {
   return (
     <>
@@ -311,6 +314,10 @@ function Form({
         <div className="field">
           <div className="flabel">종목</div>
           <TickerSelect value={ticker} onChange={onTicker} />
+        </div>
+        <div className="field">
+          <div className="flabel">초기 투자금</div>
+          <StepInput value={lump} onChange={onLump} min={0} max={1000000} step={100} suffix="만원" />
         </div>
         <div className="field">
           <div className="flabel">매달 적립 금액</div>

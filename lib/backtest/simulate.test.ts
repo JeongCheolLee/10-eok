@@ -122,6 +122,30 @@ describe("양도세 (taxMode)", () => {
   });
 });
 
+describe("최초 납입금 (initialKRW)", () => {
+  // price=1, fx=1000 고정. 목돈 500만 + 매달 100만, 3개월.
+  // 첫달: 목돈 500만 + 적립 100만 = 600만 투입(shares 6000), 이후 매달 100만(+1000).
+  // principal = 500만 + 3×100만 = 800만. 마지막 평가액 = 8000 shares × 1000 = 800만.
+  const rows = [row("2020-01-01", 1, 1000), row("2020-02-01", 1, 1000), row("2020-03-01", 1, 1000)];
+  it("목돈이 첫 매수일에 1회 합산 투입된다", () => {
+    const res = runBacktest(rows, { monthlyKRW: 1_000_000, initialKRW: 5_000_000, buyDay: 1, targetKRW: 9_999_999_999 });
+    expect(res.principalKRW).toBe(8_000_000);
+    expect(res.series.map((s) => Math.round(s.valueKRW))).toEqual([6_000_000, 7_000_000, 8_000_000]);
+  });
+  it("목돈 0이면 적립만(300만)", () => {
+    const res = runBacktest(rows, { monthlyKRW: 1_000_000, initialKRW: 0, buyDay: 1, targetKRW: 9_999_999_999 });
+    expect(res.principalKRW).toBe(3_000_000);
+  });
+  it("runToToday도 목돈을 반영해 더 빨리 도달", () => {
+    const rs: Row[] = [];
+    for (let m = 1; m <= 12; m++) rs.push(row(`2020-${String(m).padStart(2, "0")}-01`, 1, 1000));
+    // 목돈 없으면 8월 시작(매수 5회=500만). 목돈 200만이면 더 늦게 시작해도 도달.
+    const res = runToToday(rs, { monthlyKRW: 1_000_000, initialKRW: 2_000_000, buyDay: 1, targetKRW: 5_000_000 });
+    expect(res.reached).toBe(true);
+    expect(res.series[0].date > "2020-08-01").toBe(true);
+  });
+});
+
 describe("helpers", () => {
   it("monthsBetween 일자 보정", () => {
     expect(monthsBetween("2020-01-01", "2020-10-01")).toBe(9);

@@ -25,6 +25,8 @@ export type Bundle = {
 export type BacktestInput = {
   /** 매달 적립액 (KRW) */
   monthlyKRW: number;
+  /** 최초 납입금(목돈, KRW). 시작 시 1회 투입. 기본 0. */
+  initialKRW?: number;
   /** 매수일 (매달 며칠, 1~28). 휴장/주말이면 다음 거래일로 롤. */
   buyDay: number;
   /** 시작일 ISO. 생략 시 데이터 최초일. */

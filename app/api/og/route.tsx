@@ -21,6 +21,8 @@ export async function GET(req: Request) {
   const d = parseInt(url.searchParams.get("d") || "1", 10);
   let g = parseInt(url.searchParams.get("g") || "10", 10);
   if (!Number.isFinite(g) || g < 1 || g > 100) g = 10;
+  let lump = parseInt(url.searchParams.get("i") || "0", 10);
+  if (!Number.isFinite(lump) || lump < 0) lump = 0;
 
   const font = await fetch(`${origin}/fonts/Pretendard-Bold.otf`).then((r) => r.arrayBuffer());
 
@@ -33,13 +35,14 @@ export async function GET(req: Request) {
   if (valid) {
     try {
       const b: Bundle = await fetch(`${origin}/data/${t.toLowerCase()}.json`).then((r) => r.json());
-      const res = runToToday(bundleToRows(b), { monthlyKRW: m * 10000, buyDay: d, targetKRW: g * 100_000_000 });
+      const res = runToToday(bundleToRows(b), { monthlyKRW: m * 10000, initialKRW: lump * 10000, buyDay: d, targetKRW: g * 100_000_000 });
+      const lumpLabel = lump > 0 ? ` · 초기 ${lump}만원` : "";
       if (res.reached) {
         lead = `지금 ${g}억이 되려면`;
         big = `${res.years}년 ${res.monthsRem}개월 전부터`;
-        sub = `${tickerName(t)}(${t}) · 매달 ${m}만원 · ${res.series[0] ? ymK(res.series[0].date) : ""}부터 → 지금 ${eok(res.valueKRW)}`;
+        sub = `${tickerName(t)}(${t}) · 매달 ${m}만원${lumpLabel} · ${res.series[0] ? ymK(res.series[0].date) : ""}부터 → 지금 ${eok(res.valueKRW)}`;
       } else {
-        lead = `${tickerName(t)}(${t}) · 매달 ${m}만원`;
+        lead = `${tickerName(t)}(${t}) · 매달 ${m}만원${lumpLabel}`;
         big = `아직 ${g}억은 멀어요`;
         sub = `전 구간 모아도 지금 ${eok(res.valueKRW)}`;
       }
