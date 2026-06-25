@@ -61,13 +61,17 @@ export function BacktestApp({ initial }: { initial: Initial }) {
     [rows, amount, lump, buyDay, targetKRW, infl, cpi, reinvest, tax, ticker],
   );
 
-  // 결과 화면 진입/갱신 시 애니메이션 재트리거 + 공유용 URL 동기화
+  // 결과 화면 진입/갱신 시 애니메이션 재트리거 (결과가 바뀔 때만)
   useEffect(() => {
-    if (screen === "result" && result) {
-      setRevealKey((k) => k + 1);
+    if (screen === "result" && result) setRevealKey((k) => k + 1);
+  }, [screen, result?.reachedDate, result?.months]); // eslint-disable-line
+
+  // 공유용 URL 동기화: 입력값이 바뀔 때마다 주소창을 최신으로 (결과 변화 여부와 무관)
+  useEffect(() => {
+    if (screen === "result") {
       window.history.replaceState(null, "", `/?t=${ticker}&m=${amount}${lump > 0 ? `&i=${lump}` : ""}&d=${buyDay}&g=${target}${infl ? "&infl=1" : ""}${!reinvest ? "&div=0" : ""}${tax ? "&tax=1" : ""}`);
     }
-  }, [screen, result?.reachedDate, result?.months]); // eslint-disable-line
+  }, [screen, ticker, amount, lump, buyDay, target, infl, reinvest, tax]);
 
   useEffect(() => {
     if (!editMode) return;
