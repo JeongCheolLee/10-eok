@@ -148,6 +148,29 @@ export function runToToday(rows: Row[], input: BacktestInput): BacktestResult {
   };
 }
 
+/**
+ * 역산: 고정 기간(startDate~마지막 거래일) 동안 target에 도달하려면 매달 얼마를 적립해야 하나.
+ * 평가액 = 월적립액×A + 초기금×B (둘 다 path 상수)로 적립액·초기금에 선형이므로,
+ * 단위 적립/단위 초기금 시뮬 2회로 정확히 푼다. (taxMode는 비선형이라 무시; 현재 기본 off)
+ * 반환 monthlyKRW는 0 이상으로 클램프, result는 그 적립액으로 실제 시뮬한 결과(차트·원금용).
+ */
+export function requiredMonthly(rows: Row[], input: BacktestInput): { monthlyKRW: number; result: BacktestResult } {
+  if (rows.length === 0) throw new Error("rows가 비어있음");
+  const target = input.targetKRW ?? DEFAULT_TARGET;
+  const UNIT = 1_000_000; // 1원 단위는 부동소수 오차 → 100만원 단위로 풀고 나눔
+  const base = { ...input, targetKRW: Number.MAX_SAFE_INTEGER };
+
+  // 월 1원당 최종 평가액 (초기금 0)
+  const vPerMonthlyUnit = runBacktest(rows, { ...base, monthlyKRW: UNIT, initialKRW: 0 }).valueKRW / UNIT;
+  // 실제 초기금이 만드는 최종 평가액
+  const vInitial = input.initialKRW ? runBacktest(rows, { ...base, monthlyKRW: 0 }).valueKRW : 0;
+
+  let monthlyKRW = vPerMonthlyUnit > 0 ? (target - vInitial) / vPerMonthlyUnit : 0;
+  monthlyKRW = Math.max(0, monthlyKRW);
+  const result = runBacktest(rows, { ...input, monthlyKRW, targetKRW: target });
+  return { monthlyKRW, result };
+}
+
 /** ym("YYYY-MM") 이하의 마지막 CPI 값 (오름차순 가정, 없으면 첫 값). 데이터 끝 이후는 마지막값 유지. */
 export function cpiIndexAt(cpi: { ym: string; idx: number }[], ym: string): number {
   let lo = 0, hi = cpi.length - 1, ans = -1;

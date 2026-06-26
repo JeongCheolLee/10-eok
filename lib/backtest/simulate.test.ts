@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { runBacktest, runToToday, monthsBetween, lowerBound, clampBuyDay, cpiIndexAt } from "./simulate";
+import { runBacktest, runToToday, requiredMonthly, monthsBetween, lowerBound, clampBuyDay, cpiIndexAt } from "./simulate";
 import type { Row } from "./types";
 
 function row(date: string, price: number, fx: number): Row {
@@ -143,6 +143,30 @@ describe("최초 납입금 (initialKRW)", () => {
     const res = runToToday(rs, { monthlyKRW: 1_000_000, initialKRW: 2_000_000, buyDay: 1, targetKRW: 5_000_000 });
     expect(res.reached).toBe(true);
     expect(res.series[0].date > "2020-08-01").toBe(true);
+  });
+});
+
+describe("requiredMonthly — 역산(기간→필요 월 적립액)", () => {
+  // price=1, fx=1000 고정, 12개월. 월 m원 적립 → 최종 평가액 = 12*m. (선형)
+  const rows: Row[] = [];
+  for (let m = 1; m <= 12; m++) rows.push(row(`2020-${String(m).padStart(2, "0")}-01`, 1, 1000));
+
+  it("목표/기간으로 필요 월 적립액을 정확히 푼다", () => {
+    const { monthlyKRW, result } = requiredMonthly(rows, { monthlyKRW: 0, buyDay: 1, startDate: "2020-01-01", targetKRW: 6_000_000 });
+    expect(monthlyKRW).toBeCloseTo(500_000, 2);
+    expect(result.valueKRW).toBeCloseTo(6_000_000, 2);
+  });
+
+  it("초기금이 있으면 그만큼 월 적립액이 줄어든다", () => {
+    // 초기금 100만(첫달 투입)이 최종 100만 기여 → 나머지 500만을 12개월로
+    const { monthlyKRW, result } = requiredMonthly(rows, { monthlyKRW: 0, initialKRW: 1_000_000, buyDay: 1, startDate: "2020-01-01", targetKRW: 6_000_000 });
+    expect(monthlyKRW).toBeCloseTo((6_000_000 - 1_000_000) / 12, 2);
+    expect(result.valueKRW).toBeCloseTo(6_000_000, 2);
+  });
+
+  it("초기금만으로 목표 초과면 월 적립액 0", () => {
+    const { monthlyKRW } = requiredMonthly(rows, { monthlyKRW: 0, initialKRW: 10_000_000, buyDay: 1, startDate: "2020-01-01", targetKRW: 5_000_000 });
+    expect(monthlyKRW).toBe(0);
   });
 });
 

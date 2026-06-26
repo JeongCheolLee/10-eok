@@ -1,32 +1,44 @@
 import { ImageResponse } from "next/og";
 import { bundleToRows, type Bundle } from "@/lib/backtest/types";
-import { runToToday } from "@/lib/backtest/simulate";
+import { runToToday, requiredMonthly, monthsBetween } from "@/lib/backtest/simulate";
 import { tickerInfo, tickerName, TICKERS } from "@/lib/tickers";
 import { eok } from "@/lib/format";
 
 export const runtime = "nodejs";
 
-const DAYS = [1, 5, 10, 15, 25];
-
 function ymK(iso: string) {
   const [y, m] = iso.split("-").map(Number);
   return `${y}년 ${m}월`;
+}
+function startMonthsAgo(end: string, n: number): string {
+  let [y, m] = end.split("-").map(Number);
+  m -= n;
+  while (m <= 0) { m += 12; y -= 1; }
+  return `${y}-${String(m).padStart(2, "0")}-01`;
+}
+function manwon(won: number): string {
+  if (won >= 100_000_000) return `${Math.round(won / 10_000_000) / 10}억`;
+  return `${Math.round(won / 10_000).toLocaleString()}만원`;
 }
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const origin = url.origin;
   const t = (url.searchParams.get("t") || "QLD").toUpperCase();
+  const mode = url.searchParams.get("mode") === "amt" ? "amount" : "time";
   const m = parseInt(url.searchParams.get("m") || "100", 10);
   const d = parseInt(url.searchParams.get("d") || "1", 10);
   let g = parseInt(url.searchParams.get("g") || "10", 10);
   if (!Number.isFinite(g) || g < 1 || g > 100) g = 10;
   let lump = parseInt(url.searchParams.get("i") || "0", 10);
   if (!Number.isFinite(lump) || lump < 0) lump = 0;
+  let yrs = parseInt(url.searchParams.get("y") || "10", 10);
+  if (!Number.isFinite(yrs) || yrs < 1) yrs = 10;
 
   const font = await fetch(`${origin}/fonts/Pretendard-Bold.otf`).then((r) => r.arrayBuffer());
 
-  const valid = TICKERS.some((x) => x.symbol === t) && Number.isFinite(m) && m >= 10 && DAYS.includes(d);
+  const tickerOk = TICKERS.some((x) => x.symbol === t) && Number.isFinite(d) && d >= 1 && d <= 31;
+  const valid = tickerOk && (mode === "amount" ? true : Number.isFinite(m) && m >= 10);
   let lead = "과거에 매달 모았다면";
   let big = `${g}억까지 얼마나?`;
   let sub = "실제 과거 가격 + 그날 환율로 백테스트";
@@ -35,16 +47,27 @@ export async function GET(req: Request) {
   if (valid) {
     try {
       const b: Bundle = await fetch(`${origin}/data/${t.toLowerCase()}.json`).then((r) => r.json());
-      const res = runToToday(bundleToRows(b), { monthlyKRW: m * 10000, initialKRW: lump * 10000, buyDay: d, targetKRW: g * 100_000_000 });
+      const rows = bundleToRows(b);
       const lumpLabel = lump > 0 ? ` · 초기 ${lump}만원` : "";
-      if (res.reached) {
-        lead = `지금 ${g}억이 되려면`;
-        big = `${res.years}년 ${res.monthsRem}개월 전부터`;
-        sub = `${tickerName(t)}(${t}) · 매달 ${m}만원${lumpLabel} · ${res.series[0] ? ymK(res.series[0].date) : ""}부터 → 지금 ${eok(res.valueKRW)}`;
+      if (mode === "amount") {
+        const maxYears = Math.max(1, Math.floor(monthsBetween(rows[0].date, rows[rows.length - 1].date) / 12));
+        const yUsed = Math.min(yrs, maxYears);
+        const startDate = startMonthsAgo(rows[rows.length - 1].date, yUsed * 12);
+        const { monthlyKRW, result } = requiredMonthly(rows, { monthlyKRW: 0, initialKRW: lump * 10000, buyDay: d, startDate, targetKRW: g * 100_000_000 });
+        lead = `${yUsed}년 안에 ${g}억 모으려면`;
+        big = monthlyKRW === 0 ? "초기금만으로 달성!" : `매달 ${manwon(monthlyKRW)}`;
+        sub = `${tickerName(t)}(${t}) 기준${lumpLabel} · 원금 ${eok(result.principalKRW)} → ${eok(result.valueKRW)}`;
       } else {
-        lead = `${tickerName(t)}(${t}) · 매달 ${m}만원${lumpLabel}`;
-        big = `아직 ${g}억은 멀어요`;
-        sub = `전 구간 모아도 지금 ${eok(res.valueKRW)}`;
+        const res = runToToday(rows, { monthlyKRW: m * 10000, initialKRW: lump * 10000, buyDay: d, targetKRW: g * 100_000_000 });
+        if (res.reached) {
+          lead = `지금 ${g}억이 되려면`;
+          big = `${res.years}년 ${res.monthsRem}개월 전부터`;
+          sub = `${tickerName(t)}(${t}) · 매달 ${m}만원${lumpLabel} · ${res.series[0] ? ymK(res.series[0].date) : ""}부터 → 지금 ${eok(res.valueKRW)}`;
+        } else {
+          lead = `${tickerName(t)}(${t}) · 매달 ${m}만원${lumpLabel}`;
+          big = `아직 ${g}억은 멀어요`;
+          sub = `전 구간 모아도 지금 ${eok(res.valueKRW)}`;
+        }
       }
     } catch { /* 기본 카드 유지 */ }
   }
