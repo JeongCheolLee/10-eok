@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { runBacktest, runToToday, requiredMonthly, monthsBetween, lowerBound, clampBuyDay, cpiIndexAt } from "./simulate";
+import { runBacktest, runToToday, requiredMonthly, timingRange, monthsBetween, lowerBound, clampBuyDay, cpiIndexAt } from "./simulate";
 import type { Row } from "./types";
 
 function row(date: string, price: number, fx: number): Row {
@@ -167,6 +167,26 @@ describe("requiredMonthly — 역산(기간→필요 월 적립액)", () => {
   it("초기금만으로 목표 초과면 월 적립액 0", () => {
     const { monthlyKRW } = requiredMonthly(rows, { monthlyKRW: 0, initialKRW: 10_000_000, buyDay: 1, startDate: "2020-01-01", targetKRW: 5_000_000 });
     expect(monthlyKRW).toBe(0);
+  });
+});
+
+describe("endDate window + timingRange", () => {
+  // price=1, fx=1000 고정, 12개월. 월 100만.
+  const rows: Row[] = [];
+  for (let m = 1; m <= 12; m++) rows.push(row(`2020-${String(m).padStart(2, "0")}-01`, 1, 1000));
+
+  it("endDate로 평가 기간을 자른다 (1~6월 = 6회 매수)", () => {
+    const res = runBacktest(rows, { monthlyKRW: 1_000_000, buyDay: 1, startDate: "2020-01-01", endDate: "2020-06-01", targetKRW: 9_999_999_999 });
+    expect(res.principalKRW).toBe(6_000_000);
+    expect(res.valueKRW).toBeCloseTo(6_000_000, 2);
+    expect(res.series[res.series.length - 1].date).toBe("2020-06-01");
+  });
+
+  it("timingRange: 평탄가격이면 모든 시작월 결과가 같다", () => {
+    const r = timingRange(rows, { monthlyKRW: 1_000_000, buyDay: 1 }, 3);
+    expect(r).not.toBeNull();
+    expect(r!.samples).toBe(9); // 1월~9월 시작 (각 +3개월 ≤ 12월)
+    expect(r!.min).toBeCloseTo(r!.max, 2); // 가격 고정 → 운 차이 없음
   });
 });
 

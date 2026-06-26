@@ -8,7 +8,8 @@ export function runBacktest(rows: Row[], input: BacktestInput): BacktestResult {
   const target = input.targetKRW ?? DEFAULT_TARGET;
   const buyDay = clampBuyDay(input.buyDay);
   const startDate = input.startDate ?? rows[0].date;
-  const endDate = rows[rows.length - 1].date;
+  const dataEnd = rows[rows.length - 1].date;
+  const endDate = input.endDate && input.endDate < dataEnd ? input.endDate : dataEnd;
 
   // 매수 실행일 → 그날 투입 KRW (같은 거래일에 겹치면 합산)
   const buyKRWByIndex = new Map<number, number>();
@@ -47,7 +48,8 @@ export function runBacktest(rows: Row[], input: BacktestInput): BacktestResult {
 
   // 배당 재투자 OFF면 미수정 종가(가격수익)로 평가/매수
   const px = (r: Row) => (input.reinvestDividends === false ? r.raw ?? r.price : r.price);
-  for (let i = firstBuyIdx; i < rows.length; i++) {
+  const endLimit = lastIdxOnOrBefore(rows, endDate); // 평가 종료 인덱스 (window 끝)
+  for (let i = firstBuyIdx; i <= endLimit; i++) {
     const r = rows[i];
     const invest = buyKRWByIndex.get(i);
     if (invest) {
@@ -65,7 +67,7 @@ export function runBacktest(rows: Row[], input: BacktestInput): BacktestResult {
   }
 
   const firstDate = rows[firstBuyIdx].date;
-  const endIdx = reachIdx >= 0 ? reachIdx : rows.length - 1;
+  const endIdx = reachIdx >= 0 ? reachIdx : endLimit;
   const months = monthsBetween(firstDate, rows[endIdx].date);
   let valueKRW = reachedDate ? valueAtReach : series[series.length - 1].valueKRW;
   // 양도세(해외주식 22%, 연 250만 공제 1회 단순화). taxMode일 때만, 통화 분기는 호출부에서.
@@ -171,6 +173,38 @@ export function requiredMonthly(rows: Row[], input: BacktestInput): { monthlyKRW
   return { monthlyKRW, result };
 }
 
+/**
+ * 타이밍 리스크: 같은 플랜(적립액·초기금·옵션)을 같은 기간(durationMonths)으로,
+ * 시작월만 데이터 전 구간에 슬라이딩해 window 끝 평가액 분포를 구한다.
+ * "언제 시작했느냐"에 따른 운의 폭(최악~최선, 중앙값)을 보여주는 용도. 표본 부족 시 null.
+ */
+export function timingRange(
+  rows: Row[],
+  input: BacktestInput,
+  durationMonths: number,
+): { min: number; median: number; max: number; minStart: string; maxStart: string; samples: number } | null {
+  if (rows.length === 0 || durationMonths < 1) return null;
+  const [y0, m0] = ymOf(rows[0].date);
+  const dataEnd = rows[rows.length - 1].date;
+  const vals: { start: string; v: number }[] = [];
+  for (let y = y0, m = m0; ; ) {
+    const start = calDate(y, m, 1);
+    if (addMonths(start, durationMonths) > dataEnd) break;
+    const v = runBacktest(rows, { ...input, startDate: start, endDate: addMonths(start, durationMonths), targetKRW: Number.MAX_SAFE_INTEGER }).valueKRW;
+    vals.push({ start, v });
+    m++;
+    if (m > 12) { m = 1; y++; }
+  }
+  if (vals.length < 2) return null;
+  const sorted = [...vals].sort((a, b) => a.v - b.v);
+  const lo = sorted[0], hi = sorted[sorted.length - 1];
+  return {
+    min: lo.v, max: hi.v,
+    median: sorted[Math.floor(sorted.length / 2)].v,
+    minStart: lo.start, maxStart: hi.start, samples: vals.length,
+  };
+}
+
 /** ym("YYYY-MM") 이하의 마지막 CPI 값 (오름차순 가정, 없으면 첫 값). 데이터 끝 이후는 마지막값 유지. */
 export function cpiIndexAt(cpi: { ym: string; idx: number }[], ym: string): number {
   let lo = 0, hi = cpi.length - 1, ans = -1;
@@ -199,6 +233,26 @@ function pad(n: number): string {
 
 function calDate(y: number, m: number, d: number): string {
   return `${y}-${pad(m)}-${pad(d)}`;
+}
+
+/** "YYYY-MM-DD"에 n개월 더한 달의 1일 (YYYY-MM-01). */
+function addMonths(iso: string, n: number): string {
+  let [y, m] = iso.split("-").map(Number);
+  m += n;
+  while (m > 12) { m -= 12; y += 1; }
+  while (m < 1) { m += 12; y -= 1; }
+  return `${y}-${pad(m)}-01`;
+}
+
+/** rows[i].date <= target 인 마지막 i (이분 탐색). 없으면 -1. */
+function lastIdxOnOrBefore(rows: Row[], target: string): number {
+  let lo = 0, hi = rows.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (rows[mid].date <= target) lo = mid + 1;
+    else hi = mid;
+  }
+  return lo - 1;
 }
 
 function maxDate(a: string, b: string): string {

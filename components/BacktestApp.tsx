@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { bundleToRows, type Bundle, type Row } from "@/lib/backtest/types";
-import { runToToday, requiredMonthly, monthsBetween } from "@/lib/backtest/simulate";
+import { runToToday, requiredMonthly, timingRange, monthsBetween } from "@/lib/backtest/simulate";
 import { useAnimatedNumber } from "@/lib/useAnimatedNumber";
 import { AppLogo } from "@/components/AppLogo";
 import { GrowthChart } from "@/components/GrowthChart";
@@ -78,6 +78,15 @@ export function BacktestApp({ initial }: { initial: Initial }) {
   const result = calc?.result ?? null;
   const reqMonthly = calc?.reqMonthly ?? null;
 
+  // 타이밍 리스크: 같은 플랜·같은 기간을 시작 시점만 바꿔봤을 때의 최종 평가액 폭
+  const timing = useMemo(() => {
+    if (!rows || !result) return null;
+    const monthlyKRW = mode === "amount" ? (reqMonthly ?? 0) : amount * 10000;
+    const dur = mode === "amount" ? yearsUsed * 12 : result.months;
+    if (dur < 12) return null; // 1년 미만은 표본/의미 부족
+    return timingRange(rows, { monthlyKRW, initialKRW: lump * 10000, buyDay, cpi: infl && cpi ? cpi : undefined, reinvestDividends: reinvest, taxMode: tax && tickerCurrency(ticker) === "USD" }, dur);
+  }, [rows, mode, amount, reqMonthly, result?.months, yearsUsed, lump, buyDay, infl, cpi, reinvest, tax, ticker]); // eslint-disable-line
+
   const query =
     `t=${ticker}` +
     (mode === "amount" ? `&mode=amt&y=${years}` : `&m=${amount}`) +
@@ -128,6 +137,13 @@ export function BacktestApp({ initial }: { initial: Initial }) {
           : `${tickerName(ticker)} 적립 백테스트 — ${target}억까지 얼마나 걸릴까?`;
     if (navigator.share) { navigator.share({ title: "10-eok", text, url }).catch(() => {}); }
     else { navigator.clipboard?.writeText(`${text} ${url}`); setToast("링크가 복사됐어요"); window.setTimeout(() => setToast(""), 2000); }
+  }
+  function saveImage() {
+    const a = document.createElement("a");
+    a.href = `/api/og?${query}`;
+    a.download = `10-eok-${ticker}.png`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setToast("이미지를 저장했어요"); window.setTimeout(() => setToast(""), 2000);
   }
 
   if (loadErr) {
@@ -286,7 +302,19 @@ export function BacktestApp({ initial }: { initial: Initial }) {
 
           {tipOpen && <div id="tip">연평균 {pct(result.cagr)}는 1년에 평균 이만큼씩 늘었다는 뜻이에요. (과거 수익률 기준)</div>}
 
-          <div className="opts rv" style={{ ["--i" as string]: 5 }}>
+          {timing && (
+            <div className="card rv" style={{ ["--i" as string]: 5 }}>
+              <div className="clab"><span>시작 시점 운</span><span>같은 {Math.round((mode === "amount" ? yearsUsed * 12 : result.months) / 12)}년 기준</span></div>
+              <div className="stats" style={{ borderTop: 0, paddingTop: 0, marginTop: 4 }}>
+                <div className="stat"><div className="k">최악</div><div className="v">{eok(timing.min)}</div></div>
+                <div className="stat"><div className="k">중간</div><div className="v">{eok(timing.median)}</div></div>
+                <div className="stat"><div className="k">최선</div><div className="v up">{eok(timing.max)}</div></div>
+              </div>
+              <div className="timing-note">{ym(timing.minStart)} 시작이 최악 · {ym(timing.maxStart)} 시작이 최선 · 시작월 {timing.samples}개 비교</div>
+            </div>
+          )}
+
+          <div className="opts rv" style={{ ["--i" as string]: 6 }}>
             <label className="opt">
               <span>물가만큼 매년 인상 <i>적립액을 물가지수만큼 올림</i></span>
               <input type="checkbox" checked={infl} onChange={(e) => setInfl(e.target.checked)} />
@@ -303,7 +331,10 @@ export function BacktestApp({ initial }: { initial: Initial }) {
             */}
           </div>
 
-          <button className="btn share rv" style={{ ["--i" as string]: 6, marginBottom: 24 }} onClick={share}>결과 공유하기</button>
+          <div className="btnrow rv" style={{ ["--i" as string]: 7, marginBottom: 24 }}>
+            <button className="btn ghost" onClick={saveImage}>이미지 저장</button>
+            <button className="btn share" onClick={share}>결과 공유하기</button>
+          </div>
         </div>
       )}
 
