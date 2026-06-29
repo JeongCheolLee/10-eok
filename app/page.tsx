@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { BacktestApp } from "@/components/BacktestApp";
+import { HomeContent } from "@/components/HomeContent";
 import { JsonLd, webSiteLd, softwareAppLd } from "@/components/JsonLd";
 import { TICKERS, tickerName } from "@/lib/tickers";
 
@@ -52,6 +53,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<SP>
       <JsonLd data={webSiteLd()} />
       <JsonLd data={softwareAppLd()} />
       <BacktestApp initial={parseInitial(sp)} />
+      <HomeContent />
     </>
   );
 }

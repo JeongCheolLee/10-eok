@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { ContentShell } from "@/components/ContentShell";
+import { AUTHOR, CONTACT_EMAIL } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "문의 · 10-eok",
@@ -10,10 +11,15 @@ export const metadata: Metadata = {
 export default function Page() {
   return (
     <ContentShell title="문의" desc="궁금한 점, 오류 제보, 종목 추가 요청 환영합니다" crumb="문의">
-      <p>아래 이메일로 연락 주세요. 보통 영업일 기준 며칠 안에 답변드립니다.</p>
       <p>
+        10-eok은 <strong>{AUTHOR}</strong>가 운영합니다. 아래 이메일로 연락 주시면 보통 영업일 기준 며칠 안에
+        답변드립니다.
+      </p>
+      <p>
+        <strong>운영자:</strong> {AUTHOR}
+        <br />
         <strong>이메일:</strong>{" "}
-        <a href="mailto:jclee7503@gmail.com">jclee7503@gmail.com</a>
+        <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
       </p>
 
       <h2>이런 내용을 보내주시면 좋아요</h2>

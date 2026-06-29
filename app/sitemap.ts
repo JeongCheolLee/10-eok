@@ -5,6 +5,7 @@ import { TICKERS } from "@/lib/tickers";
 export default function sitemap(): MetadataRoute.Sitemap {
   const paths = [
     "",
+    "/compare",
     "/about",
     "/how-it-works",
     "/contact",

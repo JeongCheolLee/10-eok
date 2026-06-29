@@ -9,6 +9,7 @@ import { TICKERS, tickerName, tickerCurrency } from "@/lib/tickers";
 import { bundleToRows, type Bundle } from "@/lib/backtest/types";
 import { runToToday } from "@/lib/backtest/simulate";
 import { eok, pct } from "@/lib/format";
+import { ETF_CONTENT } from "@/lib/etfContent";
 
 // 기본 시나리오: 매달 100만원, 1일, 목표 10억
 const M = 100;
@@ -98,16 +99,17 @@ export default async function EtfPage({ params }: { params: Promise<{ symbol: st
   const lc = sym.toLowerCase();
   const label = tickerCurrency(sym) === "KRW" ? tickerName(sym) : sym;
   const blurb = BLURB[sym] ?? { line: `${tickerName(sym)} 적립식 백테스트 결과입니다.`, guides: [{ href: "/guides", label: "투자 가이드" }] };
+  const content = ETF_CONTENT[sym];
   const startYm = r.series[0] ? r.series[0].date.slice(0, 7).replace("-", "년 ") + "월" : "";
   const appHref = `/?t=${sym}&m=${M}&d=${D}&g=${G}`;
   const title = `${label} 적립식 백테스트`;
 
   return (
-    <ContentShell title={title} desc={`매달 ${M}만원씩 모았다면 10억까지 얼마나 걸렸을까`} crumb={`종목 · ${label}`}>
+    <ContentShell title={title} desc={`매달 ${M}만원씩 모았다면 10억까지 얼마나 걸렸을까`} crumb={`종목 · ${label}`} byline>
       <JsonLd data={articleLd({ path: `/etf/${lc}`, title, description: blurb.line })} />
       <JsonLd data={pageBreadcrumbLd(label, `/etf/${lc}`)} />
 
-      <p>{blurb.line}</p>
+      <p>{content?.lead ?? blurb.line}</p>
 
       <div className="note" style={{ background: "#181818", borderLeft: "3px solid #1ed760", padding: "16px 18px", borderRadius: 10, color: "#fff" }}>
         {r.reached ? (
@@ -134,19 +136,33 @@ export default async function EtfPage({ params }: { params: Promise<{ symbol: st
         </Link>
       </p>
 
-      <h2>이 결과를 어떻게 읽어야 하나</h2>
-      <p>
-        위 숫자는 {startYm ? `${startYm}부터 ` : ""}매달 같은 날 같은 금액을 적립했다고 가정한 <strong>과거 시뮬레이션</strong>입니다.
-        실제로는 매수 타이밍·세금·수수료·심리적 요인이 모두 다르게 작용합니다. 특히 레버리지 상품은 같은 구간이라도 시작 시점에 따라 결과가 크게 달라집니다.
-      </p>
-      <p>금액·매수일·목표 금액을 바꿔 보고 싶다면 위 버튼으로 직접 계산해 보세요. 종목을 바꿔 비교해 볼 수도 있습니다.</p>
+      {content ? (
+        content.sections.map((s, i) => (
+          <section key={i}>
+            <h2>{s.h}</h2>
+            {s.paras.map((para, j) => (
+              <p key={j}>{para}</p>
+            ))}
+          </section>
+        ))
+      ) : (
+        <>
+          <h2>이 결과를 어떻게 읽어야 하나</h2>
+          <p>
+            위 숫자는 {startYm ? `${startYm}부터 ` : ""}매달 같은 날 같은 금액을 적립했다고 가정한 <strong>과거 시뮬레이션</strong>입니다.
+            실제로는 매수 타이밍·세금·수수료·심리적 요인이 모두 다르게 작용합니다. 특히 레버리지 상품은 같은 구간이라도 시작 시점에 따라 결과가 크게 달라집니다.
+          </p>
+        </>
+      )}
+      <p>금액·매수일·목표 금액을 바꿔 보고 싶다면 위 버튼으로 직접 계산해 보세요.</p>
 
       <h2>함께 읽어보세요</h2>
       <ul>
         {blurb.guides.map((g) => (
           <li key={g.href}><Link href={g.href}>{g.label}</Link></li>
         ))}
-        <li><Link href="/how-it-works">계산 방법 & 자주 묻는 질문</Link></li>
+        <li><Link href="/compare">5개 ETF 비교</Link></li>
+        <li><Link href="/how-it-works">계산 방법 &amp; 자주 묻는 질문</Link></li>
       </ul>
 
       <p className="note">본 내용은 정보 제공이며 투자 권유나 자문이 아닙니다. 투자 결정은 스스로 판단하셔야 합니다.</p>

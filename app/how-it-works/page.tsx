@@ -20,7 +20,7 @@ const FAQ = [
 
 export default function Page() {
   return (
-    <ContentShell title="계산 방법 & 자주 묻는 질문" desc="10-eok이 결과를 어떻게 만들어내는지" crumb="계산 방법">
+    <ContentShell title="계산 방법 & 자주 묻는 질문" desc="10-eok이 결과를 어떻게 만들어내는지" crumb="계산 방법" byline>
       <JsonLd data={faqLd(FAQ)} />
       <h2>한눈에 보는 계산 절차</h2>
       <ol>

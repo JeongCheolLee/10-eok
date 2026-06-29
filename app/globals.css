@@ -207,3 +207,33 @@ button { font-family: inherit; cursor: pointer; }
   * { animation: none !important; transition: none !important; }
   .reveal .rv, .num.pop, .hero-glow { opacity: 1 !important; transform: none !important; }
 }
+
+/* 전역 상단 네비게이션 — 홈(계산기)에서도 가이드·계산방법·소개로 가는 크롤 경로 */
+.site-header { border-bottom: 1px solid var(--line); }
+.site-header .inner { max-width: 960px; margin: 0 auto; padding: 12px 22px; display: flex; align-items: center; gap: 16px; }
+.site-header .brand-link { display: inline-flex; align-items: center; gap: 8px; color: var(--ink); text-decoration: none; font-weight: 700; font-size: 15px; flex: 0 0 auto; }
+.site-header .brand-link .logo { width: 24px; height: 24px; }
+.site-header nav { display: flex; flex-wrap: wrap; gap: 12px 18px; margin-left: auto; }
+.site-header nav a { color: var(--muted); font-size: 14px; text-decoration: none; white-space: nowrap; }
+.site-header nav a:hover { color: #fff; }
+
+/* 작성자/수정일 바이라인 (E-E-A-T 신뢰 신호) */
+.prose .byline { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: -2px 0 22px; font-size: 13px; line-height: 1.4; color: var(--muted); }
+.prose .byline-author { color: var(--ink); font-weight: 700; text-decoration: none; }
+.prose .byline-author:hover { color: var(--accent); text-decoration: underline; }
+.prose .byline-sep { color: #555; }
+.prose .byline-note { color: #6f6f6f; }
+
+/* 홈 본문(계산기 아래 서버 렌더 콘텐츠) + 종목 비교표 */
+.home-editorial { border-top: 1px solid var(--line); }
+.cmp-wrap { overflow-x: auto; margin: 18px 0; -webkit-overflow-scrolling: touch; }
+.cmp { width: 100%; border-collapse: collapse; font-size: 15px; }
+.cmp th, .cmp td { text-align: left; padding: 12px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.cmp th { color: var(--muted); font-size: 13px; font-weight: 700; white-space: nowrap; }
+.cmp-sym { color: var(--accent); font-weight: 700; text-decoration: none; }
+.cmp-sym:hover { text-decoration: underline; }
+.cmp-sub { display: block; color: var(--muted); font-size: 12px; margin-top: 3px; font-weight: 400; }
+.cmp td strong { color: #fff; white-space: nowrap; }
+.cmp-cagr { font-variant-numeric: tabular-nums; color: var(--accent); font-weight: 700; white-space: nowrap; }
+.cmp-miss { color: var(--muted); font-size: 13px; }
+.prose .cmp-note { font-size: 13px; color: var(--muted); }
