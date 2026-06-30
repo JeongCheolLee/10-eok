@@ -409,11 +409,22 @@ function Intro({ onStart }: { onStart: () => void }) {
     <>
       <div className="intro-mid">
         <h1><b>10억 모으기</b>,<br />얼마나 걸릴까?</h1>
-        <div className="sub">ETF로 10억 모으기 — 실제 과거 주가와 환율로 계산해 드려요.</div>
+        <div className="sub">
+          QLD·QQQ·SPY 같은 ETF를 매달 일정 금액씩 모았다면 목표 10억 원까지 얼마나 걸렸을지,
+          가정 수익률이 아니라 <b>실제 과거의 일별 주가와 그날의 원/달러 환율</b>로 계산해 드려요.
+        </div>
+        <ul className="intro-points">
+          <li>실제 데이터 — Yahoo 주가 + 미국 연준(FRED) 환율, 매일 자동 갱신</li>
+          <li>“얼마가 될까”가 아니라 “목표까지 얼마나” — 역방향으로 계산</li>
+          <li>시작 시점에 따른 결과 폭(타이밍 리스크)까지 함께 확인</li>
+        </ul>
+        <div className="intro-disc">
+          교육·정보 제공용 백테스트입니다. 투자 권유가 아니며, 과거 수익은 미래를 보장하지 않습니다.
+        </div>
       </div>
       <div className="cta">
         <button className="btn" onClick={onStart}>계산 시작하기</button>
-        <div className="hint">종목·금액·날짜만 정하면 끝 · 약 5초</div>
+        <div className="hint">종목·금액·날짜만 정하면 끝 · 아래에서 5개 ETF 결과 비교와 투자 가이드도 볼 수 있어요</div>
       </div>
     </>
   );
