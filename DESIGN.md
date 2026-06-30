@@ -31,11 +31,13 @@
 
 ## 3. 타이포그래피
 - 폰트: 영문/숫자 — system-ui 또는 Pretendard(한글 우선 권장). 굵기 400/600/700.
-- 스케일:
-  - Hero 숫자: 64–66px / 700 / letter-spacing -.03em (단위 '년·개월'은 ~30px/700 muted)
-  - 섹션 타이틀: 24px / 700
+- 스케일 (실제 구현값 — CSS 토큰 `--fs-*`로 globals.css `:root`에서 단일 관리):
+  - 결과 영웅 숫자 `--fs-hero`: 62px / 700 / letter-spacing -.03em (단위 '년·개월'은 28px muted)
+  - 인트로 헤드라인 `--fs-h1`: 40px / 700
+  - 본문 페이지 제목 `--fs-article-h1`: 30px / 700
+  - 섹션 타이틀 `--fs-section`: 20px / 700
   - Feature: 18px / 600
-  - Body: 16px / 400 (Bold 700)
+  - Body `--fs-body`: 16px / 400 (Bold 700)
   - 라벨(칩 키, 통계 키): 10–12px / 700 / **uppercase 금지(한글)** — 한글은 그냥 작게.
   - 버튼: 14px / 700, **영문일 때만** uppercase + letter-spacing 1.4–2px. 한글 버튼은
     uppercase 미적용(한글엔 대문자 개념 없음) — 굵게 + 자간 살짝.

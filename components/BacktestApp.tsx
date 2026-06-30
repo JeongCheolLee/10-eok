@@ -175,8 +175,8 @@ export function BacktestApp({ initial }: { initial: Initial }) {
       {screen === "result" && result && (
         <div className="reveal" key={revealKey}>
           <div className="modetoggle rv" style={{ ["--i" as string]: 0 }}>
-            <button className={mode === "time" ? "on" : ""} onClick={() => { setMode("time"); setEditMode(null); }}>기간이 궁금</button>
-            <button className={mode === "amount" ? "on" : ""} onClick={() => { setMode("amount"); setEditMode(null); }}>금액이 궁금</button>
+            <button className={mode === "time" ? "on" : ""} aria-pressed={mode === "time"} onClick={() => { setMode("time"); setEditMode(null); }}>기간이 궁금</button>
+            <button className={mode === "amount" ? "on" : ""} aria-pressed={mode === "amount"} onClick={() => { setMode("amount"); setEditMode(null); }}>금액이 궁금</button>
           </div>
           <p className="mode-cap rv" style={{ ["--i" as string]: 0, marginBottom: 10 }}>
             {mode === "time"
@@ -433,8 +433,8 @@ function Form({
       <div className="form-mid">
         <div>
           <div className="modetoggle">
-            <button className={mode === "time" ? "on" : ""} onClick={() => onMode("time")}>기간이 궁금</button>
-            <button className={mode === "amount" ? "on" : ""} onClick={() => onMode("amount")}>금액이 궁금</button>
+            <button className={mode === "time" ? "on" : ""} aria-pressed={mode === "time"} onClick={() => onMode("time")}>기간이 궁금</button>
+            <button className={mode === "amount" ? "on" : ""} aria-pressed={mode === "amount"} onClick={() => onMode("amount")}>금액이 궁금</button>
           </div>
           <p className="mode-cap">
             {mode === "time"
@@ -480,7 +480,7 @@ function TickerSelect({ value, onChange }: { value: string; onChange: (s: string
   const list = TICKERS.filter((t) => !s || t.symbol.toLowerCase().includes(s) || t.name.toLowerCase().includes(s));
   return (
     <div className="select">
-      <button className="select-btn" onClick={() => setOpen((o) => !o)}>
+      <button className="select-btn" aria-haspopup="listbox" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
         <span className="select-cur">
           <TickerLogo symbol={value} size={26} />
           <span className="pcol"><span className="pn">{tickerTitle(value)}</span><span className="ps">{tickerSubtitle(value)}</span></span>

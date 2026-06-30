@@ -111,27 +111,27 @@ export default async function EtfPage({ params }: { params: Promise<{ symbol: st
 
       <p>{content?.lead ?? blurb.line}</p>
 
-      <div className="note" style={{ background: "#181818", borderLeft: "3px solid #1ed760", padding: "16px 18px", borderRadius: 10, color: "#fff" }}>
+      <div className="callout">
         {r.reached ? (
           <>
-            <strong style={{ fontSize: 18 }}>매달 {M}만원씩이면 약 {r.years}년 {r.monthsRem}개월 만에 10억</strong>
+            <strong>매달 {M}만원씩이면 약 {r.years}년 {r.monthsRem}개월 만에 10억</strong>
             <br />
             {startYm}부터 모았다면 지금 약 {eok(r.valueKRW)} · 원금 {eok(r.principalKRW)} · 연평균 {pct(r.cagr)}
           </>
         ) : (
           <>
-            <strong style={{ fontSize: 18 }}>아직 10억까지는 더 걸려요</strong>
+            <strong>아직 10억까지는 더 걸려요</strong>
             <br />
             전 구간 모아도 지금 약 {eok(r.valueKRW)} · 원금 {eok(r.principalKRW)} · 연평균 {pct(r.cagr)}
           </>
         )}
-        <div style={{ color: "#b3b3b3", fontSize: 13, marginTop: 8 }}>
+        <div className="sub">
           ※ 매수일 {D}일 · 목표 10억 · 실제 과거 {tickerCurrency(sym) === "USD" ? "가격과 그날 환율" : "가격"} 기준. 과거 수익률은 미래를 보장하지 않습니다.
         </div>
       </div>
 
-      <p style={{ marginTop: 18 }}>
-        <Link href={appHref} className="btn-inline" style={{ display: "inline-block", background: "#1ed760", color: "#000", fontWeight: 700, padding: "12px 20px", borderRadius: 500, textDecoration: "none" }}>
+      <p style={{ marginTop: 16 }}>
+        <Link href={appHref} className="btn-inline">
           내 조건으로 직접 계산해보기 →
         </Link>
       </p>

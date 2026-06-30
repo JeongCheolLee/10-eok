@@ -59,18 +59,18 @@ export function GrowthChart({
   }, [d]);
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{ display: "block", width: "100%", height: 128 }}>
-      <line x1="0" y1={targetY} x2={W} y2={targetY} stroke="#4a4a4a" strokeWidth="1" strokeDasharray="3 4" />
+    <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{ display: "block", width: "100%", height: 128, color: "var(--accent)" }}>
+      <line x1="0" y1={targetY} x2={W} y2={targetY} style={{ stroke: "var(--line-2)" }} strokeWidth="1" strokeDasharray="3 4" />
       <defs>
         <linearGradient id="gfill" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#1ed760" stopOpacity="0.38" />
-          <stop offset="1" stopColor="#1ed760" stopOpacity="0" />
+          <stop offset="0" stopColor="currentColor" stopOpacity="0.38" />
+          <stop offset="1" stopColor="currentColor" stopOpacity="0" />
         </linearGradient>
       </defs>
       {area && <path d={area} fill="url(#gfill)" />}
-      <path ref={lineRef} d={d} fill="none" stroke="#1ed760" strokeWidth="2.5" strokeLinecap="round" />
-      {reached && <circle cx={dotX} cy={dotY} r="4" fill="#fff" stroke="#1ed760" strokeWidth="2.5" className="pulse" />}
-      <circle cx={dotX} cy={dotY} r="4" fill="#fff" stroke="#1ed760" strokeWidth="2.5" />
+      <path ref={lineRef} d={d} fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+      {reached && <circle cx={dotX} cy={dotY} r="4" fill="#fff" stroke="currentColor" strokeWidth="2.5" className="pulse" />}
+      <circle cx={dotX} cy={dotY} r="4" fill="#fff" stroke="currentColor" strokeWidth="2.5" />
     </svg>
   );
 }
