@@ -32,7 +32,7 @@ button { font-family: inherit; cursor: pointer; }
 .btn.ghost { background: var(--surface-2); color: #fff; }
 
 /* intro */
-.intro-mid { flex: 1; display: flex; flex-direction: column; justify-content: center; padding-bottom: 5vh; }
+.intro-mid { flex: 1; display: flex; flex-direction: column; justify-content: center; padding-bottom: 10vh; }
 .kick { color: var(--accent); font-size: 12px; font-weight: 700; letter-spacing: 0.06em; margin-bottom: 16px; }
 .intro-mid h1 { font-size: 40px; line-height: 1.25; font-weight: 700; letter-spacing: -0.03em; }
 .intro-mid h1 b { color: var(--accent); }
@@ -40,9 +40,6 @@ button { font-family: inherit; cursor: pointer; }
 .cta { margin-bottom: 34px; }
 .hint { text-align: center; color: #8a8a8a; font-size: 12px; margin-top: 14px; line-height: 1.5; }
 .intro-mid .sub b { color: #e6e6e6; font-weight: 700; }
-.intro-points { list-style: none; padding: 0; margin: 22px 0 0; display: flex; flex-direction: column; gap: 9px; }
-.intro-points li { position: relative; padding-left: 20px; color: var(--muted); font-size: 13.5px; line-height: 1.5; }
-.intro-points li::before { content: "✓"; position: absolute; left: 0; top: 0; color: var(--accent); font-weight: 800; }
 .intro-disc { margin-top: 18px; color: #7a7a7a; font-size: 12px; line-height: 1.55; }
 
 /* chat */
