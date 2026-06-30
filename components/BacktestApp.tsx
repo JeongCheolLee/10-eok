@@ -302,13 +302,14 @@ export function BacktestApp({ initial }: { initial: Initial }) {
 
           {timing && (
             <div className="card rv" style={{ ["--i" as string]: 5 }}>
-              <div className="clab"><span>시작 시점 운</span><span>같은 {Math.round((mode === "amount" ? yearsUsed * 12 : result.months) / 12)}년 기준</span></div>
+              <div className="clab"><span>언제 시작했냐에 따라</span><span>같은 {Math.round((mode === "amount" ? yearsUsed * 12 : result.months) / 12)}년 · 같은 금액</span></div>
+              <p className="timing-lead">똑같이 모아도 <b>시작한 달</b>이 언제냐에 따라 최종 금액이 이만큼 갈렸어요.</p>
               <div className="stats" style={{ borderTop: 0, paddingTop: 0, marginTop: 4 }}>
-                <div className="stat"><div className="k">최악</div><div className="v">{eok(timing.min)}</div></div>
-                <div className="stat"><div className="k">중간</div><div className="v">{eok(timing.median)}</div></div>
-                <div className="stat"><div className="k">최선</div><div className="v up">{eok(timing.max)}</div></div>
+                <div className="stat"><div className="k">운 나빴다면</div><div className="v">{eok(timing.min)}</div></div>
+                <div className="stat"><div className="k">보통이면</div><div className="v">{eok(timing.median)}</div></div>
+                <div className="stat"><div className="k">운 좋았다면</div><div className="v up">{eok(timing.max)}</div></div>
               </div>
-              <div className="timing-note">{ym(timing.minStart)} 시작이 최악 · {ym(timing.maxStart)} 시작이 최선 · 시작월 {timing.samples}개 비교</div>
+              <div className="timing-note">{ym(timing.minStart)}에 시작했으면 최악 · {ym(timing.maxStart)}이면 최선 (과거 시작월 {timing.samples}개 비교)</div>
             </div>
           )}
 
