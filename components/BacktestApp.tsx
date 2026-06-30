@@ -138,13 +138,6 @@ export function BacktestApp({ initial }: { initial: Initial }) {
     if (navigator.share) { navigator.share({ title: "10-eok", text, url }).catch(() => {}); }
     else { navigator.clipboard?.writeText(`${text} ${url}`); setToast("링크가 복사됐어요"); window.setTimeout(() => setToast(""), 2000); }
   }
-  function saveImage() {
-    const a = document.createElement("a");
-    a.href = `/api/og?${query}`;
-    a.download = `10-eok-${ticker}.png`;
-    document.body.appendChild(a); a.click(); a.remove();
-    setToast("이미지를 저장했어요"); window.setTimeout(() => setToast(""), 2000);
-  }
 
   if (loadErr) {
     return (
@@ -332,7 +325,6 @@ export function BacktestApp({ initial }: { initial: Initial }) {
           </div>
 
           <div className="btnrow rv" style={{ ["--i" as string]: 7, marginBottom: 24 }}>
-            <button className="btn ghost" onClick={saveImage}>이미지 저장</button>
             <button className="btn share" onClick={share}>결과 공유하기</button>
           </div>
         </div>
