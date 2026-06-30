@@ -174,10 +174,15 @@ export function BacktestApp({ initial }: { initial: Initial }) {
 
       {screen === "result" && result && (
         <div className="reveal" key={revealKey}>
-          <div className="modetoggle rv" style={{ ["--i" as string]: 0, marginBottom: 10 }}>
+          <div className="modetoggle rv" style={{ ["--i" as string]: 0 }}>
             <button className={mode === "time" ? "on" : ""} onClick={() => { setMode("time"); setEditMode(null); }}>기간이 궁금</button>
             <button className={mode === "amount" ? "on" : ""} onClick={() => { setMode("amount"); setEditMode(null); }}>금액이 궁금</button>
           </div>
+          <p className="mode-cap rv" style={{ ["--i" as string]: 0, marginBottom: 10 }}>
+            {mode === "time"
+              ? <>매달 정한 금액으로 <b>{target}억까지 몇 년</b> 걸리는지</>
+              : <>정한 기간 안에 {target}억을 모으려면 <b>매달 얼마씩</b> 넣을지</>}
+          </p>
           <div className="chips-wrap" ref={chipsRef}>
             <div className="chips">
               <button className={"chip rv" + (editMode === "ticker" ? " open" : "")} style={{ ["--i" as string]: 0 }} onClick={() => setEditMode((m) => (m === "ticker" ? null : "ticker"))}>
@@ -426,9 +431,16 @@ function Form({
   return (
     <>
       <div className="form-mid">
-        <div className="modetoggle">
-          <button className={mode === "time" ? "on" : ""} onClick={() => onMode("time")}>기간이 궁금</button>
-          <button className={mode === "amount" ? "on" : ""} onClick={() => onMode("amount")}>금액이 궁금</button>
+        <div>
+          <div className="modetoggle">
+            <button className={mode === "time" ? "on" : ""} onClick={() => onMode("time")}>기간이 궁금</button>
+            <button className={mode === "amount" ? "on" : ""} onClick={() => onMode("amount")}>금액이 궁금</button>
+          </div>
+          <p className="mode-cap">
+            {mode === "time"
+              ? <>매달 정한 금액으로 <b>10억까지 몇 년</b> 걸리는지 계산해요</>
+              : <>정한 기간 안에 10억을 모으려면 <b>매달 얼마씩</b> 넣을지 계산해요</>}
+          </p>
         </div>
         <div className="field">
           <div className="flabel">종목</div>
