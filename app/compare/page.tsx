@@ -23,7 +23,6 @@ export default async function ComparePage() {
       title="5개 ETF, 10억까지 비교"
       desc={`매달 ${MONTHLY}만원씩 적립했다면 — 실제 과거 데이터로 본 종목별 결과와 성격`}
       crumb="종목 비교"
-      byline
     >
       <JsonLd data={articleLd({ path: "/compare", title: TITLE, description: DESC })} />
       <JsonLd data={pageBreadcrumbLd("종목 비교", "/compare")} />

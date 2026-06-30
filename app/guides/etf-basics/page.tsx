@@ -16,7 +16,6 @@ export default function Page() {
       title="ETF가 뭔가요? (초보자)"
       desc="주식처럼 사고파는 '여러 종목 한 바구니', ETF를 처음부터 이해하기"
       crumb="가이드 · ETF 기초"
-      byline
     >
       <JsonLd
         data={guideLd({

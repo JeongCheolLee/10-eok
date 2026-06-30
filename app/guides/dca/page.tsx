@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 
 export default function Page() {
   return (
-    <ContentShell title="적립식 투자(DCA)의 원리" desc="매달 같은 금액을 꾸준히" crumb="가이드 · 적립식" byline>
+    <ContentShell title="적립식 투자(DCA)의 원리" desc="매달 같은 금액을 꾸준히" crumb="가이드 · 적립식">
       <JsonLd data={guideLd({ path: "/guides/dca", title: "적립식 투자(DCA)의 원리", description: "매달 일정 금액을 꾸준히 사는 적립식 투자(DCA)가 왜 마음 편한 방법인지, 장점과 한계를 정리했어요.", name: "적립식 투자(DCA)의 원리" })} />
       <p>
         적립식 투자는 영어로 Dollar-Cost Averaging, 줄여서 <strong>DCA</strong>라고 부릅니다. 핵심은

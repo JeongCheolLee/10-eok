@@ -105,7 +105,7 @@ export default async function EtfPage({ params }: { params: Promise<{ symbol: st
   const title = `${label} 적립식 백테스트`;
 
   return (
-    <ContentShell title={title} desc={`매달 ${M}만원씩 모았다면 10억까지 얼마나 걸렸을까`} crumb={`종목 · ${label}`} byline>
+    <ContentShell title={title} desc={`매달 ${M}만원씩 모았다면 10억까지 얼마나 걸렸을까`} crumb={`종목 · ${label}`}>
       <JsonLd data={articleLd({ path: `/etf/${lc}`, title, description: blurb.line })} />
       <JsonLd data={pageBreadcrumbLd(label, `/etf/${lc}`)} />
 

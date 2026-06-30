@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 
 export default function Page() {
   return (
-    <ContentShell title="나스닥100 vs S&P 500" desc="미국 대표 두 지수, 무엇이 다른가" crumb="가이드 · 지수 비교" byline>
+    <ContentShell title="나스닥100 vs S&P 500" desc="미국 대표 두 지수, 무엇이 다른가" crumb="가이드 · 지수 비교">
       <JsonLd
         data={guideLd({
           path: "/guides/nasdaq100-vs-sp500",

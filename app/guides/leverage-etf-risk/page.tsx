@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 
 export default function Page() {
   return (
-    <ContentShell title="레버리지 ETF의 위험" desc="2배는 수익에도, 손실에도 적용됩니다" crumb="가이드 · 위험" byline>
+    <ContentShell title="레버리지 ETF의 위험" desc="2배는 수익에도, 손실에도 적용됩니다" crumb="가이드 · 위험">
       <JsonLd data={guideLd({ path: "/guides/leverage-etf-risk", title: "레버리지 ETF의 위험", description: "2·3배의 수익만큼 큰 손실, 그리고 변동성 끌림(volatility decay)이라는 숨은 함정을 숫자로 설명합니다.", name: "레버리지 ETF의 위험" })} />
       <p>
         QLD(2배)나 TQQQ(3배) 같은 레버리지 ETF는 상승장에서 눈부신 수익을 보여줍니다. 백테스트

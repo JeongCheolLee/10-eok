@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 
 export default function Page() {
   return (
-    <ContentShell title="환율이 수익률에 미치는 영향" desc="원화로 달러 자산을 살 때 생기는 또 하나의 변수" crumb="가이드 · 환율" byline>
+    <ContentShell title="환율이 수익률에 미치는 영향" desc="원화로 달러 자산을 살 때 생기는 또 하나의 변수" crumb="가이드 · 환율">
       <JsonLd data={guideLd({ path: "/guides/fx-impact", title: "환율이 수익률에 미치는 영향", description: "원화로 달러 자산(미국 ETF)을 살 때, 환율이 수익을 어떻게 더하거나 깎는지 시나리오로 설명합니다.", name: "환율이 수익률에 미치는 영향" })} />
       <p>
         QQQ, SPY, QLD, TQQQ 같은 미국 ETF는 모두 <strong>달러로 거래</strong>됩니다. 그런데 우리가

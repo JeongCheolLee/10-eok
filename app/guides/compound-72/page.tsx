@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 
 export default function Page() {
   return (
-    <ContentShell title="복리와 72의 법칙" desc="돈이 돈을 버는 원리와 암산법" crumb="가이드 · 복리" byline>
+    <ContentShell title="복리와 72의 법칙" desc="돈이 돈을 버는 원리와 암산법" crumb="가이드 · 복리">
       <JsonLd data={guideLd({ path: "/guides/compound-72", title: "복리와 72의 법칙", description: "돈이 돈을 버는 복리의 원리와, 원금이 두 배 되는 기간을 암산하는 72의 법칙을 예시로 설명합니다.", name: "복리와 72의 법칙" })} />
       <p>
         장기 투자에서 가장 강력한 힘은 의외로 단순합니다. 바로 <strong>복리(compound interest)</strong>,

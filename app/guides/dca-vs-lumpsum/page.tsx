@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 
 export default function Page() {
   return (
-    <ContentShell title="적립식 vs 거치식" desc="한 번에 넣을까, 나눠 넣을까" crumb="가이드 · 적립 vs 거치" byline>
+    <ContentShell title="적립식 vs 거치식" desc="한 번에 넣을까, 나눠 넣을까" crumb="가이드 · 적립 vs 거치">
       <JsonLd data={guideLd({ path: "/guides/dca-vs-lumpsum", title: "적립식 vs 거치식", description: "목돈을 한 번에 넣을까, 나눠 넣을까 — 적립식과 거치식의 차이, 평균적으로 유리한 쪽과 상황별 선택 기준.", name: "적립식 vs 거치식" })} />
       <p>
         같은 돈을 같은 종목에 넣어도 <strong>언제 넣느냐</strong>에 따라 결과가 달라집니다. 크게 두 가지

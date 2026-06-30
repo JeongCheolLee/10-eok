@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 
 export default function Page() {
   return (
-    <ContentShell title="해외주식·ETF 세금 기초" desc="양도세·배당세, 무엇이 어떻게 다른가" crumb="가이드 · 세금" byline>
+    <ContentShell title="해외주식·ETF 세금 기초" desc="양도세·배당세, 무엇이 어떻게 다른가" crumb="가이드 · 세금">
       <JsonLd data={guideLd({ path: "/guides/overseas-tax", title: "해외주식·ETF 세금 기초", description: "해외주식·ETF의 양도소득세·배당소득세와 국내 상장 종목과의 과세 차이를 기초부터 정리합니다.", name: "해외주식·ETF 세금 기초" })} />
       <p>
         QQQ나 SPY 같은 미국 ETF에 투자하면 수익률만큼이나 세금을 함께 따져야 합니다. 같은 돈을 벌어도

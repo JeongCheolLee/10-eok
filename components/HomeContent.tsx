@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Byline } from "@/components/Byline";
 import {
   computeTickerResults,
   dataEndLabel,
@@ -20,7 +19,6 @@ export async function HomeContent() {
       <div className="content">
         <article className="prose">
           <h2 id="intro">매달 모았다면 10억까지, 얼마나 걸렸을까</h2>
-          <Byline note={dataEnd ? `시장 데이터 기준일 ${dataEndLabel(dataEnd)}` : undefined} />
           <p>
             10-eok은 흔한 수익률 계산기와 질문의 방향이 반대입니다. 대부분의 계산기는 "지금 얼마를 넣으면
             나중에 얼마가 될까?"를 묻지만, 10-eok은 <strong>"내가 정한 목표(10억 원)에 닿으려면 과거에 얼마나

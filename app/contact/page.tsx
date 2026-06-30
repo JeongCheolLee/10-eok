@@ -12,12 +12,10 @@ export default function Page() {
   return (
     <ContentShell title="문의" desc="궁금한 점, 오류 제보, 종목 추가 요청 환영합니다" crumb="문의">
       <p>
-        10-eok은 <strong>{AUTHOR}</strong>가 운영합니다. 아래 이메일로 연락 주시면 보통 영업일 기준 며칠 안에
-        답변드립니다.
+        10-eok의 운영자는 <strong>{AUTHOR}</strong>입니다. 궁금한 점이나 오류 제보, 종목 추가 요청은 아래
+        이메일로 보내주세요. 보통 영업일 기준 며칠 안에 답변드립니다.
       </p>
       <p>
-        <strong>운영자:</strong> {AUTHOR}
-        <br />
         <strong>이메일:</strong>{" "}
         <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
       </p>

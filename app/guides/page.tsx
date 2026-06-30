@@ -24,7 +24,7 @@ const GUIDES = [
 
 export default function GuidesIndex() {
   return (
-    <ContentShell title="투자 가이드" desc="10-eok의 백테스트를 더 잘 이해하기 위한 배경 지식이에요." crumb="가이드" byline>
+    <ContentShell title="투자 가이드" desc="10-eok의 백테스트를 더 잘 이해하기 위한 배경 지식이에요." crumb="가이드">
       <JsonLd data={pageBreadcrumbLd("가이드", "/guides")} />
       <div className="cardlinks">
         {GUIDES.map((g) => (

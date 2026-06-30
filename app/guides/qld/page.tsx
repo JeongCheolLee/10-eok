@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 
 export default function Page() {
   return (
-    <ContentShell title="QLD란 무엇인가" desc="나스닥100을 하루 2배로 추종하는 레버리지 ETF" crumb="가이드 · QLD" byline>
+    <ContentShell title="QLD란 무엇인가" desc="나스닥100을 하루 2배로 추종하는 레버리지 ETF" crumb="가이드 · QLD">
       <JsonLd data={guideLd({ path: "/guides/qld", title: "QLD란 무엇인가", description: "나스닥100을 하루 2배로 추종하는 레버리지 ETF, QLD의 구조와 적립식 궁합, 위험을 기초부터 설명합니다.", name: "QLD란 무엇인가" })} />
       <p>
         QLD는 미국 운용사 ProShares가 만든 상장지수펀드(ETF)로, 정식 이름은 ProShares Ultra QQQ입니다.
