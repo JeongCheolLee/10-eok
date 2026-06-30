@@ -443,26 +443,26 @@ function Form({
           </p>
         </div>
         <div className="field">
-          <div className="flabel">종목</div>
+          <div className="flabel">어떤 종목을 모을까요?</div>
           <TickerSelect value={ticker} onChange={onTicker} />
         </div>
         <div className="field">
-          <div className="flabel">초기 투자금</div>
+          <div className="flabel">시작할 때 넣을 목돈이 있나요? (없으면 0)</div>
           <StepInput value={lump} onChange={onLump} min={0} max={1000000} step={100} suffix="만원" />
         </div>
         {mode === "time" ? (
           <div className="field">
-            <div className="flabel">매달 적립 금액</div>
+            <div className="flabel">매달 얼마씩 넣을까요?</div>
             <StepInput value={amount} onChange={onAmount} min={10} max={100000} step={10} suffix="만원" />
           </div>
         ) : (
           <div className="field">
-            <div className="flabel">목표 기간 (최대 {maxYears}년)</div>
+            <div className="flabel">몇 년 안에 모을까요? (최대 {maxYears}년)</div>
             <StepInput value={years} onChange={onYears} min={1} max={maxYears} step={1} suffix="년" />
           </div>
         )}
         <div className="field">
-          <div className="flabel">매수일 (매달 며칠)</div>
+          <div className="flabel">매달 며칠에 살까요?</div>
           <StepInput value={buyDay} onChange={onDay} min={1} max={31} step={1} suffix="일" />
         </div>
       </div>
