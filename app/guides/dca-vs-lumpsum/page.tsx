@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ContentShell } from "@/components/ContentShell";
+import { Sources } from "@/components/Sources";
 import { JsonLd, guideLd } from "@/components/JsonLd";
 
 export const metadata: Metadata = {
@@ -89,6 +90,8 @@ export default function Page() {
         어떤 방식이 유리했다고 해서 미래에도 같다는 보장은 없으니, 결과 자체보다 &ldquo;내가 끝까지
         지킬 수 있는 방식인가&rdquo;를 기준으로 고르는 편이 좋습니다.
       </p>
+
+      <Sources ids={["yahoo", "fredFx"]} />
 
       <p className="note">본 내용은 일반적인 정보 제공이며 투자 권유나 자문이 아닙니다.</p>
     </ContentShell>

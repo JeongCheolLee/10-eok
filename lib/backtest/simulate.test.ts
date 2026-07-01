@@ -146,6 +146,38 @@ describe("최초 납입금 (initialKRW)", () => {
   });
 });
 
+describe("runToToday — 목돈이 단조성을 깨는 경우 (선형 스캔 회귀)", () => {
+  // fx=1000 고정, 가격 경로: Jan10 Feb3 Mar3 Apr3 May1 Jun10 (5월 폭락 → 6월 회복).
+  // 목돈은 '시작월 첫 매수'에 투입되므로, 5월에 늦게 시작하면 목돈이 바닥(가격1)에서
+  // 사들여 최종 평가액이 되레 커진다 → 최종액이 시작월에 대해 단조롭지 않다.
+  // 목돈500만+월100만 기준 시작월별 6월 평가액(만원): 1월2700 2월3767 3월3433 4월3100 5월6100 6월600.
+  // target 4000만은 오직 '5월 시작'(6100만)만 도달 → 이분 탐색은 이를 놓쳐 미달로 오판(회귀).
+  const rows = [
+    row("2020-01-01", 10, 1000),
+    row("2020-02-01", 3, 1000),
+    row("2020-03-01", 3, 1000),
+    row("2020-04-01", 3, 1000),
+    row("2020-05-01", 1, 1000),
+    row("2020-06-01", 10, 1000),
+  ];
+
+  it("이분 탐색이 놓치는 '가장 늦은 도달 시작'을 전수 스캔으로 찾아낸다", () => {
+    const res = runToToday(rows, { monthlyKRW: 1_000_000, initialKRW: 5_000_000, buyDay: 1, targetKRW: 40_000_000 });
+    expect(res.reached).toBe(true);
+    expect(res.series[0].date).toBe("2020-05-01");
+    expect(res.valueKRW).toBeCloseTo(61_000_000, 2);
+    expect(res.months).toBe(1); // 5월→6월
+  });
+
+  it("목돈이 없으면(단조) 기존 이분 탐색 경로 그대로 동작", () => {
+    // 같은 가격 경로, 목돈 없이 월100만. 시작월별 6월 평가액: 1월2200 2월2100 3월1766 ... 로
+    // 늦을수록 감소(단조). target 2000만 → 2월 시작이 경계(2100만).
+    const res = runToToday(rows, { monthlyKRW: 1_000_000, buyDay: 1, targetKRW: 21_000_000 });
+    expect(res.reached).toBe(true);
+    expect(res.series[0].date).toBe("2020-02-01");
+  });
+});
+
 describe("requiredMonthly — 역산(기간→필요 월 적립액)", () => {
   // price=1, fx=1000 고정, 12개월. 월 m원 적립 → 최종 평가액 = 12*m. (선형)
   const rows: Row[] = [];

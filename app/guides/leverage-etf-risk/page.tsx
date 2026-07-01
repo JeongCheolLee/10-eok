@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ContentShell } from "@/components/ContentShell";
+import { Sources } from "@/components/Sources";
 import { JsonLd, guideLd } from "@/components/JsonLd";
 
 export const metadata: Metadata = {
@@ -120,6 +121,8 @@ export default function Page() {
         <Link href="/"> 계산기</Link>에서 직접 비교해 보세요. 좋은 숫자만큼 나쁜 숫자도 함께 보는
         것이 레버리지를 제대로 이해하는 길입니다.
       </p>
+
+      <Sources ids={["prosharesQld", "prosharesTqqq"]} />
 
       <p className="note">본 내용은 일반적인 정보 제공이며 투자 권유나 자문이 아닙니다.</p>
     </ContentShell>

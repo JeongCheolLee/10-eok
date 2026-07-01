@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ContentShell } from "@/components/ContentShell";
+import { Sources } from "@/components/Sources";
 import { JsonLd, guideLd } from "@/components/JsonLd";
 
 export const metadata: Metadata = {
@@ -112,6 +113,8 @@ export default function Page() {
         직접 확인하세요. 환율이 세금에 어떻게 얽히는지는 <Link href="/guides/overseas-tax">해외주식·ETF 세금 기초</Link>도
         함께 참고하면 좋습니다.
       </p>
+
+      <Sources ids={["fredFx", "yahoo"]} />
 
       <p className="note">
         환율은 예측하기 어렵고, 과거의 환율 흐름이 미래에 반복된다는 보장은 없습니다. 본 내용은 일반적인

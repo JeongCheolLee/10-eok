@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ContentShell } from "@/components/ContentShell";
+import { Sources } from "@/components/Sources";
 import { JsonLd, guideLd } from "@/components/JsonLd";
 
 export const metadata: Metadata = {
@@ -96,6 +97,8 @@ export default function Page() {
         시작 시점을 바꿔 가며 <Link href="/">계산기</Link>에 넣어 보면, QLD가 다른 종목 대비 어느
         구간에서 앞서고 어디서 무너졌는지가 선명하게 보입니다.
       </p>
+
+      <Sources ids={["prosharesQld", "yahoo", "fredFx"]} />
 
       <p className="note">본 내용은 일반적인 정보 제공이며 투자 권유나 자문이 아닙니다.</p>
     </ContentShell>

@@ -10,6 +10,8 @@ import { bundleToRows, type Bundle } from "@/lib/backtest/types";
 import { runToToday } from "@/lib/backtest/simulate";
 import { eok, pct } from "@/lib/format";
 import { ETF_CONTENT } from "@/lib/etfContent";
+import { Sources } from "@/components/Sources";
+import type { SourceId } from "@/lib/sources";
 
 // 기본 시나리오: 매달 100만원, 1일, 목표 10억
 const M = 100;
@@ -103,6 +105,9 @@ export default async function EtfPage({ params }: { params: Promise<{ symbol: st
   const startYm = r.series[0] ? r.series[0].date.slice(0, 7).replace("-", "년 ") + "월" : "";
   const appHref = `/?t=${sym}&m=${M}&d=${D}&g=${G}`;
   const title = `${label} 적립식 백테스트`;
+  const sourceIds: SourceId[] = tickerCurrency(sym) === "USD" ? ["yahoo", "fredFx"] : ["yahoo"];
+  if (sym === "QLD") sourceIds.push("prosharesQld");
+  if (sym === "TQQQ") sourceIds.push("prosharesTqqq");
 
   return (
     <ContentShell title={title} desc={`매달 ${M}만원씩 모았다면 10억까지 얼마나 걸렸을까`} crumb={`종목 · ${label}`}>
@@ -164,6 +169,8 @@ export default async function EtfPage({ params }: { params: Promise<{ symbol: st
         <li><Link href="/compare">5개 ETF 비교</Link></li>
         <li><Link href="/how-it-works">계산 방법 &amp; 자주 묻는 질문</Link></li>
       </ul>
+
+      <Sources ids={sourceIds} />
 
       <p className="note">본 내용은 정보 제공이며 투자 권유나 자문이 아닙니다. 투자 결정은 스스로 판단하셔야 합니다.</p>
     </ContentShell>

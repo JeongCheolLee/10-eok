@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ContentShell } from "@/components/ContentShell";
+import { Sources } from "@/components/Sources";
 import { JsonLd, guideLd } from "@/components/JsonLd";
 
 export const metadata: Metadata = {
@@ -147,6 +148,8 @@ export default function Page() {
         <Link href="/">계산기</Link>에서 종목별로 확인할 수 있습니다. 다만 과거 수익률이 미래를
         보장하지는 않으니, 어디까지나 참고용으로 보시기 바랍니다.
       </p>
+
+      <Sources ids={["yahoo", "fredFx"]} />
 
       <p className="note">
         본 내용은 일반적인 정보 제공이며 투자 권유나 자문이 아닙니다.

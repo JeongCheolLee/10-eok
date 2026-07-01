@@ -32,15 +32,16 @@ export default function Page() {
 
       <h2>데이터 출처</h2>
       <ul>
-        <li><strong>가격:</strong> Yahoo Finance의 일별 수정주가(adjusted close). 배당 재투자와 액면분할, 운용보수가 이미 반영된 값입니다.</li>
-        <li><strong>환율:</strong> 미국 세인트루이스 연방준비은행(FRED)의 일별 원/달러(DEXKOUS) 시계열.</li>
+        <li><strong>가격:</strong> <a href="https://finance.yahoo.com" target="_blank" rel="noopener">Yahoo Finance</a>의 일별 수정주가(adjusted close). 배당 재투자와 액면분할, 운용보수가 이미 반영된 값입니다.</li>
+        <li><strong>환율:</strong> <a href="https://fred.stlouisfed.org/series/DEXKOUS" target="_blank" rel="noopener">미국 세인트루이스 연방준비은행(FRED)의 일별 원/달러(DEXKOUS)</a> 시계열.</li>
+        <li><strong>물가지수:</strong> <a href="https://fred.stlouisfed.org/series/KORCPIALLMINMEI" target="_blank" rel="noopener">한국 소비자물가지수(FRED, KORCPIALLMINMEI)</a>. &lsquo;물가만큼 매년 인상&rsquo; 옵션에 사용합니다.</li>
         <li>데이터는 매일 한 번 자동으로 갱신됩니다.</li>
       </ul>
 
       <h2>전제와 단순화</h2>
       <ul>
         <li>배당은 <strong>재투자</strong>한 것으로 봅니다(수정주가 사용).</li>
-        <li><strong>세금</strong>은 계산에 넣지 않습니다. 목표는 평가액이며 아직 팔지 않은 미실현 상태로 보기 때문입니다.</li>
+        <li><strong>세금</strong>은 기본적으로 넣지 않습니다(평가액 기준, 아직 팔지 않은 미실현 상태). 다만 <strong>&lsquo;양도세 반영&rsquo;</strong>을 켜면 해외주식(미국)에 한해 끝 시점에 전부 판다고 가정하고 차익에 22%(연 250만원 공제 1회 단순화)를 매겨 세후 금액으로 보여줍니다. 배당소득세(15.4%)는 반영하지 않습니다.</li>
         <li>매매 수수료·스프레드는 단순화를 위해 제외했습니다.</li>
         <li>주식을 소수점 단위로 살 수 있다고 가정합니다(모델 단순화).</li>
       </ul>
