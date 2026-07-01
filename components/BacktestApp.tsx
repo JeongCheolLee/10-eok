@@ -120,6 +120,22 @@ export function BacktestApp({ initial }: { initial: Initial }) {
   const reached = !!result?.reached;
   const heroMonths = Math.round(animMonths);
 
+  // 타이밍 카드 브릿지: 히어로 숫자(운 좋은 특정 시작)와 중앙값을 잇는 한 줄. 입력에 따라 참이 되도록 분기.
+  const timingBridge = useMemo(() => {
+    if (!timing || !result) return null;
+    const med = timing.median;
+    const tgt = targetKRW;
+    const medRough = med >= 100_000_000 ? `약 ${Math.round(med / 100_000_000)}억` : eok(med);
+    const goal = `${target}억`;
+    if (result.reached && med < tgt) {
+      return `위의 ${eok(result.valueKRW)}은 이 중 운이 좋았던 편이에요. 보통이면 ${medRough}으로, ${goal}엔 조금 못 미쳐요.`;
+    }
+    if (result.reached && med >= tgt) {
+      return `보통이면 ${medRough}으로 ${goal}을 넘겨요. 다만 시작이 나빴다면 ${eok(timing.min)}까지 낮아졌어요.`;
+    }
+    return `보통이면 ${medRough}이고, 시작한 달에 따라 ${eok(timing.min)}~${eok(timing.max)}까지 갈렸어요.`;
+  }, [timing, result, targetKRW, target]); // eslint-disable-line
+
   function submit() {
     setScreen("loading");
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -302,14 +318,15 @@ export function BacktestApp({ initial }: { initial: Initial }) {
 
           {timing && (
             <div className="card rv" style={{ ["--i" as string]: 5 }}>
-              <div className="clab"><span>언제 시작했냐에 따라</span><span>같은 {Math.round((mode === "amount" ? yearsUsed * 12 : result.months) / 12)}년 · 같은 금액</span></div>
-              <p className="timing-lead">똑같이 모아도 <b>시작한 달</b>이 언제냐에 따라 최종 금액이 이만큼 갈렸어요.</p>
+              <div className="clab"><span>시작한 달에 따라 이렇게 달라져요</span></div>
+              <p className="timing-lead">매달 같은 {manwon(mode === "amount" ? (reqMonthly ?? 0) : amount * 10000)}을 똑같이 {Math.round((mode === "amount" ? yearsUsed * 12 : result.months) / 12)}년 넣어도, <b>시작한 달</b>이 언제였냐에 따라 최종 금액이 이만큼 갈렸어요.</p>
               <div className="stats" style={{ borderTop: 0, paddingTop: 0, marginTop: 4 }}>
                 <div className="stat"><div className="k">운 나빴다면</div><div className="v">{eok(timing.min)}</div></div>
                 <div className="stat"><div className="k">보통이면</div><div className="v">{eok(timing.median)}</div></div>
                 <div className="stat"><div className="k">운 좋았다면</div><div className="v up">{eok(timing.max)}</div></div>
               </div>
-              <div className="timing-note">{ym(timing.minStart)}에 시작했으면 최악 · {ym(timing.maxStart)}이면 최선 (과거 시작월 {timing.samples}개 비교)</div>
+              {timingBridge && <p className="timing-lead" style={{ marginTop: 10, color: "var(--ink)" }}>{timingBridge}</p>}
+              <div className="timing-note">최악: {ym(timing.minStart)} 시작 · 최선: {ym(timing.maxStart)} · 과거 시작 시점 {timing.samples}개 비교</div>
             </div>
           )}
 
