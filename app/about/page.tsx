@@ -38,8 +38,9 @@ export default function Page() {
         않습니다.
       </p>
       <p>
-        계산 로직은 공개된 순수 함수로 작성하고 단위·골든 테스트로 검증합니다. 가격은 Yahoo Finance, 환율은
-        미국 연방준비제도(FRED)의 공개 데이터를 매일 자동으로 받아 반영합니다. 계산 방식의 전제와 단순화는{" "}
+        계산 로직은 공개된 순수 함수로 작성하고 단위·골든 테스트로 검증합니다. 가격은{" "}
+        <a href="https://finance.yahoo.com" target="_blank" rel="noopener">Yahoo Finance</a>, 환율은{" "}
+        <a href="https://fred.stlouisfed.org/series/DEXKOUS" target="_blank" rel="noopener">미국 연방준비제도(FRED)</a>의 공개 데이터를 매일 자동으로 받아 반영합니다. 계산 방식의 전제와 단순화는{" "}
         <a href="/how-it-works">계산 방법 &amp; FAQ</a>에서 투명하게 공개합니다.
       </p>
 

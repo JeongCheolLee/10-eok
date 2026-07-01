@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ContentShell } from "@/components/ContentShell";
+import { Sources } from "@/components/Sources";
 import { JsonLd, guideLd } from "@/components/JsonLd";
 
 export const metadata: Metadata = {
@@ -88,6 +89,8 @@ export default function Page() {
         종목별 실제 결과나 내 조건에 맞춘 수치는 <Link href="/">계산기</Link>와 첫 화면의 종목
         비교표에서 직접 확인해 보세요.
       </p>
+
+      <Sources ids={["yahoo", "fredFx"]} />
 
       <p className="note">본 내용은 일반적인 정보 제공이며 투자 권유나 자문이 아닙니다.</p>
     </ContentShell>

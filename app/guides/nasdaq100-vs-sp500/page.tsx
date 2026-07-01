@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ContentShell } from "@/components/ContentShell";
+import { Sources } from "@/components/Sources";
 import { JsonLd, guideLd } from "@/components/JsonLd";
 
 export const metadata: Metadata = {
@@ -120,6 +121,8 @@ export default function Page() {
         손실도 배수로 커집니다. 더 자세한 내용은{" "}
         <Link href="/guides/leverage-etf-risk">레버리지 ETF의 위험</Link>을 꼭 함께 읽어보세요.
       </p>
+
+      <Sources ids={["yahoo", "fredFx"]} />
 
       <p className="note">본 내용은 일반적인 정보 제공이며 투자 권유나 자문이 아닙니다.</p>
     </ContentShell>

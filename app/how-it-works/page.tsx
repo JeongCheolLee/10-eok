@@ -32,8 +32,9 @@ export default function Page() {
 
       <h2>데이터 출처</h2>
       <ul>
-        <li><strong>가격:</strong> Yahoo Finance의 일별 수정주가(adjusted close). 배당 재투자와 액면분할, 운용보수가 이미 반영된 값입니다.</li>
-        <li><strong>환율:</strong> 미국 세인트루이스 연방준비은행(FRED)의 일별 원/달러(DEXKOUS) 시계열.</li>
+        <li><strong>가격:</strong> <a href="https://finance.yahoo.com" target="_blank" rel="noopener">Yahoo Finance</a>의 일별 수정주가(adjusted close). 배당 재투자와 액면분할, 운용보수가 이미 반영된 값입니다.</li>
+        <li><strong>환율:</strong> <a href="https://fred.stlouisfed.org/series/DEXKOUS" target="_blank" rel="noopener">미국 세인트루이스 연방준비은행(FRED)의 일별 원/달러(DEXKOUS)</a> 시계열.</li>
+        <li><strong>물가지수:</strong> <a href="https://fred.stlouisfed.org/series/KORCPIALLMINMEI" target="_blank" rel="noopener">한국 소비자물가지수(FRED, KORCPIALLMINMEI)</a>. &lsquo;물가만큼 매년 인상&rsquo; 옵션에 사용합니다.</li>
         <li>데이터는 매일 한 번 자동으로 갱신됩니다.</li>
       </ul>
 

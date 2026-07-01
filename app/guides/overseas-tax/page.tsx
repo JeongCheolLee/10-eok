@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ContentShell } from "@/components/ContentShell";
+import { Sources } from "@/components/Sources";
 import { JsonLd, guideLd } from "@/components/JsonLd";
 
 export const metadata: Metadata = {
@@ -105,6 +106,8 @@ export default function Page() {
         실제 세후 결과가 궁금하면 <Link href="/">계산기</Link>에서 직접 옵션을 켜 보세요. 과거 데이터로
         계산한 값일 뿐, 미래의 세금이나 수익을 보장하지는 않습니다.
       </p>
+
+      <Sources ids={["ntsTax", "fredFx"]} />
 
       <p className="note">
         세법과 세율은 바뀔 수 있고, 보유 기간·금융소득 규모·대주주 여부 등 개인 상황에 따라 실제 세금은
