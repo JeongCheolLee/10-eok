@@ -15,6 +15,9 @@ export const TICKERS: TickerInfo[] = [
   { symbol: "TQQQ", name: "나스닥100 3배", color: "#e0467c" },
   { symbol: "QQQ", name: "나스닥100", color: "#3b82f6" },
   { symbol: "SPY", name: "S&P 500", color: "#e11d48" },
+  { symbol: "VOO", name: "S&P 500 (뱅가드)", color: "#ea580c" },
+  { symbol: "SCHD", name: "미국 배당성장", color: "#0d9488" },
+  { symbol: "VT", name: "전세계 주식", color: "#16a34a" },
   { symbol: "069500.KS", name: "KODEX 200", color: "#c0392b", currency: "KRW", short: "K200" },
 ];
 

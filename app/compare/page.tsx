@@ -3,10 +3,11 @@ import Link from "next/link";
 import { ContentShell } from "@/components/ContentShell";
 import { JsonLd, articleLd, pageBreadcrumbLd } from "@/components/JsonLd";
 import { computeTickerResults, dataEndLabel, yearOf, COMPARE_MONTHLY as MONTHLY } from "@/lib/etfResults";
+import { TICKERS } from "@/lib/tickers";
 import { eok1, pct } from "@/lib/format";
 
-const TITLE = "5개 ETF 비교 — 매달 100만원이면 10억까지 누가 빨랐나";
-const DESC = "QLD·TQQQ·QQQ·SPY·KODEX 200을 매달 100만원씩 적립했다고 가정해, 10억 도달 기간·연평균 수익률을 실제 과거 데이터로 비교하고 각 종목의 성격과 위험을 정리합니다.";
+const TITLE = `${TICKERS.length}개 ETF 비교 — 매달 100만원이면 10억까지 누가 빨랐나`;
+const DESC = "QLD·TQQQ·QQQ·SPY·VOO·SCHD·VT·KODEX 200을 매달 100만원씩 적립했다고 가정해, 10억 도달 기간·연평균 수익률을 실제 과거 데이터로 비교하고 각 종목의 성격과 위험을 정리합니다.";
 
 export const metadata: Metadata = {
   title: `${TITLE} · 10-eok`,
@@ -20,7 +21,7 @@ export default async function ComparePage() {
 
   return (
     <ContentShell
-      title="5개 ETF, 10억까지 비교"
+      title={`${TICKERS.length}개 ETF, 10억까지 비교`}
       desc={`매달 ${MONTHLY}만원씩 적립했다면 — 실제 과거 데이터로 본 종목별 결과와 성격`}
       crumb="종목 비교"
     >
@@ -29,7 +30,7 @@ export default async function ComparePage() {
 
       <p>
         같은 금액을 매달 똑같이 모았더라도 어떤 ETF에 넣었느냐에 따라 결과는 크게 달라집니다. 아래는
-        10-eok이 지원하는 5개 ETF를 <strong>매달 {MONTHLY}만원씩, 매달 1일</strong>에 적립했다고 가정하고,
+        10-eok이 지원하는 {TICKERS.length}개 ETF를 <strong>매달 {MONTHLY}만원씩, 매달 1일</strong>에 적립했다고 가정하고,
         실제 과거의 일별 종가와 환율로 10억 원에 닿기까지 걸린 기간을 계산한 결과입니다. 기간은 <strong>오늘
         시점에서 거꾸로 계산</strong>한 값으로, "약 몇 년 전부터 모았더라면 지금 10억이 되는가"를 뜻합니다.
       </p>

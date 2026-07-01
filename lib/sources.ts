@@ -28,6 +28,18 @@ export const SOURCES = {
     label: "TQQQ 상품 개요(나스닥100 하루 3배 목표): ProShares",
     href: "https://www.proshares.com/our-etfs/leveraged-and-inverse/tqqq",
   },
+  vanguardVoo: {
+    label: "VOO 상품 개요(S&P 500 추종·운용보수): Vanguard",
+    href: "https://investor.vanguard.com/investment-products/etfs/profile/voo",
+  },
+  schwabSchd: {
+    label: "SCHD 상품 개요(다우존스 미국 배당 100 추종): Charles Schwab",
+    href: "https://www.schwab.com/research/etfs/quotes/summary/schd",
+  },
+  vanguardVt: {
+    label: "VT 상품 개요(FTSE 글로벌 올캡·전 세계 주식): Vanguard",
+    href: "https://investor.vanguard.com/investment-products/etfs/profile/vt",
+  },
 } satisfies Record<string, Source>;
 
 export type SourceId = keyof typeof SOURCES;

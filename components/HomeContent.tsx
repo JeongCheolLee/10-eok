@@ -71,7 +71,7 @@ export async function HomeContent() {
           </div>
           <p className="cmp-note">
             ※ {dataEnd ? `${dataEndLabel(dataEnd)} 기준 데이터. ` : ""}각 종목의 데이터 시작 시점이 달라
-            기간을 단순 비교하긴 어렵습니다. 구성·위험까지 함께 본 <Link href="/compare">5개 ETF 비교</Link>를
+            기간을 단순 비교하긴 어렵습니다. 구성·위험까지 함께 본 <Link href="/compare">{rows.length}개 ETF 비교</Link>를
             참고하거나, 종목을 눌러 상세·직접 계산으로 넘어갈 수 있습니다.
           </p>
 
@@ -104,7 +104,7 @@ export async function HomeContent() {
 
           <h2 id="more">더 알아보기</h2>
           <ul>
-            <li><Link href="/compare">5개 ETF 비교</Link> — 구성·성격·위험과 10억 도달 결과를 한눈에</li>
+            <li><Link href="/compare">{rows.length}개 ETF 비교</Link> — 구성·성격·위험과 10억 도달 결과를 한눈에</li>
             <li><Link href="/guides/dca">적립식 투자(DCA)의 원리</Link> — 매달 꾸준히 사는 방식이 왜 마음 편한지</li>
             <li><Link href="/guides/leverage-etf-risk">레버리지 ETF의 위험</Link> — 2·3배의 수익만큼 큰 손실과 변동성 끌림</li>
             <li><Link href="/guides/fx-impact">환율이 수익률에 미치는 영향</Link> — 원화로 달러 자산을 살 때</li>

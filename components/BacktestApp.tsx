@@ -417,7 +417,7 @@ function Intro({ onStart }: { onStart: () => void }) {
       </div>
       <div className="cta">
         <button className="btn" onClick={onStart}>계산 시작하기</button>
-        <div className="hint">종목·금액·날짜만 정하면 끝 · 아래에서 5개 ETF 결과 비교와 투자 가이드도 볼 수 있어요</div>
+        <div className="hint">종목·금액·날짜만 정하면 끝 · 아래에서 {TICKERS.length}개 ETF 결과 비교와 투자 가이드도 볼 수 있어요</div>
       </div>
     </>
   );

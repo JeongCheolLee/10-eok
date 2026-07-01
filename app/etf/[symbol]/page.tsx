@@ -48,6 +48,27 @@ const BLURB: Record<string, Blurb> = {
       { href: "/guides/dca-vs-lumpsum", label: "적립식 vs 거치식" },
     ],
   },
+  VOO: {
+    line: "VOO는 SPY와 같은 S&P 500 지수를 1배로 추종하는 뱅가드 ETF입니다. 담는 지수는 같고 운용사·보수가 다릅니다.",
+    guides: [
+      { href: "/guides/etf-basics", label: "ETF가 뭔가요?" },
+      { href: "/guides/nasdaq100-vs-sp500", label: "나스닥100 vs S&P 500" },
+    ],
+  },
+  SCHD: {
+    line: "SCHD는 배당을 꾸준히 잘 주는 미국 우량 기업 약 100곳을 담은 배당성장 ETF입니다. 성장주 지수와 성격이 다릅니다.",
+    guides: [
+      { href: "/guides/etf-basics", label: "ETF가 뭔가요?" },
+      { href: "/guides/overseas-tax", label: "해외주식 세금" },
+    ],
+  },
+  VT: {
+    line: "VT는 미국을 포함한 전 세계 주식 수천 종목을 한 번에 담는 뱅가드 ETF입니다. 분산의 폭이 가장 넓습니다.",
+    guides: [
+      { href: "/guides/etf-basics", label: "ETF가 뭔가요?" },
+      { href: "/guides/fx-impact", label: "환율의 영향" },
+    ],
+  },
   "069500.KS": {
     line: "KODEX 200은 한국 코스피200 지수를 추종하는 대표 국내 ETF입니다. 원화 자산이라 환율의 영향을 받지 않습니다.",
     guides: [
@@ -108,6 +129,9 @@ export default async function EtfPage({ params }: { params: Promise<{ symbol: st
   const sourceIds: SourceId[] = tickerCurrency(sym) === "USD" ? ["yahoo", "fredFx"] : ["yahoo"];
   if (sym === "QLD") sourceIds.push("prosharesQld");
   if (sym === "TQQQ") sourceIds.push("prosharesTqqq");
+  if (sym === "VOO") sourceIds.push("vanguardVoo");
+  if (sym === "SCHD") sourceIds.push("schwabSchd");
+  if (sym === "VT") sourceIds.push("vanguardVt");
 
   return (
     <ContentShell title={title} desc={`매달 ${M}만원씩 모았다면 10억까지 얼마나 걸렸을까`} crumb={`종목 · ${label}`}>
@@ -166,7 +190,7 @@ export default async function EtfPage({ params }: { params: Promise<{ symbol: st
         {blurb.guides.map((g) => (
           <li key={g.href}><Link href={g.href}>{g.label}</Link></li>
         ))}
-        <li><Link href="/compare">5개 ETF 비교</Link></li>
+        <li><Link href="/compare">{TICKERS.length}개 ETF 비교</Link></li>
         <li><Link href="/how-it-works">계산 방법 &amp; 자주 묻는 질문</Link></li>
       </ul>
 
