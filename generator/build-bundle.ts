@@ -2,7 +2,7 @@
 // 1) Yahoo 차트에서 종목 일별 수정주가  2) FRED DEXKOUS 일별 USD/KRW
 // 3) align.ts(공유)로 거래일 정렬+forward-fill+검증  4) public/data/<ticker>.json 파생 번들 생성
 // 가격 소스는 PRICE_SOURCE로 추상화 — 추후 교체 용이(Stooq가 봇 차단되어 Yahoo 채택).
-import { writeFileSync, mkdirSync } from "node:fs";
+import { writeFileSync, mkdirSync, existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { alignSeries, type PricePoint, type FxPoint } from "../lib/backtest/align";
 import type { Bundle } from "../lib/backtest/types";
@@ -11,6 +11,14 @@ import { TICKERS, tickerCurrency } from "../lib/tickers";
 // TICKER env 지정 시 그 종목만, 없으면 레지스트리 전체.
 const ONLY = process.env.TICKER;
 const UA = "Mozilla/5.0 (compatible; 10-eok-bot/0.1)";
+
+// 데이터 무결성 가드 임계값. 잘린/부분 응답(HTTP 200이지만 몇 달치만 온 경우)이
+// alignSeries 검증(길이>0·단조·양수)만 통과해 정상 번들을 덮어쓰는 것을 막는다.
+const MIN_PRICE_ROWS = 200; // 종목당 최소 거래일 수 (약 10개월 미만이면 이상)
+const MIN_CPI_ROWS = 100; // CPI 최소 개월 수
+const MIN_FX_ROWS = 1000; // DEXKOUS 일별은 수천 개 — 그 미만이면 잘린 응답
+const FX_STALE_DAYS = 14; // 환율 마지막일이 가격 최신일보다 이만큼 뒤처지면 이상(잘림/중단)
+const MAX_ROW_DROP = 0.02; // 기존 대비 행 수 2% 초과 감소면 거부
 
 async function fetchPrices(ticker: string): Promise<PricePoint[]> {
   const url = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?period1=0&period2=9999999999&interval=1d&events=div%2Csplit`;
@@ -65,6 +73,37 @@ async function fetchCpiKr(): Promise<{ ym: string; idx: number }[]> {
   return out;
 }
 
+/**
+ * 새 번들이 기존 정상 번들을 안전하게 대체할 수 있는지 검증. 이상 시 throw → 커밋 차단.
+ * - 절대 하한: 행 수가 MIN_PRICE_ROWS 미만이면 잘린 응답으로 간주.
+ * - 기존 번들 대비: 행 수 급감(MAX_ROW_DROP 초과)·시작일 후퇴·마지막일 후퇴를 거부.
+ * 기존 파일이 없거나 깨졌으면 절대 하한만 검사(최초 생성/복구 허용).
+ */
+function guardBundle(file: string, next: Bundle): void {
+  const n = next.rows.length;
+  if (n < MIN_PRICE_ROWS) throw new Error(`${next.ticker}: 행 ${n}개 < 최소 ${MIN_PRICE_ROWS}개 — 잘린 응답 의심`);
+  if (!existsSync(file)) return;
+  let prev: Bundle;
+  try {
+    prev = JSON.parse(readFileSync(file, "utf8")) as Bundle;
+  } catch {
+    return; // 기존 파일 손상 → 새 번들로 교체 허용
+  }
+  const p = prev.rows?.length ?? 0;
+  if (p === 0) return;
+  if (n < p * (1 - MAX_ROW_DROP)) {
+    throw new Error(`${next.ticker}: 행 급감 ${p}→${n} (>${MAX_ROW_DROP * 100}% 감소) — 잘린 응답 의심, 이전 번들 유지`);
+  }
+  if (next.start > prev.start) {
+    throw new Error(`${next.ticker}: 시작일 후퇴 ${prev.start}→${next.start} — 앞부분 유실 의심`);
+  }
+  const prevEnd = prev.rows[p - 1]?.[0];
+  const nextEnd = next.rows[n - 1]?.[0];
+  if (prevEnd && nextEnd && nextEnd < prevEnd) {
+    throw new Error(`${next.ticker}: 마지막일 후퇴 ${prevEnd}→${nextEnd} — 최신분 유실 의심`);
+  }
+}
+
 function isoUTC(epochSec: number): string {
   return new Date(epochSec * 1000).toISOString().slice(0, 10);
 }
@@ -78,10 +117,15 @@ async function main() {
   console.log(`[build-bundle] 환율(FRED) 수집…`);
   const fx = await fetchFx();
   console.log(`  fx=${fx.length}`);
+  if (fx.length < MIN_FX_ROWS) throw new Error(`FRED DEXKOUS: ${fx.length}개 < 최소 ${MIN_FX_ROWS}개 — 잘린 응답 의심`);
+  const fxEnd = fx[fx.length - 1].date;
 
   const dir = join(process.cwd(), "public", "data");
   mkdirSync(dir, { recursive: true });
 
+  // 모든 종목을 먼저 만들고 가드까지 통과시킨 뒤에만 디스크에 쓴다.
+  // (중간에 한 종목이라도 실패하면 어떤 파일도 안 써 부분 갱신을 원천 차단)
+  const pending: { file: string; bundle: Bundle }[] = [];
   for (const ticker of symbols) {
     const prices = await fetchPrices(ticker);
     // 한국 종목은 원화 자산 → 환율=1 (1900년 더미 1점을 forward-fill). 미국은 실제 환율.
@@ -97,14 +141,35 @@ async function main() {
       rows: rows.map((r) => [r.date, r.price, r.fx, r.raw ?? r.price] as [string, number, number, number]),
     };
     const file = join(dir, `${ticker.toLowerCase()}.json`);
-    writeFileSync(file, JSON.stringify(bundle));
-    console.log(`  ${ticker}: ${rows.length}행, ${bundle.start} ~ ${rows[rows.length - 1].date}`);
+    guardBundle(file, bundle); // 잘린/부분 응답이 정상 번들을 덮어쓰지 못하게 (이상 시 throw)
+    pending.push({ file, bundle });
+    console.log(`  ${ticker}: ${rows.length}행, ${bundle.start} ~ ${rows[rows.length - 1].date} (가드 통과)`);
+  }
+
+  // 환율 신선도 가드: 잘린 DEXKOUS는 행 수(forward-fill로 유지)로는 안 잡혀 최근 날짜에
+  // 오래된 환율이 조용히 적용된다 → 미국 종목 가격 최신일과 환율 마지막일 격차로 검출.
+  const usdEnds = pending
+    .filter((p) => tickerCurrency(p.bundle.ticker) === "USD")
+    .map((p) => p.bundle.rows[p.bundle.rows.length - 1][0]);
+  if (usdEnds.length > 0) {
+    const maxUsdEnd = usdEnds.reduce((a, b) => (a > b ? a : b));
+    const stale = new Date(maxUsdEnd);
+    stale.setUTCDate(stale.getUTCDate() - FX_STALE_DAYS);
+    const threshold = stale.toISOString().slice(0, 10);
+    if (fxEnd < threshold) {
+      throw new Error(`환율 정체: 마지막 환율 ${fxEnd} 가 가격 최신일 ${maxUsdEnd} 보다 ${FX_STALE_DAYS}일 넘게 뒤처짐 — 잘린/중단된 DEXKOUS 의심`);
+    }
   }
 
   // 한국 CPI (물가연동 적립용) — 종목 무관, 1회
   const cpi = await fetchCpiKr();
+  if (cpi.length < MIN_CPI_ROWS) throw new Error(`cpi-kr: ${cpi.length}개월 < 최소 ${MIN_CPI_ROWS}개월 — 잘린 응답 의심`);
+
+  // 여기까지 오면 모두 정상 → 일괄 쓰기
+  for (const { file, bundle } of pending) writeFileSync(file, JSON.stringify(bundle));
   writeFileSync(join(dir, "cpi-kr.json"), JSON.stringify({ base: cpi[0]?.ym, series: cpi.map((c) => [c.ym, c.idx]) }));
   console.log(`  cpi-kr: ${cpi.length}개월, ${cpi[0]?.ym} ~ ${cpi[cpi.length - 1]?.ym}`);
+  console.log(`[build-bundle] 완료: ${pending.length}개 종목 + cpi 기록`);
 }
 
 main().catch((e) => {

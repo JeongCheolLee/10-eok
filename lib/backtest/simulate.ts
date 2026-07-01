@@ -125,12 +125,23 @@ export function runToToday(rows: Row[], input: BacktestInput): BacktestResult {
   const sim = (startDate: string) =>
     runBacktest(rows, { ...input, buyDay, startDate, targetKRW: Number.MAX_SAFE_INTEGER });
 
-  // target 도달하는 가장 늦은 시작(=최단 기간)을 이분 탐색
-  let lo = 0, hi = starts.length - 1, ans = -1;
-  while (lo <= hi) {
-    const mid = (lo + hi) >> 1;
-    if (sim(starts[mid]).valueKRW >= target) { ans = mid; lo = mid + 1; }
-    else hi = mid - 1;
+  // target에 도달하는 "가장 늦은 시작"(=최단 기간)을 찾는다.
+  // 목돈(initialKRW)이 없으면 시작이 늦을수록 최종 평가액이 단조 감소하므로 이분 탐색으로 충분.
+  // 목돈이 있으면 폭락 바닥에 늦게 시작할수록 목돈이 싸게 사들여 최종액이 되레 커질 수 있어
+  // 단조성이 깨진다 → 이분 탐색은 도달 가능한 늦은 시작을 놓칠 수 있다(false negative).
+  // 이 경우 후보 시작월(보통 수백 개, sim은 저렴)을 늦은 쪽부터 전수 스캔해 정확히 고른다.
+  let ans = -1;
+  if (input.initialKRW && input.initialKRW > 0) {
+    for (let i = starts.length - 1; i >= 0; i--) {
+      if (sim(starts[i]).valueKRW >= target) { ans = i; break; }
+    }
+  } else {
+    let lo = 0, hi = starts.length - 1;
+    while (lo <= hi) {
+      const mid = (lo + hi) >> 1;
+      if (sim(starts[mid]).valueKRW >= target) { ans = mid; lo = mid + 1; }
+      else hi = mid - 1;
+    }
   }
 
   const chosen = ans >= 0 ? starts[ans] : starts[0];
