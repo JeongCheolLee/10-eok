@@ -62,6 +62,27 @@ describe("runBacktest — 비거래일 매수일 롤", () => {
   });
 });
 
+describe("runBacktest — 말일 매수 (buyDay 29+)", () => {
+  // price=1, fx=1000 고정. 각 달 '말일'(그 달 마지막 거래일)에 매수해야 함.
+  // 1월 말일=01-31, 2월 말일=02-27(29 이전 마지막 거래일), 3월 말일=03-30.
+  const rows = [
+    row("2020-01-15", 1, 1000),
+    row("2020-01-31", 1, 1000),
+    row("2020-02-14", 1, 1000),
+    row("2020-02-27", 1, 1000),
+    row("2020-03-02", 1, 1000),
+    row("2020-03-30", 1, 1000),
+  ];
+  const res = runBacktest(rows, { monthlyKRW: 1_000_000, buyDay: 31, targetKRW: 1_000_000_000 });
+
+  it("각 달 마지막 거래일에 매수 (2월은 03-02로 넘기지 않고 02-27)", () => {
+    // 첫 매수 = 1월 말일. 값 점프(=매수) 시점이 01-31, 02-27, 03-30 이어야 함.
+    expect(res.series.map((s) => s.date)).toEqual(["2020-01-31", "2020-02-14", "2020-02-27", "2020-03-02", "2020-03-30"]);
+    expect(res.series.map((s) => Math.round(s.valueKRW))).toEqual([1_000_000, 1_000_000, 2_000_000, 2_000_000, 3_000_000]);
+    expect(res.principalKRW).toBe(3_000_000);
+  });
+});
+
 describe("runToToday — 오늘 기준 역산", () => {
   // price=1, fx=1000 고정, 매달 100만원 → 매수마다 shares+=1000, 마지막날 평가액 = (#매수) × 100만.
   // 12개월 데이터, target=500만 → #매수>=5 필요. 끝(12월)에서 역산하면 8월 시작(매수 5회)이 경계.
@@ -234,9 +255,10 @@ describe("helpers", () => {
     expect(lowerBound(rows, "2020-01-01")).toBe(0);
     expect(lowerBound(rows, "2020-02-01")).toBe(-1);
   });
-  it("clampBuyDay 1~28", () => {
+  it("clampBuyDay 1~31 (29+는 말일 모드로 해석)", () => {
     expect(clampBuyDay(0)).toBe(1);
-    expect(clampBuyDay(31)).toBe(28);
+    expect(clampBuyDay(31)).toBe(31);
+    expect(clampBuyDay(29)).toBe(29);
     expect(clampBuyDay(15)).toBe(15);
   });
 });

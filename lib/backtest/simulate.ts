@@ -7,6 +7,7 @@ export function runBacktest(rows: Row[], input: BacktestInput): BacktestResult {
   if (rows.length === 0) throw new Error("rows가 비어있음");
   const target = input.targetKRW ?? DEFAULT_TARGET;
   const buyDay = clampBuyDay(input.buyDay);
+  const monthEnd = buyDay >= 29; // 29일 이상 = 그 달 '말일'(마지막 거래일)에 매수
   const startDate = input.startDate ?? rows[0].date;
   const dataEnd = rows[rows.length - 1].date;
   const endDate = input.endDate && input.endDate < dataEnd ? input.endDate : dataEnd;
@@ -16,14 +17,14 @@ export function runBacktest(rows: Row[], input: BacktestInput): BacktestResult {
   let [y, m] = ymOf(maxDate(startDate, rows[0].date));
   const baseIdx = input.cpi ? cpiIndexAt(input.cpi, `${y}-${pad(m)}`) : 1; // 물가연동 base = 시작월
   while (true) {
-    const cal = calDate(y, m, buyDay);
-    if (cal > endDate) break;
-    if (cal >= startDate) {
-      const idx = lowerBound(rows, cal); // cal 이상인 첫 거래일 (다음 거래일 롤)
-      if (idx !== -1) {
-        const amt = input.cpi ? input.monthlyKRW * (cpiIndexAt(input.cpi, `${y}-${pad(m)}`) / baseIdx) : input.monthlyKRW;
-        buyKRWByIndex.set(idx, (buyKRWByIndex.get(idx) ?? 0) + amt);
-      }
+    if (calDate(y, m, 1) > endDate) break; // 이 달 시작이 이미 창(끝)을 벗어나면 종료
+    // 이 달의 매수 실행 거래일: 말일 모드=그 달 마지막 거래일, 아니면 지정일 이상의 첫 거래일(다음 거래일 롤)
+    const idx = monthEnd
+      ? lastIdxOnOrBefore(rows, calDate(y, m, daysInMonth(y, m)))
+      : lowerBound(rows, calDate(y, m, buyDay));
+    if (idx !== -1 && rows[idx].date >= startDate && rows[idx].date <= endDate) {
+      const amt = input.cpi ? input.monthlyKRW * (cpiIndexAt(input.cpi, `${y}-${pad(m)}`) / baseIdx) : input.monthlyKRW;
+      buyKRWByIndex.set(idx, (buyKRWByIndex.get(idx) ?? 0) + amt);
     }
     m++;
     if (m > 12) { m = 1; y++; }
@@ -230,7 +231,13 @@ export function cpiIndexAt(cpi: { ym: string; idx: number }[], ym: string): numb
 // ---- helpers ----
 export function clampBuyDay(d: number): number {
   if (!Number.isFinite(d)) return 1;
-  return Math.min(28, Math.max(1, Math.round(d)));
+  return Math.min(31, Math.max(1, Math.round(d))); // 29~31은 '말일' 모드로 해석 (runBacktest)
+}
+
+/** (y, m)월의 마지막 날짜 (윤년 반영). 2월=28/29. */
+function daysInMonth(y: number, m: number): number {
+  if (m === 2) return y % 4 === 0 && (y % 100 !== 0 || y % 400 === 0) ? 29 : 28;
+  return [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][m - 1];
 }
 
 function ymOf(iso: string): [number, number] {

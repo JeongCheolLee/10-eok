@@ -3,7 +3,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { bundleToRows, type Bundle, type Row } from "@/lib/backtest/types";
 import { runToToday, requiredMonthly, timingRange, monthsBetween } from "@/lib/backtest/simulate";
 import { useAnimatedNumber } from "@/lib/useAnimatedNumber";
-import { AppLogo } from "@/components/AppLogo";
 import { GrowthChart } from "@/components/GrowthChart";
 import { TickerLogo } from "@/components/TickerLogo";
 import { eok, eok1, pct, ym } from "@/lib/format";
@@ -14,13 +13,16 @@ type Screen = "intro" | "form" | "loading" | "result";
 type Mode = "time" | "amount"; // time=기간이 궁금(정방향), amount=금액이 궁금(역산)
 type Initial = { ticker: string; mode: Mode; amount: number; years: number; lump: number; buyDay: number; target: number; infl: boolean; reinvest: boolean; tax: boolean } | null;
 
+/** 매수일 표시: 29일 이상은 '말일'(그 달 마지막 거래일)로 계산·표시. */
+const dayLabel = (d: number) => (d >= 29 ? "말일" : `${d}일`);
+
 export function BacktestApp({ initial }: { initial: Initial }) {
   const [ticker, setTicker] = useState(initial?.ticker ?? DEFAULT_TICKER);
   const [mode, setMode] = useState<Mode>(initial?.mode ?? "time");
   const [amount, setAmount] = useState(initial?.amount ?? 100); // 만원
   const [years, setYears] = useState(initial?.years ?? 10); // 역산 모드: 목표 기간(년)
   const [lump, setLump] = useState(initial?.lump ?? 0); // 초기 투자금 (만원)
-  const [buyDay, setBuyDay] = useState(initial?.buyDay ?? 1);
+  const [buyDay, setBuyDay] = useState(Math.min(initial?.buyDay ?? 1, 29)); // 29 = 말일(29~31 통합)
   const [target, setTarget] = useState(initial?.target ?? 10); // 억
   const [infl, setInfl] = useState(initial?.infl ?? false);
   const [reinvest, setReinvest] = useState(initial?.reinvest ?? true);
@@ -151,8 +153,6 @@ export function BacktestApp({ initial }: { initial: Initial }) {
   return (
     <main className="app">
       <div className="top">
-        <AppLogo />
-        <div className="brand">10-eok</div>
         {screen === "result" && <div className="tag">탭하면 변경</div>}
       </div>
 
@@ -201,7 +201,7 @@ export function BacktestApp({ initial }: { initial: Initial }) {
                 <div className="k">초기금</div><div className="v">{lump > 0 ? `${lump}만원` : "없음"}</div>
               </button>
               <button className={"chip rv" + (editMode === "day" ? " open" : "")} style={{ ["--i" as string]: 0 }} onClick={() => setEditMode((m) => (m === "day" ? null : "day"))}>
-                <div className="k">매수일</div><div className="v">{buyDay}일</div>
+                <div className="k">매수일</div><div className="v">{dayLabel(buyDay)}</div>
               </button>
               <button className={"chip rv" + (editMode === "target" ? " open" : "")} style={{ ["--i" as string]: 0 }} onClick={() => setEditMode((m) => (m === "target" ? null : "target"))}>
                 <div className="k">목표</div><div className="v">{target}억</div>
@@ -232,8 +232,8 @@ export function BacktestApp({ initial }: { initial: Initial }) {
                 )}
                 {editMode === "day" && (
                   <div className="chip-dropdown-field">
-                    <div className="chip-dropdown-label">매수일 (매달 며칠)</div>
-                    <StepInput value={buyDay} onChange={setBuyDay} min={1} max={31} step={1} suffix="일" />
+                    <div className="chip-dropdown-label">매수일 (매달 며칠 · 29일은 말일)</div>
+                    <StepInput value={buyDay} onChange={setBuyDay} min={1} max={29} step={1} suffix="일" labelOverride={(v) => (v >= 29 ? "말일" : null)} />
                   </div>
                 )}
                 {editMode === "target" && (
@@ -374,8 +374,10 @@ function Confetti() {
   );
 }
 
-function StepInput({ value, onChange, min, max, step, suffix, bare }: {
+function StepInput({ value, onChange, min, max, step, suffix, bare, labelOverride }: {
   value: number; onChange: (v: number) => void; min: number; max: number; step: number; suffix: string; bare?: boolean;
+  /** 특정 값에서 숫자 입력 대신 정적 라벨을 보여줄 때 (예: 매수일 29 → '말일'). null이면 기본 숫자 입력. */
+  labelOverride?: (v: number) => string | null;
 }) {
   const [text, setText] = useState(String(value));
   useEffect(() => { setText(String(value)); }, [value]);
@@ -384,18 +386,25 @@ function StepInput({ value, onChange, min, max, step, suffix, bare }: {
     const n = parseInt(raw, 10);
     onChange(Number.isFinite(n) ? clamp(n) : value);
   };
+  const label = labelOverride ? labelOverride(value) : null;
   return (
     <div className={"stepper" + (bare ? " bare" : "")}>
       <button type="button" aria-label="줄이기" onClick={() => onChange(clamp(value - step))}>−</button>
       <div className="val">
-        <input
-          inputMode="numeric"
-          value={text}
-          onChange={(e) => setText(e.target.value.replace(/[^0-9]/g, ""))}
-          onBlur={(e) => commit(e.target.value)}
-          onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
-        />
-        <span className="suffix">{suffix}</span>
+        {label != null ? (
+          <span className="static">{label}</span>
+        ) : (
+          <>
+            <input
+              inputMode="numeric"
+              value={text}
+              onChange={(e) => setText(e.target.value.replace(/[^0-9]/g, ""))}
+              onBlur={(e) => commit(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+            />
+            <span className="suffix">{suffix}</span>
+          </>
+        )}
       </div>
       <button type="button" aria-label="늘리기" onClick={() => onChange(clamp(value + step))}>+</button>
     </div>
@@ -463,8 +472,8 @@ function Form({
           </div>
         )}
         <div className="field">
-          <div className="flabel">매달 며칠에 살까요?</div>
-          <StepInput value={buyDay} onChange={onDay} min={1} max={31} step={1} suffix="일" />
+          <div className="flabel">매달 며칠에 살까요? (29일은 말일)</div>
+          <StepInput value={buyDay} onChange={onDay} min={1} max={29} step={1} suffix="일" labelOverride={(v) => (v >= 29 ? "말일" : null)} />
         </div>
       </div>
       <div className="cta">
