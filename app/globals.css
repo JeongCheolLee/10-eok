@@ -84,6 +84,7 @@ button { font-family: inherit; cursor: pointer; }
 .stepper .val input { width: 3.2em; min-width: 0; max-width: 100%; background: transparent; border: 0; border-bottom: 2px solid transparent; color: var(--accent); font-size: 24px; font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; font-family: inherit; padding: 0; -moz-appearance: textfield; }
 .stepper .val input:focus { outline: 0; border-bottom-color: var(--accent); }
 .stepper .val .suffix { color: var(--muted); font-size: 17px; font-weight: 600; }
+.stepper .val .static { color: var(--accent); }
 .chips-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
 .pick { background: var(--surface-2); border: 1px solid var(--line); color: #fff; border-radius: 500px; padding: 10px 18px; font-size: 14px; font-weight: 700; }
 .pick.sel { background: var(--accent); color: #000; border-color: var(--accent); }
@@ -161,6 +162,9 @@ button { font-family: inherit; cursor: pointer; }
 .callout strong { display: inline-block; font-size: 18px; }
 .callout .sub { display: block; color: var(--muted); font-size: 13px; margin-top: 8px; line-height: 1.5; }
 .btn-inline { display: inline-block; background: var(--accent); color: #000; font-weight: 700; padding: 12px 20px; border-radius: 500px; text-decoration: none; }
+/* .prose a(초록 글자)보다 특이성을 높여야 초록 배경 위 검정 글자가 유지됨 */
+.prose a.btn-inline { color: #000; }
+.prose a.btn-inline:hover { text-decoration: none; }
 .btn-inline:active { transform: scale(0.99); }
 
 .site-footer { border-top: 1px solid var(--line); margin-top: auto; padding: 24px var(--gutter) 40px; }
