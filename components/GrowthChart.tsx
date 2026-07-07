@@ -1,7 +1,8 @@
 "use client";
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { won, ymd, growth } from "@/lib/format";
 
-type Pt = { date: string; valueKRW: number };
+type Pt = { date: string; valueKRW: number; principalKRW: number };
 
 /** 5천 포인트는 무거우니 표시용 다운샘플(균등 + 마지막 보존). */
 function downsample(pts: Pt[], max: number): Pt[] {
@@ -24,8 +25,11 @@ export function GrowthChart({
 }) {
   const W = 360, H = 128, pad = 8;
   const lineRef = useRef<SVGPathElement>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  // 스크럽 중인 표시용 인덱스. null = 손 뗌(최종 결과 표시).
+  const [scrubIdx, setScrubIdx] = useState<number | null>(null);
 
-  const pts = downsample(series, 140);
+  const pts = useMemo(() => downsample(series, 140), [series]);
   const maxV = Math.max(target, ...pts.map((p) => p.valueKRW)) * 1.06 || 1;
   const x = (i: number) => (pts.length <= 1 ? 0 : (i / (pts.length - 1)) * W);
   const y = (v: number) => H - (v / maxV) * (H - pad);
@@ -34,8 +38,14 @@ export function GrowthChart({
   const d = pts.map((p, i) => `${i === 0 ? "M" : "L"}${x(i).toFixed(1)},${y(p.valueKRW).toFixed(1)}`).join(" ");
   const area = pts.length ? `${d} L${W},${H} L0,${H} Z` : "";
   const lastI = pts.length - 1;
-  const dotX = x(lastI);
-  const dotY = y(pts[lastI]?.valueKRW ?? 0);
+  const endX = x(lastI);
+  const endY = y(pts[lastI]?.valueKRW ?? 0);
+
+  // 손을 뗀 기본 상태는 최종 지점, 스크럽 중이면 그 지점.
+  const view = scrubIdx != null ? pts[scrubIdx] : pts[lastI];
+  const live = scrubIdx != null;
+  const dotX = live ? x(scrubIdx) : endX;
+  const dotY = live ? y(pts[scrubIdx].valueKRW) : endY;
 
   // 마운트/데이터 변경 시 좌→우 그리기
   useEffect(() => {
@@ -58,19 +68,51 @@ export function GrowthChart({
     return () => cancelAnimationFrame(raf);
   }, [d]);
 
+  function moveTo(clientX: number) {
+    const el = wrapRef.current;
+    if (!el || pts.length <= 1) return;
+    const rect = el.getBoundingClientRect();
+    const frac = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
+    const idx = Math.round(frac * (pts.length - 1));
+    setScrubIdx((prev) => (prev === idx ? prev : idx));
+  }
+
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{ display: "block", width: "100%", height: 128, color: "var(--accent)" }}>
-      <line x1="0" y1={targetY} x2={W} y2={targetY} style={{ stroke: "var(--line-2)" }} strokeWidth="1" strokeDasharray="3 4" />
-      <defs>
-        <linearGradient id="gfill" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="currentColor" stopOpacity="0.38" />
-          <stop offset="1" stopColor="currentColor" stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      {area && <path d={area} fill="url(#gfill)" />}
-      <path ref={lineRef} d={d} fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-      {reached && <circle cx={dotX} cy={dotY} r="4" fill="#fff" stroke="currentColor" strokeWidth="2.5" className="pulse" />}
-      <circle cx={dotX} cy={dotY} r="4" fill="#fff" stroke="currentColor" strokeWidth="2.5" />
-    </svg>
+    <div className="growth">
+      <div className={"chart-readout" + (live ? " live" : "")} aria-live="off">
+        <span className="ro-date">{view ? ymd(view.date) : ""}</span>
+        <span className="ro-vals">
+          원금 <b>{won(view?.principalKRW ?? 0)}</b> → <b className="up">{won(view?.valueKRW ?? 0)}</b>
+          {view && view.principalKRW > 0 && <span className="ro-badge">{growth(view.principalKRW, view.valueKRW)}</span>}
+        </span>
+      </div>
+
+      <div
+        ref={wrapRef}
+        className={"chart-scrub" + (live ? " live" : "")}
+        onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); moveTo(e.clientX); }}
+        onPointerMove={(e) => { if (e.pointerType !== "touch" || e.buttons) moveTo(e.clientX); }}
+        onPointerUp={() => setScrubIdx(null)}
+        onPointerCancel={() => setScrubIdx(null)}
+        onPointerLeave={(e) => { if (e.pointerType !== "touch") setScrubIdx(null); }}
+      >
+        <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{ display: "block", width: "100%", height: 128, color: "var(--accent)" }} aria-hidden="true">
+          <line x1="0" y1={targetY} x2={W} y2={targetY} style={{ stroke: "var(--line-2)" }} strokeWidth="1" strokeDasharray="3 4" />
+          <defs>
+            <linearGradient id="gfill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stopColor="currentColor" stopOpacity="0.38" />
+              <stop offset="1" stopColor="currentColor" stopOpacity="0" />
+            </linearGradient>
+          </defs>
+          {area && <path d={area} fill="url(#gfill)" />}
+          <path ref={lineRef} d={d} fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+          {reached && !live && <circle cx={endX} cy={endY} r="4" fill="#fff" stroke="currentColor" strokeWidth="2.5" className="pulse" />}
+          <circle cx={dotX} cy={dotY} r="4" fill="#fff" stroke="currentColor" strokeWidth="2.5" />
+        </svg>
+        {live && <div className="chart-hairline" style={{ left: `${(dotX / W) * 100}%` }} />}
+      </div>
+
+      <div className={"chart-hint" + (live ? " off" : "")}>차트를 짚으면 그때의 결과가 보여요</div>
+    </div>
   );
 }

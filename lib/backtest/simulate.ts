@@ -30,7 +30,7 @@ export function runBacktest(rows: Row[], input: BacktestInput): BacktestResult {
     if (m > 12) { m = 1; y++; }
   }
 
-  const series: { date: string; valueKRW: number }[] = [];
+  const series: { date: string; valueKRW: number; principalKRW: number }[] = [];
   let shares = 0;
   let principal = 0;
   let reachedDate: string | null = null;
@@ -59,7 +59,7 @@ export function runBacktest(rows: Row[], input: BacktestInput): BacktestResult {
       principal += invest;
     }
     const valueKRW = shares * px(r) * r.fx;
-    series.push({ date: r.date, valueKRW });
+    series.push({ date: r.date, valueKRW, principalKRW: principal });
     if (reachedDate === null && valueKRW >= target) {
       reachedDate = r.date;
       reachIdx = i;

@@ -225,6 +225,54 @@ button { font-family: inherit; cursor: pointer; }
 .timing-lead { font-size: 12.5px; color: var(--muted); line-height: 1.5; margin: 2px 0 10px; }
 .timing-lead b { color: #e6e6e6; font-weight: 700; }
 
+/* 성장 차트 스크럽(짚어서 그 날 결과 보기) */
+.growth { margin-top: 2px; }
+.chart-readout { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; min-height: 20px; padding: 4px 0 10px; }
+.chart-readout .ro-date { color: var(--muted); font-size: 12px; font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.chart-readout.live .ro-date { color: var(--accent); }
+.ro-vals { font-size: 13px; color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
+.ro-vals b { color: var(--ink); font-weight: 700; }
+.ro-vals b.up { color: var(--accent); }
+.ro-badge { display: inline-block; margin-left: 6px; font-size: 11px; font-weight: 700; color: var(--accent); background: rgba(30, 215, 96, 0.14); border-radius: 500px; padding: 2px 8px; font-variant-numeric: tabular-nums; }
+.chart-scrub { position: relative; touch-action: pan-y; cursor: crosshair; }
+.chart-hairline { position: absolute; top: 0; bottom: 0; width: 1px; margin-left: -0.5px; background: rgba(255, 255, 255, 0.45); pointer-events: none; }
+.chart-hint { text-align: center; color: var(--muted); font-size: 11px; margin-top: 8px; transition: opacity 0.3s; }
+.chart-hint.off { opacity: 0; }
+
+/* 월별 기록 카드 */
+.loglead { font-size: 12.5px; color: var(--muted); line-height: 1.5; margin: 2px 0 10px; }
+.mlog { margin-top: 2px; }
+details.yr { border-top: 1px solid var(--line); }
+details.yr:last-of-type { border-bottom: 1px solid var(--line); }
+details.yr summary { list-style: none; display: flex; align-items: center; gap: 8px; padding: 12px 2px; cursor: pointer; user-select: none; }
+details.yr summary::-webkit-details-marker { display: none; }
+details.yr summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+.yname { font-size: 14px; font-weight: 700; }
+.ymile { font-size: 10.5px; font-weight: 700; color: var(--accent); background: rgba(30, 215, 96, 0.14); border-radius: 500px; padding: 2px 8px; }
+.ysum { margin-left: auto; font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.ysum b { color: var(--ink); font-weight: 700; }
+.ysum .pos { color: var(--accent); }
+.ysum .negv { color: var(--neg); }
+.caret { color: var(--muted); font-size: 10px; transition: transform 0.18s; }
+details.yr[open] .caret { transform: rotate(90deg); }
+.mrows { padding: 0 2px 10px; }
+.mhead, .mrow { display: grid; grid-template-columns: 44px 1fr 1fr 60px; gap: 8px; align-items: baseline; }
+.mhead { color: var(--muted); font-size: 10px; padding: 2px 0 7px; }
+.mhead :nth-child(n+2), .mrow :nth-child(n+2) { text-align: right; }
+.mrow { font-size: 13px; padding: 6.5px 0; font-variant-numeric: tabular-nums; }
+.mrow .mm { color: var(--muted); font-size: 12px; }
+.mrow .pr { color: var(--muted); }
+.mrow .va { font-weight: 600; }
+.mrow .rt { font-weight: 600; }
+.mrow .rt.pos { color: var(--accent); }
+.mrow .rt.negv { color: var(--neg); }
+.mrow.hit { background: rgba(30, 215, 96, 0.14); border-radius: 6px; margin: 0 -8px; padding-left: 8px; padding-right: 8px; }
+.mrow.hit .va { color: var(--accent); font-weight: 700; }
+.mile { display: flex; align-items: center; gap: 8px; color: var(--accent); font-size: 11px; font-weight: 700; padding: 7px 0 5px; }
+.mile::before, .mile::after { content: ""; flex: 1; height: 1px; background: rgba(30, 215, 96, 0.28); }
+
+@media (prefers-reduced-motion: reduce) { .caret, .chart-hint { transition: none; } }
+
 /* 모드 토글 (기간↔금액 역산) */
 .modetoggle { display: flex; gap: 4px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 500px; padding: 4px; }
 .modetoggle button { flex: 1; border: 0; background: transparent; color: var(--muted); font-weight: 700; font-size: 13px; padding: 9px 10px; border-radius: 500px; letter-spacing: -0.01em; white-space: nowrap; transition: background 0.15s, color 0.15s; }

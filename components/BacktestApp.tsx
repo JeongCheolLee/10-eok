@@ -4,6 +4,8 @@ import { bundleToRows, type Bundle, type Row } from "@/lib/backtest/types";
 import { runToToday, requiredMonthly, timingRange, monthsBetween } from "@/lib/backtest/simulate";
 import { useAnimatedNumber } from "@/lib/useAnimatedNumber";
 import { GrowthChart } from "@/components/GrowthChart";
+import { MonthlyLog } from "@/components/MonthlyLog";
+import { monthlySnapshots } from "@/lib/backtest/monthly";
 import { TickerLogo } from "@/components/TickerLogo";
 import { eok, eok1, pct, ym } from "@/lib/format";
 import { TICKERS, DEFAULT_TICKER, tickerName, tickerTitle, tickerSubtitle, tickerCurrency } from "@/lib/tickers";
@@ -88,6 +90,14 @@ export function BacktestApp({ initial }: { initial: Initial }) {
     if (dur < 12) return null; // 1년 미만은 표본/의미 부족
     return timingRange(rows, { monthlyKRW, initialKRW: lump * 10000, buyDay, cpi: infl && cpi ? cpi : undefined, reinvestDividends: reinvest, taxMode: tax && tickerCurrency(ticker) === "USD" }, dur);
   }, [rows, mode, amount, reqMonthly, result?.months, yearsUsed, lump, buyDay, infl, cpi, reinvest, tax, ticker]); // eslint-disable-line
+
+  // 차트/월별 표에 쓰는 시계열: 기간 모드에서 도달했으면 도달일까지 잘라 여정만 보여준다.
+  const chartSeries = useMemo(() => {
+    if (!result) return [];
+    return mode === "time" && result.reached ? sliceToReached(result.series, result.reachedDate!) : result.series;
+  }, [result, mode]);
+  // 월별 스냅샷 (각 달 마지막 거래일). 표시 구간과 동일한 series에서 파생.
+  const monthly = useMemo(() => monthlySnapshots(chartSeries), [chartSeries]);
 
   const query =
     `t=${ticker}` +
@@ -302,7 +312,7 @@ export function BacktestApp({ initial }: { initial: Initial }) {
           <div className="card rv" style={{ ["--i" as string]: 4 }}>
             <div className="clab"><span>자산 성장 (KRW)</span><span>목표 {target}억</span></div>
             <GrowthChart
-              series={mode === "time" && reached ? sliceToReached(result.series, result.reachedDate!) : result.series}
+              series={chartSeries}
               target={targetKRW} reached={mode === "amount" ? true : reached}
             />
             <div className="stats">
@@ -330,7 +340,15 @@ export function BacktestApp({ initial }: { initial: Initial }) {
             </div>
           )}
 
-          <div className="opts rv" style={{ ["--i" as string]: 6 }}>
+          {monthly.length > 0 && (
+            <div className="card rv" style={{ ["--i" as string]: 6 }}>
+              <div className="clab"><span>월별 기록</span><span>매수일 {dayLabel(buyDay)} · {mode === "amount" ? manwon(reqMonthly ?? 0) : `${amount}만원`}</span></div>
+              <p className="loglead">달마다 계좌가 얼마였는지 연도별로 접어뒀어요. 연도를 누르면 펼쳐져요.</p>
+              <MonthlyLog months={monthly} targetKRW={targetKRW} />
+            </div>
+          )}
+
+          <div className="opts rv" style={{ ["--i" as string]: 7 }}>
             <label className="opt">
               <span>물가만큼 매년 인상 <i>적립액을 물가지수만큼 올림</i></span>
               <input type="checkbox" checked={infl} onChange={(e) => setInfl(e.target.checked)} />
@@ -347,7 +365,7 @@ export function BacktestApp({ initial }: { initial: Initial }) {
             */}
           </div>
 
-          <div className="btnrow rv" style={{ ["--i" as string]: 7, marginBottom: 24 }}>
+          <div className="btnrow rv" style={{ ["--i" as string]: 8, marginBottom: 24 }}>
             <button className="btn share" onClick={share}>결과 공유하기</button>
           </div>
         </div>
@@ -358,7 +376,7 @@ export function BacktestApp({ initial }: { initial: Initial }) {
   );
 }
 
-function sliceToReached(series: { date: string; valueKRW: number }[], reachedDate: string) {
+function sliceToReached<T extends { date: string }>(series: T[], reachedDate: string): T[] {
   const i = series.findIndex((s) => s.date === reachedDate);
   return i >= 0 ? series.slice(0, i + 1) : series;
 }

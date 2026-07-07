@@ -50,8 +50,8 @@ export type BacktestResult = {
   months: number;
   years: number;
   monthsRem: number;
-  /** 일별 평가액 시계열 (KRW) */
-  series: { date: string; valueKRW: number }[];
+  /** 일별 시계열 (KRW). 각 날짜의 평가액과 그날까지 누적 납입원금. */
+  series: { date: string; valueKRW: number; principalKRW: number }[];
   /** 누적 납입원금 (KRW) */
   principalKRW: number;
   /** 도달일(미달 시 마지막일) 평가액 (KRW) */
