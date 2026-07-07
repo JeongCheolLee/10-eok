@@ -53,9 +53,9 @@ export default async function RootLayout({
         )}
       </head>
       <body>
-        <SiteHeader />
+        <SiteHeader locale={lang} />
         {children}
-        <SiteFooter />
+        <SiteFooter locale={lang} />
       </body>
     </html>
   );
