@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
-import { bundleToRows, type Bundle } from "@/lib/backtest/types";
+import { composeRows, type PxBundle, type FxBundle } from "@/lib/backtest/compose";
 import { runToToday, requiredMonthly, monthsBetween } from "@/lib/backtest/simulate";
-import { tickerInfo, tickerName, TICKERS } from "@/lib/tickers";
+import { tickerInfo, tickerName, tickerCurrency, TICKERS } from "@/lib/tickers";
 import { eok } from "@/lib/format";
 
 export const runtime = "nodejs";
@@ -46,8 +46,13 @@ export async function GET(req: Request) {
 
   if (valid) {
     try {
-      const b: Bundle = await fetch(`${origin}/data/${t.toLowerCase()}.json`).then((r) => r.json());
-      const rows = bundleToRows(b);
+      const [px, fxB] = await Promise.all([
+        fetch(`${origin}/data/px/${t.toLowerCase()}.json`).then((r) => r.json() as Promise<PxBundle>),
+        tickerCurrency(t) === "KRW"
+          ? Promise.resolve(null)
+          : fetch(`${origin}/data/fx/krw.json`).then((r) => r.json() as Promise<FxBundle>),
+      ]);
+      const rows = composeRows(px, fxB);
       const lumpLabel = lump > 0 ? ` · 초기 ${lump}만원` : "";
       if (mode === "amount") {
         const maxYears = Math.max(1, Math.floor(monthsBetween(rows[0].date, rows[rows.length - 1].date) / 12));

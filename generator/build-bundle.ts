@@ -6,6 +6,7 @@ import { writeFileSync, mkdirSync, existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { alignSeries, type PricePoint, type FxPoint } from "../lib/backtest/align";
 import type { Bundle } from "../lib/backtest/types";
+import type { PxBundle, FxBundle } from "../lib/backtest/compose";
 import { TICKERS, tickerCurrency } from "../lib/tickers";
 
 // TICKER env 지정 시 그 종목만, 없으면 레지스트리 전체.
@@ -15,6 +16,8 @@ const UA = "Mozilla/5.0 (compatible; 10-eok-bot/0.1)";
 // 데이터 무결성 가드 임계값. 잘린/부분 응답(HTTP 200이지만 몇 달치만 온 경우)이
 // alignSeries 검증(길이>0·단조·양수)만 통과해 정상 번들을 덮어쓰는 것을 막는다.
 const MIN_PRICE_ROWS = 200; // 종목당 최소 거래일 수 (약 10개월 미만이면 이상)
+// fx 파일 시작 하한: 최초 상장 종목(SPY 1993)보다 충분히 이전이면 forward-fill에 지장 없음.
+const FX_FILE_START = "1990-01-01";
 const MIN_CPI_ROWS = 100; // CPI 최소 개월 수
 const MIN_FX_ROWS = 1000; // DEXKOUS 일별은 수천 개 — 그 미만이면 잘린 응답
 const FX_STALE_DAYS = 14; // 환율 마지막일이 가격 최신일보다 이만큼 뒤처지면 이상(잘림/중단)
@@ -122,10 +125,16 @@ async function main() {
 
   const dir = join(process.cwd(), "public", "data");
   mkdirSync(dir, { recursive: true });
+  mkdirSync(join(dir, "px"), { recursive: true });
+  mkdirSync(join(dir, "fx"), { recursive: true });
+  mkdirSync(join(dir, "cpi"), { recursive: true });
 
   // 모든 종목을 먼저 만들고 가드까지 통과시킨 뒤에만 디스크에 쓴다.
   // (중간에 한 종목이라도 실패하면 어떤 파일도 안 써 부분 갱신을 원천 차단)
   const pending: { file: string; bundle: Bundle }[] = [];
+  // 신규 분리 포맷: px(원통화 가격)는 종목별, fx는 통화별 1파일 — 프론트가 compose.ts로 합성.
+  // 레거시 {ticker}.json은 전환기 동안 병행 생성(외부 참조 대비), 이후 제거 예정.
+  const pendingPx: { file: string; px: PxBundle }[] = [];
   for (const ticker of symbols) {
     const prices = await fetchPrices(ticker);
     // 한국 종목은 원화 자산 → 환율=1 (1900년 더미 1점을 forward-fill). 미국은 실제 환율.
@@ -143,6 +152,17 @@ async function main() {
     const file = join(dir, `${ticker.toLowerCase()}.json`);
     guardBundle(file, bundle); // 잘린/부분 응답이 정상 번들을 덮어쓰지 못하게 (이상 시 throw)
     pending.push({ file, bundle });
+    // px는 정렬된 가격만 담는다(합성 시 다시 align하므로 결과는 레거시와 동일).
+    pendingPx.push({
+      file: join(dir, "px", `${ticker.toLowerCase()}.json`),
+      px: {
+        ticker,
+        currency: tickerCurrency(ticker),
+        start: rows[0].date,
+        generatedAt: bundle.generatedAt,
+        rows: rows.map((r) => [r.date, r.price, r.raw ?? r.price] as [string, number, number]),
+      },
+    });
     console.log(`  ${ticker}: ${rows.length}행, ${bundle.start} ~ ${rows[rows.length - 1].date} (가드 통과)`);
   }
 
@@ -165,11 +185,22 @@ async function main() {
   const cpi = await fetchCpiKr();
   if (cpi.length < MIN_CPI_ROWS) throw new Error(`cpi-kr: ${cpi.length}개월 < 최소 ${MIN_CPI_ROWS}개월 — 잘린 응답 의심`);
 
-  // 여기까지 오면 모두 정상 → 일괄 쓰기
+  // 여기까지 오면 모두 정상 → 일괄 쓰기 (레거시 + 분리 포맷 동시)
   for (const { file, bundle } of pending) writeFileSync(file, JSON.stringify(bundle));
-  writeFileSync(join(dir, "cpi-kr.json"), JSON.stringify({ base: cpi[0]?.ym, series: cpi.map((c) => [c.ym, c.idx]) }));
+  for (const { file, px } of pendingPx) writeFileSync(file, JSON.stringify(px));
+  const fxBundle: FxBundle = {
+    pair: "USDKRW",
+    source: "DEXKOUS",
+    generatedAt: new Date().toISOString(),
+    rows: fx.filter((p) => p.date >= FX_FILE_START).map((p) => [p.date, p.rate] as [string, number]),
+  };
+  writeFileSync(join(dir, "fx", "krw.json"), JSON.stringify(fxBundle));
+  const cpiJson = JSON.stringify({ base: cpi[0]?.ym, series: cpi.map((c) => [c.ym, c.idx]) });
+  writeFileSync(join(dir, "cpi-kr.json"), cpiJson);
+  writeFileSync(join(dir, "cpi", "kr.json"), cpiJson);
+  console.log(`  fx/krw: ${fxBundle.rows.length}행 (${FX_FILE_START}~)`);
   console.log(`  cpi-kr: ${cpi.length}개월, ${cpi[0]?.ym} ~ ${cpi[cpi.length - 1]?.ym}`);
-  console.log(`[build-bundle] 완료: ${pending.length}개 종목 + cpi 기록`);
+  console.log(`[build-bundle] 완료: ${pending.length}개 종목(레거시+px) + fx + cpi 기록`);
 }
 
 main().catch((e) => {

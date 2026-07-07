@@ -1,7 +1,8 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { TICKERS, tickerName, tickerCurrency } from "@/lib/tickers";
-import { bundleToRows, type Bundle, type BacktestResult } from "@/lib/backtest/types";
+import type { BacktestResult } from "@/lib/backtest/types";
+import { composeRows, type PxBundle, type FxBundle } from "@/lib/backtest/compose";
 import { runToToday } from "@/lib/backtest/simulate";
 
 // 홈 본문과 /compare 페이지가 공유하는 종목별 백테스트 계산 (서버 전용).
@@ -21,11 +22,13 @@ export type TickerResult = {
 export async function computeTickerResults(): Promise<{ rows: TickerResult[]; dataEnd: string | null }> {
   const out: TickerResult[] = [];
   let dataEnd: string | null = null;
+  const dataDir = path.join(process.cwd(), "public", "data");
+  // 환율은 통화별 1파일 — 루프 밖에서 1회 로드
+  const fx = JSON.parse(await fs.readFile(path.join(dataDir, "fx", "krw.json"), "utf8")) as FxBundle;
   for (const t of TICKERS) {
     try {
-      const file = path.join(process.cwd(), "public", "data", `${t.symbol.toLowerCase()}.json`);
-      const b = JSON.parse(await fs.readFile(file, "utf8")) as Bundle;
-      const r = runToToday(bundleToRows(b), {
+      const px = JSON.parse(await fs.readFile(path.join(dataDir, "px", `${t.symbol.toLowerCase()}.json`), "utf8")) as PxBundle;
+      const r = runToToday(composeRows(px, tickerCurrency(t.symbol) === "KRW" ? null : fx), {
         monthlyKRW: COMPARE_MONTHLY * 10000,
         buyDay: COMPARE_BUY_DAY,
         targetKRW: COMPARE_TARGET_EOK * 100_000_000,

@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { bundleToRows, type Bundle, type Row } from "@/lib/backtest/types";
+import type { Row } from "@/lib/backtest/types";
+import { composeRows, type PxBundle, type FxBundle } from "@/lib/backtest/compose";
 import { runToToday, requiredMonthly, timingRange, monthsBetween } from "@/lib/backtest/simulate";
 import { useAnimatedNumber } from "@/lib/useAnimatedNumber";
 import { GrowthChart } from "@/components/GrowthChart";
@@ -40,17 +41,26 @@ export function BacktestApp({ initial }: { initial: Initial }) {
   const [rows, setRows] = useState<Row[] | null>(initial ? null : null);
   const [loadErr, setLoadErr] = useState(false);
   const cacheRef = useRef<Record<string, Row[]>>({});
+  // 환율은 통화별 1파일 — 종목이 바뀌어도 재사용하도록 프라미스를 캐시.
+  const fxRef = useRef<Promise<FxBundle> | null>(null);
 
-  // 선택 종목 번들 로드 (캐시)
+  // 선택 종목 로드: px(가격) + fx(환율) 분리 파일을 받아 합성 (캐시)
   useEffect(() => {
     let cancel = false;
     const cached = cacheRef.current[ticker];
     if (cached) { setRows(cached); return; }
     setRows(null);
-    fetch(`/data/${ticker.toLowerCase()}.json`)
-      .then((r) => { if (!r.ok) throw new Error("bundle"); return r.json(); })
-      .then((b: Bundle) => { if (cancel) return; const rw = bundleToRows(b); cacheRef.current[ticker] = rw; setRows(rw); })
-      .catch(() => { if (!cancel) setLoadErr(true); });
+    const fetchJson = (path: string) =>
+      fetch(path).then((r) => { if (!r.ok) throw new Error(path); return r.json(); });
+    const pxP: Promise<PxBundle> = fetchJson(`/data/px/${ticker.toLowerCase()}.json`);
+    // 원화 종목은 환율 불필요(자산 통화 = 타깃 통화). 미국 종목은 USD/KRW 1회 로드 후 재사용.
+    const fxP: Promise<FxBundle | null> =
+      tickerCurrency(ticker) === "KRW"
+        ? Promise.resolve(null)
+        : (fxRef.current ??= fetchJson(`/data/fx/krw.json`));
+    Promise.all([pxP, fxP])
+      .then(([px, fx]) => { if (cancel) return; const rw = composeRows(px, fx); cacheRef.current[ticker] = rw; setRows(rw); })
+      .catch(() => { if (!cancel) { fxRef.current = null; setLoadErr(true); } });
     return () => { cancel = true; };
   }, [ticker]);
 
