@@ -123,7 +123,8 @@ export function BacktestApp({ initial }: { initial: Initial }) {
 
   // 공유용 URL 동기화: 입력값이 바뀔 때마다 주소창을 최신으로 (결과 변화 여부와 무관)
   useEffect(() => {
-    if (screen === "result") window.history.replaceState(null, "", `/?${query}`);
+    // 경로는 현재 로케일 경로 유지(/, /en 등) — "/" 하드코딩 시 영어 화면에서 주소가 한국어 루트로 바뀐다
+    if (screen === "result") window.history.replaceState(null, "", `${location.pathname}?${query}`);
   }, [screen, query]);
 
   useEffect(() => {

@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
-import "./globals.css";
+import { notFound } from "next/navigation";
+import "../globals.css";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SITE_URL } from "@/lib/site";
+import { LOCALES, isLocale } from "@/lib/i18n/locales";
 
 const ADSENSE_CLIENT = "ca-pub-4501300749862789";
 
@@ -25,9 +27,22 @@ export const metadata: Metadata = {
   other: { "google-adsense-account": ADSENSE_CLIENT },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export function generateStaticParams() {
+  return LOCALES.map((lang) => ({ lang }));
+}
+
+export default async function RootLayout({
+  children,
+  params,
+}: {
+  children: React.ReactNode;
+  params: Promise<{ lang: string }>;
+}) {
+  const { lang } = await params;
+  // middleware가 허용 로케일만 통과시키지만, 직접 렌더 경로 대비 이중 방어
+  if (!isLocale(lang)) notFound();
   return (
-    <html lang="ko">
+    <html lang={lang}>
       <head>
         {process.env.NODE_ENV === "production" && (
           <script
