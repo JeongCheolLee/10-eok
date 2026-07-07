@@ -236,7 +236,9 @@ button { font-family: inherit; cursor: pointer; }
 .ro-badge { display: inline-block; margin-left: 6px; font-size: 11px; font-weight: 700; color: var(--accent); background: rgba(30, 215, 96, 0.14); border-radius: 500px; padding: 2px 8px; font-variant-numeric: tabular-nums; }
 .chart-scrub { position: relative; touch-action: pan-y; cursor: crosshair; }
 .chart-hairline { position: absolute; top: 0; bottom: 0; width: 1px; margin-left: -0.5px; background: rgba(255, 255, 255, 0.45); pointer-events: none; }
-.chart-hint { text-align: center; color: var(--muted); font-size: 11px; margin-top: 8px; transition: opacity 0.3s; }
+.chart-xaxis { position: relative; height: 13px; margin-top: 6px; }
+.chart-xaxis span { position: absolute; top: 0; font-size: 10px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; line-height: 1; }
+.chart-hint { text-align: center; color: var(--muted); font-size: 11px; margin-top: 6px; transition: opacity 0.3s; }
 .chart-hint.off { opacity: 0; }
 
 /* 월별 기록 카드 */

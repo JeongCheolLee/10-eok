@@ -30,6 +30,49 @@ export function GrowthChart({
   const [scrubIdx, setScrubIdx] = useState<number | null>(null);
 
   const pts = useMemo(() => downsample(series, 140), [series]);
+
+  // x축 시간 눈금(적응형): 항상 실제 시간 위치(frac)에 배치, 라벨 4~6개 유지.
+  //  · 30개월 이상 → 연도 눈금(step=ceil(년수/5), 끝해 포함)
+  //  · 30개월 미만 → 월 눈금({1,2,3,6,12} 중 라벨 5개 이하 되는 최소 간격, 같은 해 반복 시 "N월")
+  const xTicks = useMemo(() => {
+    const out: { label: string; frac: number; anchor: string }[] = [];
+    if (pts.length < 2) return out;
+    const first = pts[0].date, last = pts[pts.length - 1].date;
+    const fy = Number(first.slice(0, 4)), fm = Number(first.slice(5, 7));
+    const ly = Number(last.slice(0, 4)), lm = Number(last.slice(5, 7));
+    const totalMonths = (ly - fy) * 12 + (lm - fm);
+    const anchorOf = (fr: number) => (fr <= 0.02 ? "0" : fr >= 0.98 ? "-100%" : "-50%");
+    // key(YYYY 또는 YYYY-MM) 이상 첫 포인트의 위치 비율
+    const fracAt = (key: string, len: number) => {
+      let idx = pts.findIndex((p) => p.date.slice(0, len) >= key);
+      if (idx < 0) idx = pts.length - 1;
+      return idx / (pts.length - 1);
+    };
+    if (totalMonths >= 30) {
+      const step = Math.max(1, Math.ceil((ly - fy) / 5));
+      const years: number[] = [];
+      for (let y = fy; y <= ly; y += step) years.push(y);
+      if (years[years.length - 1] !== ly) {
+        if (ly - years[years.length - 1] <= 1) years[years.length - 1] = ly;
+        else years.push(ly);
+      }
+      for (const yr of years) {
+        const frac = fracAt(String(yr), 4);
+        out.push({ label: String(yr), frac, anchor: anchorOf(frac) });
+      }
+    } else {
+      let ms = 12;
+      for (const s of [1, 2, 3, 6, 12]) { ms = s; if (totalMonths / s <= 5) break; }
+      let y = fy, m = fm, prevY: number | null = null;
+      while (y < ly || (y === ly && m <= lm)) {
+        const frac = fracAt(`${y}-${String(m).padStart(2, "0")}`, 7);
+        out.push({ label: prevY === y ? `${m}월` : `${y}.${m}`, frac, anchor: anchorOf(frac) });
+        prevY = y; m += ms; while (m > 12) { m -= 12; y++; }
+      }
+    }
+    return out;
+  }, [pts]);
+
   const maxV = Math.max(target, ...pts.map((p) => p.valueKRW)) * 1.06 || 1;
   const x = (i: number) => (pts.length <= 1 ? 0 : (i / (pts.length - 1)) * W);
   const y = (v: number) => H - (v / maxV) * (H - pad);
@@ -111,6 +154,14 @@ export function GrowthChart({
         </svg>
         {live && <div className="chart-hairline" style={{ left: `${(dotX / W) * 100}%` }} />}
       </div>
+
+      {xTicks.length > 0 && (
+        <div className="chart-xaxis" aria-hidden="true">
+          {xTicks.map((t, i) => (
+            <span key={i} style={{ left: `${t.frac * 100}%`, transform: `translateX(${t.anchor})` }}>{t.label}</span>
+          ))}
+        </div>
+      )}
 
       <div className={"chart-hint" + (live ? " off" : "")}>차트를 짚으면 그때의 결과가 보여요</div>
     </div>
