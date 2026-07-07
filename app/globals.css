@@ -227,7 +227,7 @@ button { font-family: inherit; cursor: pointer; }
 
 /* 성장 차트 스크럽(짚어서 그 날 결과 보기) */
 .growth { margin-top: 2px; }
-.chart-readout { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; min-height: 20px; padding: 4px 0 10px; }
+.chart-readout { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; min-height: 48px; padding: 4px 0 10px; }
 .chart-readout .ro-date { color: var(--muted); font-size: 12px; font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .chart-readout.live .ro-date { color: var(--accent); }
 .ro-vals { font-size: 13px; color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
