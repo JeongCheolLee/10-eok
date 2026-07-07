@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { monthlySnapshots, milestoneMonths } from "./monthly";
 
-const S = (date: string, valueKRW: number, principalKRW: number) => ({ date, valueKRW, principalKRW });
+const S = (date: string, value: number, principal: number) => ({ date, value, principal });
 
 describe("monthlySnapshots", () => {
   it("각 달의 마지막 거래일을 스냅샷으로 뽑는다", () => {
@@ -14,8 +14,8 @@ describe("monthlySnapshots", () => {
     const snaps = monthlySnapshots(series);
     expect(snaps.map((s) => s.ym)).toEqual(["2020-01", "2020-02"]);
     expect(snaps.map((s) => s.date)).toEqual(["2020-01-31", "2020-02-27"]);
-    expect(snaps.map((s) => s.valueKRW)).toEqual([120, 150]);
-    expect(snaps.map((s) => s.principalKRW)).toEqual([100, 200]);
+    expect(snaps.map((s) => s.value)).toEqual([120, 150]);
+    expect(snaps.map((s) => s.principal)).toEqual([100, 200]);
   });
 
   it("빈 series는 빈 배열", () => {
@@ -25,7 +25,7 @@ describe("monthlySnapshots", () => {
   it("한 달에 하루만 있어도 그 하루가 스냅샷", () => {
     const snaps = monthlySnapshots([S("2021-05-14", 500, 300)]);
     expect(snaps).toHaveLength(1);
-    expect(snaps[0]).toMatchObject({ ym: "2021-05", date: "2021-05-14", valueKRW: 500, principalKRW: 300 });
+    expect(snaps[0]).toMatchObject({ ym: "2021-05", date: "2021-05-14", value: 500, principal: 300 });
   });
 });
 
@@ -52,8 +52,8 @@ describe("milestoneMonths", () => {
 
   it("한 달에 여러 이정표를 동시에 넘으면 최고액만 남긴다", () => {
     const jump = [
-      { date: "2020-01-31", valueKRW: 10_000_000, principalKRW: 10_000_000 },
-      { date: "2020-02-28", valueKRW: 600_000_000, principalKRW: 20_000_000 }, // 1억·5억 동시 돌파
+      { date: "2020-01-31", value: 10_000_000, principal: 10_000_000 },
+      { date: "2020-02-28", value: 600_000_000, principal: 20_000_000 }, // 1억·5억 동시 돌파
     ].map((m) => ({ ...m, ym: m.date.slice(0, 7) }));
     const map = milestoneMonths(jump, [1e8, 5e8]);
     expect(map.get("2020-02")).toBe(5e8);

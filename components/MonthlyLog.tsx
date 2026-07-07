@@ -8,11 +8,11 @@ import { won, growth } from "@/lib/format";
 const NICE_EOK = [1, 5, 10, 50, 100, 500];
 const milLabel = (krw: number) => `${krw / 1e8}억`;
 
-export function MonthlyLog({ months, targetKRW }: { months: MonthPoint[]; targetKRW: number }) {
+export function MonthlyLog({ months, target }: { months: MonthPoint[]; target: number }) {
   const model = useMemo(() => {
-    const thresholds = NICE_EOK.map((n) => n * 1e8).filter((t) => t < targetKRW);
+    const thresholds = NICE_EOK.map((n) => n * 1e8).filter((t) => t < target);
     const mileMap = milestoneMonths(months, thresholds); // ym → 그 달 최고 돌파액
-    const targetHit = months.find((m) => m.valueKRW >= targetKRW);
+    const targetHit = months.find((m) => m.value >= target);
     const targetYm = targetHit?.ym ?? null;
 
     const years: string[] = [];
@@ -25,7 +25,7 @@ export function MonthlyLog({ months, targetKRW }: { months: MonthPoint[]; target
     // 연도별 배지: 그 해에 목표 달성 or 이정표 돌파가 있으면 최고 금액 라벨.
     const yearBadge = new Map<string, string>();
     for (const y of years) {
-      if (targetYm && targetYm.slice(0, 4) === y) yearBadge.set(y, `${targetKRW / 1e8}억 달성`);
+      if (targetYm && targetYm.slice(0, 4) === y) yearBadge.set(y, `${target / 1e8}억 달성`);
       else {
         let best = 0;
         for (const [ym, amt] of mileMap) if (ym.slice(0, 4) === y) best = Math.max(best, amt);
@@ -33,7 +33,7 @@ export function MonthlyLog({ months, targetKRW }: { months: MonthPoint[]; target
       }
     }
     return { years, byYear, mileMap, yearBadge, targetYm };
-  }, [months, targetKRW]);
+  }, [months, target]);
 
   const { years, byYear, mileMap, yearBadge, targetYm } = model;
   const lastYear = years[years.length - 1];
@@ -49,7 +49,7 @@ export function MonthlyLog({ months, targetKRW }: { months: MonthPoint[]; target
               <span className="yname">{y}년</span>
               {yearBadge.has(y) && <span className="ymile">{yearBadge.get(y)}</span>}
               <span className="ysum">
-                <b>{won(last.valueKRW)}</b> · <span className={last.valueKRW >= last.principalKRW ? "pos" : "negv"}>{growth(last.principalKRW, last.valueKRW)}</span>
+                <b>{won(last.value)}</b> · <span className={last.value >= last.principal ? "pos" : "negv"}>{growth(last.principal, last.value)}</span>
               </span>
               <span className="caret" aria-hidden="true">▶</span>
             </summary>
@@ -58,18 +58,18 @@ export function MonthlyLog({ months, targetKRW }: { months: MonthPoint[]; target
               {rows.map((m) => {
                 const mm = Number(m.ym.slice(5));
                 const isTarget = m.ym === targetYm;
-                const mileAmt = isTarget ? targetKRW : mileMap.get(m.ym);
-                const up = m.valueKRW >= m.principalKRW;
+                const mileAmt = isTarget ? target : mileMap.get(m.ym);
+                const up = m.value >= m.principal;
                 return (
                   <div key={m.ym}>
                     {mileAmt != null && (
-                      <div className="mile">{isTarget ? `${targetKRW / 1e8}억 달성 — 목표 도달` : `${milLabel(mileAmt)} 돌파`}</div>
+                      <div className="mile">{isTarget ? `${target / 1e8}억 달성 — 목표 도달` : `${milLabel(mileAmt)} 돌파`}</div>
                     )}
                     <div className={"mrow" + (isTarget ? " hit" : "")}>
                       <span className="mm">{mm}월</span>
-                      <span className="pr">{won(m.principalKRW)}</span>
-                      <span className="va">{won(m.valueKRW)}</span>
-                      <span className={"rt " + (up ? "pos" : "negv")}>{growth(m.principalKRW, m.valueKRW)}</span>
+                      <span className="pr">{won(m.principal)}</span>
+                      <span className="va">{won(m.value)}</span>
+                      <span className={"rt " + (up ? "pos" : "negv")}>{growth(m.principal, m.value)}</span>
                     </div>
                   </div>
                 );

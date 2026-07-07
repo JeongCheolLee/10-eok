@@ -5,7 +5,7 @@ const DEFAULT_TARGET = 1_000_000_000; // 10억
 
 export function runBacktest(rows: Row[], input: BacktestInput): BacktestResult {
   if (rows.length === 0) throw new Error("rows가 비어있음");
-  const target = input.targetKRW ?? DEFAULT_TARGET;
+  const target = input.target ?? DEFAULT_TARGET;
   const buyDay = clampBuyDay(input.buyDay);
   const monthEnd = buyDay >= 29; // 29일 이상 = 그 달 '말일'(마지막 거래일)에 매수
   const startDate = input.startDate ?? rows[0].date;
@@ -23,14 +23,14 @@ export function runBacktest(rows: Row[], input: BacktestInput): BacktestResult {
       ? lastIdxOnOrBefore(rows, calDate(y, m, daysInMonth(y, m)))
       : lowerBound(rows, calDate(y, m, buyDay));
     if (idx !== -1 && rows[idx].date >= startDate && rows[idx].date <= endDate) {
-      const amt = input.cpi ? input.monthlyKRW * (cpiIndexAt(input.cpi, `${y}-${pad(m)}`) / baseIdx) : input.monthlyKRW;
+      const amt = input.cpi ? input.monthly * (cpiIndexAt(input.cpi, `${y}-${pad(m)}`) / baseIdx) : input.monthly;
       buyKRWByIndex.set(idx, (buyKRWByIndex.get(idx) ?? 0) + amt);
     }
     m++;
     if (m > 12) { m = 1; y++; }
   }
 
-  const series: { date: string; valueKRW: number; principalKRW: number }[] = [];
+  const series: { date: string; value: number; principal: number }[] = [];
   let shares = 0;
   let principal = 0;
   let reachedDate: string | null = null;
@@ -43,8 +43,8 @@ export function runBacktest(rows: Row[], input: BacktestInput): BacktestResult {
   const firstBuyIdx = Math.min(...buyKRWByIndex.keys());
 
   // 최초 납입금(목돈): 첫 매수일에 1회 합산 투입
-  if (input.initialKRW && input.initialKRW > 0) {
-    buyKRWByIndex.set(firstBuyIdx, (buyKRWByIndex.get(firstBuyIdx) ?? 0) + input.initialKRW);
+  if (input.initial && input.initial > 0) {
+    buyKRWByIndex.set(firstBuyIdx, (buyKRWByIndex.get(firstBuyIdx) ?? 0) + input.initial);
   }
 
   // 배당 재투자 OFF면 미수정 종가(가격수익)로 평가/매수
@@ -58,21 +58,21 @@ export function runBacktest(rows: Row[], input: BacktestInput): BacktestResult {
       shares += usd / px(r);
       principal += invest;
     }
-    const valueKRW = shares * px(r) * r.fx;
-    series.push({ date: r.date, valueKRW, principalKRW: principal });
-    if (reachedDate === null && valueKRW >= target) {
+    const value = shares * px(r) * r.fx;
+    series.push({ date: r.date, value, principal: principal });
+    if (reachedDate === null && value >= target) {
       reachedDate = r.date;
       reachIdx = i;
-      valueAtReach = valueKRW;
+      valueAtReach = value;
     }
   }
 
   const firstDate = rows[firstBuyIdx].date;
   const endIdx = reachIdx >= 0 ? reachIdx : endLimit;
   const months = monthsBetween(firstDate, rows[endIdx].date);
-  let valueKRW = reachedDate ? valueAtReach : series[series.length - 1].valueKRW;
+  let value = reachedDate ? valueAtReach : series[series.length - 1].value;
   // 양도세(해외주식 22%, 연 250만 공제 1회 단순화). taxMode일 때만, 통화 분기는 호출부에서.
-  if (input.taxMode) valueKRW -= 0.22 * Math.max(0, valueKRW - principal - 2_500_000);
+  if (input.taxMode) value -= 0.22 * Math.max(0, value - principal - 2_500_000);
 
   // 자산 연복리 수익률: 첫 매수일 ~ 도달(또는 마지막) 구간의 (price*fx) 성장률.
   const a0 = px(rows[firstBuyIdx]) * rows[firstBuyIdx].fx;
@@ -87,15 +87,15 @@ export function runBacktest(rows: Row[], input: BacktestInput): BacktestResult {
     years: Math.floor(months / 12),
     monthsRem: months % 12,
     series,
-    principalKRW: principal,
-    valueKRW,
+    principal: principal,
+    value,
     cagr,
   };
 
   function emptyResult(): BacktestResult {
     return {
       reached: false, reachedDate: null, months: 0, years: 0, monthsRem: 0,
-      series: [], principalKRW: 0, valueKRW: 0, cagr: 0,
+      series: [], principal: 0, value: 0, cagr: 0,
     };
   }
 }
@@ -107,7 +107,7 @@ export function runBacktest(rows: Row[], input: BacktestInput): BacktestResult {
  */
 export function runToToday(rows: Row[], input: BacktestInput): BacktestResult {
   if (rows.length === 0) throw new Error("rows가 비어있음");
-  const target = input.targetKRW ?? DEFAULT_TARGET;
+  const target = input.target ?? DEFAULT_TARGET;
   const buyDay = clampBuyDay(input.buyDay);
   const endDate = rows[rows.length - 1].date;
 
@@ -124,23 +124,23 @@ export function runToToday(rows: Row[], input: BacktestInput): BacktestResult {
   // 그 시작일로 끝까지 적립했을 때 마지막날 평가액 (시작이 늦을수록 단조 감소)
   // ...input 으로 cpi/reinvestDividends/taxMode 등 모든 옵션을 내부 시뮬에 전달
   const sim = (startDate: string) =>
-    runBacktest(rows, { ...input, buyDay, startDate, targetKRW: Number.MAX_SAFE_INTEGER });
+    runBacktest(rows, { ...input, buyDay, startDate, target: Number.MAX_SAFE_INTEGER });
 
   // target에 도달하는 "가장 늦은 시작"(=최단 기간)을 찾는다.
-  // 목돈(initialKRW)이 없으면 시작이 늦을수록 최종 평가액이 단조 감소하므로 이분 탐색으로 충분.
+  // 목돈(initial)이 없으면 시작이 늦을수록 최종 평가액이 단조 감소하므로 이분 탐색으로 충분.
   // 목돈이 있으면 폭락 바닥에 늦게 시작할수록 목돈이 싸게 사들여 최종액이 되레 커질 수 있어
   // 단조성이 깨진다 → 이분 탐색은 도달 가능한 늦은 시작을 놓칠 수 있다(false negative).
   // 이 경우 후보 시작월(보통 수백 개, sim은 저렴)을 늦은 쪽부터 전수 스캔해 정확히 고른다.
   let ans = -1;
-  if (input.initialKRW && input.initialKRW > 0) {
+  if (input.initial && input.initial > 0) {
     for (let i = starts.length - 1; i >= 0; i--) {
-      if (sim(starts[i]).valueKRW >= target) { ans = i; break; }
+      if (sim(starts[i]).value >= target) { ans = i; break; }
     }
   } else {
     let lo = 0, hi = starts.length - 1;
     while (lo <= hi) {
       const mid = (lo + hi) >> 1;
-      if (sim(starts[mid]).valueKRW >= target) { ans = mid; lo = mid + 1; }
+      if (sim(starts[mid]).value >= target) { ans = mid; lo = mid + 1; }
       else hi = mid - 1;
     }
   }
@@ -156,8 +156,8 @@ export function runToToday(rows: Row[], input: BacktestInput): BacktestResult {
     years: Math.floor(months / 12),
     monthsRem: months % 12,
     series: r.series,
-    principalKRW: r.principalKRW,
-    valueKRW: r.valueKRW,
+    principal: r.principal,
+    value: r.value,
     cagr: r.cagr,
   };
 }
@@ -166,23 +166,23 @@ export function runToToday(rows: Row[], input: BacktestInput): BacktestResult {
  * 역산: 고정 기간(startDate~마지막 거래일) 동안 target에 도달하려면 매달 얼마를 적립해야 하나.
  * 평가액 = 월적립액×A + 초기금×B (둘 다 path 상수)로 적립액·초기금에 선형이므로,
  * 단위 적립/단위 초기금 시뮬 2회로 정확히 푼다. (taxMode는 비선형이라 무시; 현재 기본 off)
- * 반환 monthlyKRW는 0 이상으로 클램프, result는 그 적립액으로 실제 시뮬한 결과(차트·원금용).
+ * 반환 monthly는 0 이상으로 클램프, result는 그 적립액으로 실제 시뮬한 결과(차트·원금용).
  */
-export function requiredMonthly(rows: Row[], input: BacktestInput): { monthlyKRW: number; result: BacktestResult } {
+export function requiredMonthly(rows: Row[], input: BacktestInput): { monthly: number; result: BacktestResult } {
   if (rows.length === 0) throw new Error("rows가 비어있음");
-  const target = input.targetKRW ?? DEFAULT_TARGET;
+  const target = input.target ?? DEFAULT_TARGET;
   const UNIT = 1_000_000; // 1원 단위는 부동소수 오차 → 100만원 단위로 풀고 나눔
-  const base = { ...input, targetKRW: Number.MAX_SAFE_INTEGER };
+  const base = { ...input, target: Number.MAX_SAFE_INTEGER };
 
   // 월 1원당 최종 평가액 (초기금 0)
-  const vPerMonthlyUnit = runBacktest(rows, { ...base, monthlyKRW: UNIT, initialKRW: 0 }).valueKRW / UNIT;
+  const vPerMonthlyUnit = runBacktest(rows, { ...base, monthly: UNIT, initial: 0 }).value / UNIT;
   // 실제 초기금이 만드는 최종 평가액
-  const vInitial = input.initialKRW ? runBacktest(rows, { ...base, monthlyKRW: 0 }).valueKRW : 0;
+  const vInitial = input.initial ? runBacktest(rows, { ...base, monthly: 0 }).value : 0;
 
-  let monthlyKRW = vPerMonthlyUnit > 0 ? (target - vInitial) / vPerMonthlyUnit : 0;
-  monthlyKRW = Math.max(0, monthlyKRW);
-  const result = runBacktest(rows, { ...input, monthlyKRW, targetKRW: target });
-  return { monthlyKRW, result };
+  let monthly = vPerMonthlyUnit > 0 ? (target - vInitial) / vPerMonthlyUnit : 0;
+  monthly = Math.max(0, monthly);
+  const result = runBacktest(rows, { ...input, monthly, target: target });
+  return { monthly, result };
 }
 
 /**
@@ -202,7 +202,7 @@ export function timingRange(
   for (let y = y0, m = m0; ; ) {
     const start = calDate(y, m, 1);
     if (addMonths(start, durationMonths) > dataEnd) break;
-    const v = runBacktest(rows, { ...input, startDate: start, endDate: addMonths(start, durationMonths), targetKRW: Number.MAX_SAFE_INTEGER }).valueKRW;
+    const v = runBacktest(rows, { ...input, startDate: start, endDate: addMonths(start, durationMonths), target: Number.MAX_SAFE_INTEGER }).value;
     vals.push({ start, v });
     m++;
     if (m > 12) { m = 1; y++; }

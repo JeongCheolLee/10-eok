@@ -16,12 +16,12 @@ describe("runBacktest — GOLDEN (환율 변동, 손계산 대조)", () => {
     row("2020-02-01", 1, 1250),
     row("2020-03-01", 1, 2000),
   ];
-  const res = runBacktest(rows, { monthlyKRW: 1_000_000, buyDay: 1, targetKRW: 1_000_000_000 });
+  const res = runBacktest(rows, { monthly: 1_000_000, buyDay: 1, target: 1_000_000_000 });
 
   it("이중 환율(KRW→USD→KRW) 경로가 정확하다", () => {
-    expect(res.principalKRW).toBe(3_000_000);
-    expect(res.valueKRW).toBeCloseTo(4_600_000, 6);
-    expect(res.series.map((s) => Math.round(s.valueKRW))).toEqual([1_000_000, 2_250_000, 4_600_000]);
+    expect(res.principal).toBe(3_000_000);
+    expect(res.value).toBeCloseTo(4_600_000, 6);
+    expect(res.series.map((s) => Math.round(s.value))).toEqual([1_000_000, 2_250_000, 4_600_000]);
   });
   it("목표 미달이면 reached=false", () => {
     expect(res.reached).toBe(false);
@@ -34,12 +34,12 @@ describe("runBacktest — 목표 도달 검출", () => {
   // 목표 1천만 → shares>=10000 → 10번째 매수에서 도달.
   const rows: Row[] = [];
   for (let m = 1; m <= 12; m++) rows.push(row(`2020-${String(m).padStart(2, "0")}-01`, 1, 1000));
-  const res = runBacktest(rows, { monthlyKRW: 1_000_000, buyDay: 1, targetKRW: 10_000_000 });
+  const res = runBacktest(rows, { monthly: 1_000_000, buyDay: 1, target: 10_000_000 });
 
   it("정확한 도달 거래일을 찾는다", () => {
     expect(res.reached).toBe(true);
     expect(res.reachedDate).toBe("2020-10-01");
-    expect(res.valueKRW).toBeCloseTo(10_000_000, 6);
+    expect(res.value).toBeCloseTo(10_000_000, 6);
   });
   it("경과 개월 = 9 (1월→10월)", () => {
     expect(res.months).toBe(9);
@@ -55,10 +55,10 @@ describe("runBacktest — 비거래일 매수일 롤", () => {
     row("2020-02-03", 1, 1000),
     row("2020-03-02", 1, 1000),
   ];
-  const res = runBacktest(rows, { monthlyKRW: 1_000_000, buyDay: 1, targetKRW: 1_000_000_000 });
+  const res = runBacktest(rows, { monthly: 1_000_000, buyDay: 1, target: 1_000_000_000 });
   it("매수가 다음 거래일로 굴러간다", () => {
     expect(res.series.map((s) => s.date)).toEqual(["2020-01-01", "2020-02-03", "2020-03-02"]);
-    expect(res.principalKRW).toBe(3_000_000);
+    expect(res.principal).toBe(3_000_000);
   });
 });
 
@@ -73,13 +73,13 @@ describe("runBacktest — 말일 매수 (buyDay 29+)", () => {
     row("2020-03-02", 1, 1000),
     row("2020-03-30", 1, 1000),
   ];
-  const res = runBacktest(rows, { monthlyKRW: 1_000_000, buyDay: 31, targetKRW: 1_000_000_000 });
+  const res = runBacktest(rows, { monthly: 1_000_000, buyDay: 31, target: 1_000_000_000 });
 
   it("각 달 마지막 거래일에 매수 (2월은 03-02로 넘기지 않고 02-27)", () => {
     // 첫 매수 = 1월 말일. 값 점프(=매수) 시점이 01-31, 02-27, 03-30 이어야 함.
     expect(res.series.map((s) => s.date)).toEqual(["2020-01-31", "2020-02-14", "2020-02-27", "2020-03-02", "2020-03-30"]);
-    expect(res.series.map((s) => Math.round(s.valueKRW))).toEqual([1_000_000, 1_000_000, 2_000_000, 2_000_000, 3_000_000]);
-    expect(res.principalKRW).toBe(3_000_000);
+    expect(res.series.map((s) => Math.round(s.value))).toEqual([1_000_000, 1_000_000, 2_000_000, 2_000_000, 3_000_000]);
+    expect(res.principal).toBe(3_000_000);
   });
 });
 
@@ -88,17 +88,17 @@ describe("runToToday — 오늘 기준 역산", () => {
   // 12개월 데이터, target=500만 → #매수>=5 필요. 끝(12월)에서 역산하면 8월 시작(매수 5회)이 경계.
   const rows: Row[] = [];
   for (let m = 1; m <= 12; m++) rows.push(row(`2020-${String(m).padStart(2, "0")}-01`, 1, 1000));
-  const res = runToToday(rows, { monthlyKRW: 1_000_000, buyDay: 1, targetKRW: 5_000_000 });
+  const res = runToToday(rows, { monthly: 1_000_000, buyDay: 1, target: 5_000_000 });
 
   it("가장 늦은 시작(최단 기간)을 찾는다", () => {
     expect(res.reached).toBe(true);
     expect(res.series[0].date).toBe("2020-08-01"); // 8월부터 = 매수 5회
-    expect(res.valueKRW).toBeCloseTo(5_000_000, 6);
+    expect(res.value).toBeCloseTo(5_000_000, 6);
     expect(res.months).toBe(4); // 8월→12월
   });
 
   it("전 구간 모아도 부족하면 미달", () => {
-    const r2 = runToToday(rows, { monthlyKRW: 1_000_000, buyDay: 1, targetKRW: 99_000_000 });
+    const r2 = runToToday(rows, { monthly: 1_000_000, buyDay: 1, target: 99_000_000 });
     expect(r2.reached).toBe(false);
     expect(r2.series[0].date).toBe("2020-01-01"); // 데이터 전 구간
   });
@@ -113,12 +113,12 @@ describe("물가연동 적립 (CPI)", () => {
   const cpi = [{ ym: "2020-01", idx: 100 }, { ym: "2020-07", idx: 200 }];
 
   it("적립액이 물가지수 비율로 인상된다", () => {
-    const res = runBacktest(rows, { monthlyKRW: 1_000_000, buyDay: 1, targetKRW: 9_999_999_999, cpi });
-    expect(res.principalKRW).toBeCloseTo(18_000_000, 4);
+    const res = runBacktest(rows, { monthly: 1_000_000, buyDay: 1, target: 9_999_999_999, cpi });
+    expect(res.principal).toBeCloseTo(18_000_000, 4);
   });
   it("cpi 없으면 정액(1200만)", () => {
-    const res = runBacktest(rows, { monthlyKRW: 1_000_000, buyDay: 1, targetKRW: 9_999_999_999 });
-    expect(res.principalKRW).toBe(12_000_000);
+    const res = runBacktest(rows, { monthly: 1_000_000, buyDay: 1, target: 9_999_999_999 });
+    expect(res.principal).toBe(12_000_000);
   });
   it("cpiIndexAt: 이하 최신값, 경계 처리", () => {
     expect(cpiIndexAt(cpi, "2020-03")).toBe(100);
@@ -134,34 +134,34 @@ describe("양도세 (taxMode)", () => {
   // gross = 2200 × 1 × 5000 = 1,100만. gain 800만. tax=22%×(800만−250만)=121만. 세후 979만.
   const rows = [row("2020-01-01", 1, 1000), row("2020-02-01", 1, 1000), row("2020-03-01", 1, 5000)];
   it("세후 = gross − 22%×(gain−250만)", () => {
-    const t = runBacktest(rows, { monthlyKRW: 1_000_000, buyDay: 1, targetKRW: 9_999_999_999, taxMode: true });
-    expect(t.valueKRW).toBeCloseTo(9_790_000, 2);
+    const t = runBacktest(rows, { monthly: 1_000_000, buyDay: 1, target: 9_999_999_999, taxMode: true });
+    expect(t.value).toBeCloseTo(9_790_000, 2);
   });
   it("taxMode 없으면 세전 1,100만", () => {
-    const g = runBacktest(rows, { monthlyKRW: 1_000_000, buyDay: 1, targetKRW: 9_999_999_999 });
-    expect(g.valueKRW).toBeCloseTo(11_000_000, 2);
+    const g = runBacktest(rows, { monthly: 1_000_000, buyDay: 1, target: 9_999_999_999 });
+    expect(g.value).toBeCloseTo(11_000_000, 2);
   });
 });
 
-describe("최초 납입금 (initialKRW)", () => {
+describe("최초 납입금 (initial)", () => {
   // price=1, fx=1000 고정. 목돈 500만 + 매달 100만, 3개월.
   // 첫달: 목돈 500만 + 적립 100만 = 600만 투입(shares 6000), 이후 매달 100만(+1000).
   // principal = 500만 + 3×100만 = 800만. 마지막 평가액 = 8000 shares × 1000 = 800만.
   const rows = [row("2020-01-01", 1, 1000), row("2020-02-01", 1, 1000), row("2020-03-01", 1, 1000)];
   it("목돈이 첫 매수일에 1회 합산 투입된다", () => {
-    const res = runBacktest(rows, { monthlyKRW: 1_000_000, initialKRW: 5_000_000, buyDay: 1, targetKRW: 9_999_999_999 });
-    expect(res.principalKRW).toBe(8_000_000);
-    expect(res.series.map((s) => Math.round(s.valueKRW))).toEqual([6_000_000, 7_000_000, 8_000_000]);
+    const res = runBacktest(rows, { monthly: 1_000_000, initial: 5_000_000, buyDay: 1, target: 9_999_999_999 });
+    expect(res.principal).toBe(8_000_000);
+    expect(res.series.map((s) => Math.round(s.value))).toEqual([6_000_000, 7_000_000, 8_000_000]);
   });
   it("목돈 0이면 적립만(300만)", () => {
-    const res = runBacktest(rows, { monthlyKRW: 1_000_000, initialKRW: 0, buyDay: 1, targetKRW: 9_999_999_999 });
-    expect(res.principalKRW).toBe(3_000_000);
+    const res = runBacktest(rows, { monthly: 1_000_000, initial: 0, buyDay: 1, target: 9_999_999_999 });
+    expect(res.principal).toBe(3_000_000);
   });
   it("runToToday도 목돈을 반영해 더 빨리 도달", () => {
     const rs: Row[] = [];
     for (let m = 1; m <= 12; m++) rs.push(row(`2020-${String(m).padStart(2, "0")}-01`, 1, 1000));
     // 목돈 없으면 8월 시작(매수 5회=500만). 목돈 200만이면 더 늦게 시작해도 도달.
-    const res = runToToday(rs, { monthlyKRW: 1_000_000, initialKRW: 2_000_000, buyDay: 1, targetKRW: 5_000_000 });
+    const res = runToToday(rs, { monthly: 1_000_000, initial: 2_000_000, buyDay: 1, target: 5_000_000 });
     expect(res.reached).toBe(true);
     expect(res.series[0].date > "2020-08-01").toBe(true);
   });
@@ -183,17 +183,17 @@ describe("runToToday — 목돈이 단조성을 깨는 경우 (선형 스캔 회
   ];
 
   it("이분 탐색이 놓치는 '가장 늦은 도달 시작'을 전수 스캔으로 찾아낸다", () => {
-    const res = runToToday(rows, { monthlyKRW: 1_000_000, initialKRW: 5_000_000, buyDay: 1, targetKRW: 40_000_000 });
+    const res = runToToday(rows, { monthly: 1_000_000, initial: 5_000_000, buyDay: 1, target: 40_000_000 });
     expect(res.reached).toBe(true);
     expect(res.series[0].date).toBe("2020-05-01");
-    expect(res.valueKRW).toBeCloseTo(61_000_000, 2);
+    expect(res.value).toBeCloseTo(61_000_000, 2);
     expect(res.months).toBe(1); // 5월→6월
   });
 
   it("목돈이 없으면(단조) 기존 이분 탐색 경로 그대로 동작", () => {
     // 같은 가격 경로, 목돈 없이 월100만. 시작월별 6월 평가액: 1월2200 2월2100 3월1766 ... 로
     // 늦을수록 감소(단조). target 2000만 → 2월 시작이 경계(2100만).
-    const res = runToToday(rows, { monthlyKRW: 1_000_000, buyDay: 1, targetKRW: 21_000_000 });
+    const res = runToToday(rows, { monthly: 1_000_000, buyDay: 1, target: 21_000_000 });
     expect(res.reached).toBe(true);
     expect(res.series[0].date).toBe("2020-02-01");
   });
@@ -205,21 +205,21 @@ describe("requiredMonthly — 역산(기간→필요 월 적립액)", () => {
   for (let m = 1; m <= 12; m++) rows.push(row(`2020-${String(m).padStart(2, "0")}-01`, 1, 1000));
 
   it("목표/기간으로 필요 월 적립액을 정확히 푼다", () => {
-    const { monthlyKRW, result } = requiredMonthly(rows, { monthlyKRW: 0, buyDay: 1, startDate: "2020-01-01", targetKRW: 6_000_000 });
-    expect(monthlyKRW).toBeCloseTo(500_000, 2);
-    expect(result.valueKRW).toBeCloseTo(6_000_000, 2);
+    const { monthly, result } = requiredMonthly(rows, { monthly: 0, buyDay: 1, startDate: "2020-01-01", target: 6_000_000 });
+    expect(monthly).toBeCloseTo(500_000, 2);
+    expect(result.value).toBeCloseTo(6_000_000, 2);
   });
 
   it("초기금이 있으면 그만큼 월 적립액이 줄어든다", () => {
     // 초기금 100만(첫달 투입)이 최종 100만 기여 → 나머지 500만을 12개월로
-    const { monthlyKRW, result } = requiredMonthly(rows, { monthlyKRW: 0, initialKRW: 1_000_000, buyDay: 1, startDate: "2020-01-01", targetKRW: 6_000_000 });
-    expect(monthlyKRW).toBeCloseTo((6_000_000 - 1_000_000) / 12, 2);
-    expect(result.valueKRW).toBeCloseTo(6_000_000, 2);
+    const { monthly, result } = requiredMonthly(rows, { monthly: 0, initial: 1_000_000, buyDay: 1, startDate: "2020-01-01", target: 6_000_000 });
+    expect(monthly).toBeCloseTo((6_000_000 - 1_000_000) / 12, 2);
+    expect(result.value).toBeCloseTo(6_000_000, 2);
   });
 
   it("초기금만으로 목표 초과면 월 적립액 0", () => {
-    const { monthlyKRW } = requiredMonthly(rows, { monthlyKRW: 0, initialKRW: 10_000_000, buyDay: 1, startDate: "2020-01-01", targetKRW: 5_000_000 });
-    expect(monthlyKRW).toBe(0);
+    const { monthly } = requiredMonthly(rows, { monthly: 0, initial: 10_000_000, buyDay: 1, startDate: "2020-01-01", target: 5_000_000 });
+    expect(monthly).toBe(0);
   });
 });
 
@@ -229,14 +229,14 @@ describe("endDate window + timingRange", () => {
   for (let m = 1; m <= 12; m++) rows.push(row(`2020-${String(m).padStart(2, "0")}-01`, 1, 1000));
 
   it("endDate로 평가 기간을 자른다 (1~6월 = 6회 매수)", () => {
-    const res = runBacktest(rows, { monthlyKRW: 1_000_000, buyDay: 1, startDate: "2020-01-01", endDate: "2020-06-01", targetKRW: 9_999_999_999 });
-    expect(res.principalKRW).toBe(6_000_000);
-    expect(res.valueKRW).toBeCloseTo(6_000_000, 2);
+    const res = runBacktest(rows, { monthly: 1_000_000, buyDay: 1, startDate: "2020-01-01", endDate: "2020-06-01", target: 9_999_999_999 });
+    expect(res.principal).toBe(6_000_000);
+    expect(res.value).toBeCloseTo(6_000_000, 2);
     expect(res.series[res.series.length - 1].date).toBe("2020-06-01");
   });
 
   it("timingRange: 평탄가격이면 모든 시작월 결과가 같다", () => {
-    const r = timingRange(rows, { monthlyKRW: 1_000_000, buyDay: 1 }, 3);
+    const r = timingRange(rows, { monthly: 1_000_000, buyDay: 1 }, 3);
     expect(r).not.toBeNull();
     expect(r!.samples).toBe(9); // 1월~9월 시작 (각 +3개월 ≤ 12월)
     expect(r!.min).toBeCloseTo(r!.max, 2); // 가격 고정 → 운 차이 없음

@@ -29,9 +29,9 @@ export async function computeTickerResults(): Promise<{ rows: TickerResult[]; da
     try {
       const px = JSON.parse(await fs.readFile(path.join(dataDir, "px", `${t.symbol.toLowerCase()}.json`), "utf8")) as PxBundle;
       const r = runToToday(composeRows(px, tickerCurrency(t.symbol) === "KRW" ? null : fx), {
-        monthlyKRW: COMPARE_MONTHLY * 10000,
+        monthly: COMPARE_MONTHLY * 10000,
         buyDay: COMPARE_BUY_DAY,
-        targetKRW: COMPARE_TARGET_EOK * 100_000_000,
+        target: COMPARE_TARGET_EOK * 100_000_000,
       });
       const isKRW = tickerCurrency(t.symbol) === "KRW";
       out.push({
@@ -50,7 +50,7 @@ export async function computeTickerResults(): Promise<{ rows: TickerResult[]; da
   // 도달한 종목을 빠른 순으로, 미달 종목은 평가액 큰 순으로 뒤에
   out.sort((a, b) => {
     if (a.r.reached !== b.r.reached) return a.r.reached ? -1 : 1;
-    return a.r.reached ? a.r.months - b.r.months : b.r.valueKRW - a.r.valueKRW;
+    return a.r.reached ? a.r.months - b.r.months : b.r.value - a.r.value;
   });
   return { rows: out, dataEnd };
 }

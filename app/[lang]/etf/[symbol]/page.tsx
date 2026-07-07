@@ -89,7 +89,7 @@ function resolve(symbolParam: string) {
 async function compute(symbol: string) {
   const file = path.join(process.cwd(), "public", "data", `${symbol.toLowerCase()}.json`);
   const b = JSON.parse(await fs.readFile(file, "utf8")) as Bundle;
-  return runToToday(bundleToRows(b), { monthlyKRW: M * 10000, buyDay: D, targetKRW: G * 100_000_000 });
+  return runToToday(bundleToRows(b), { monthly: M * 10000, buyDay: D, target: G * 100_000_000 });
 }
 
 function display(symbol: string) {
@@ -145,13 +145,13 @@ export default async function EtfPage({ params }: { params: Promise<{ symbol: st
           <>
             <strong>매달 {M}만원씩이면 약 {r.years}년 {r.monthsRem}개월 만에 10억</strong>
             <br />
-            {startYm}부터 모았다면 지금 약 {eok(r.valueKRW)} · 원금 {eok(r.principalKRW)} · 연평균 {pct(r.cagr)}
+            {startYm}부터 모았다면 지금 약 {eok(r.value)} · 원금 {eok(r.principal)} · 연평균 {pct(r.cagr)}
           </>
         ) : (
           <>
             <strong>아직 10억까지는 더 걸려요</strong>
             <br />
-            전 구간 모아도 지금 약 {eok(r.valueKRW)} · 원금 {eok(r.principalKRW)} · 연평균 {pct(r.cagr)}
+            전 구간 모아도 지금 약 {eok(r.value)} · 원금 {eok(r.principal)} · 연평균 {pct(r.cagr)}
           </>
         )}
         <div className="sub">

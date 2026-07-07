@@ -72,22 +72,22 @@ export function BacktestApp({ initial }: { initial: Initial }) {
       .catch(() => {});
   }, []);
 
-  const targetKRW = target * 100_000_000;
+  const goalKRW = target * 100_000_000;
   // 종목 데이터로 가능한 최대 기간(년). 역산 모드 기간 입력 상한.
   const maxYears = rows ? Math.max(1, Math.floor(monthsBetween(rows[0].date, rows[rows.length - 1].date) / 12)) : 40;
   const yearsUsed = Math.min(years, maxYears);
 
   const calc = useMemo(() => {
     if (!rows) return null;
-    const opts = { initialKRW: lump * 10000, buyDay, targetKRW, cpi: infl && cpi ? cpi : undefined, reinvestDividends: reinvest, taxMode: tax && tickerCurrency(ticker) === "USD" };
+    const opts = { initial: lump * 10000, buyDay, target: goalKRW, cpi: infl && cpi ? cpi : undefined, reinvestDividends: reinvest, taxMode: tax && tickerCurrency(ticker) === "USD" };
     if (mode === "time") {
-      return { result: runToToday(rows, { monthlyKRW: amount * 10000, ...opts }), reqMonthly: null as number | null };
+      return { result: runToToday(rows, { monthly: amount * 10000, ...opts }), reqMonthly: null as number | null };
     }
     const endDate = rows[rows.length - 1].date;
     const startDate = startMonthsAgo(endDate, yearsUsed * 12);
-    const { monthlyKRW, result } = requiredMonthly(rows, { monthlyKRW: 0, startDate, ...opts });
-    return { result, reqMonthly: monthlyKRW };
-  }, [rows, mode, amount, years, maxYears, lump, buyDay, targetKRW, infl, cpi, reinvest, tax, ticker]); // eslint-disable-line
+    const { monthly, result } = requiredMonthly(rows, { monthly: 0, startDate, ...opts });
+    return { result, reqMonthly: monthly };
+  }, [rows, mode, amount, years, maxYears, lump, buyDay, goalKRW, infl, cpi, reinvest, tax, ticker]); // eslint-disable-line
 
   const result = calc?.result ?? null;
   const reqMonthly = calc?.reqMonthly ?? null;
@@ -95,10 +95,10 @@ export function BacktestApp({ initial }: { initial: Initial }) {
   // 타이밍 리스크: 같은 플랜·같은 기간을 시작 시점만 바꿔봤을 때의 최종 평가액 폭
   const timing = useMemo(() => {
     if (!rows || !result) return null;
-    const monthlyKRW = mode === "amount" ? (reqMonthly ?? 0) : amount * 10000;
+    const monthly = mode === "amount" ? (reqMonthly ?? 0) : amount * 10000;
     const dur = mode === "amount" ? yearsUsed * 12 : result.months;
     if (dur < 12) return null; // 1년 미만은 표본/의미 부족
-    return timingRange(rows, { monthlyKRW, initialKRW: lump * 10000, buyDay, cpi: infl && cpi ? cpi : undefined, reinvestDividends: reinvest, taxMode: tax && tickerCurrency(ticker) === "USD" }, dur);
+    return timingRange(rows, { monthly, initial: lump * 10000, buyDay, cpi: infl && cpi ? cpi : undefined, reinvestDividends: reinvest, taxMode: tax && tickerCurrency(ticker) === "USD" }, dur);
   }, [rows, mode, amount, reqMonthly, result?.months, yearsUsed, lump, buyDay, infl, cpi, reinvest, tax, ticker]); // eslint-disable-line
 
   // 차트/월별 표에 쓰는 시계열: 기간 모드에서 도달했으면 도달일까지 잘라 여정만 보여준다.
@@ -138,7 +138,7 @@ export function BacktestApp({ initial }: { initial: Initial }) {
 
   const months = result?.months ?? 0;
   const animMonths = useAnimatedNumber(months, screen === "result" ? 1000 : 0);
-  const animPrincipal = useAnimatedNumber(result?.principalKRW ?? 0, screen === "result" ? 1000 : 0);
+  const animPrincipal = useAnimatedNumber(result?.principal ?? 0, screen === "result" ? 1000 : 0);
   const animReq = useAnimatedNumber(reqMonthly ?? 0, screen === "result" ? 1000 : 0);
   const reached = !!result?.reached;
   const heroMonths = Math.round(animMonths);
@@ -147,17 +147,17 @@ export function BacktestApp({ initial }: { initial: Initial }) {
   const timingBridge = useMemo(() => {
     if (!timing || !result) return null;
     const med = timing.median;
-    const tgt = targetKRW;
+    const tgt = goalKRW;
     const medRough = med >= 100_000_000 ? `약 ${Math.round(med / 100_000_000)}억` : eok(med);
     const goal = `${target}억`;
     if (result.reached && med < tgt) {
-      return `위의 ${eok(result.valueKRW)}은 이 중 운이 좋았던 편이에요. 보통이면 ${medRough}으로, ${goal}엔 조금 못 미쳐요.`;
+      return `위의 ${eok(result.value)}은 이 중 운이 좋았던 편이에요. 보통이면 ${medRough}으로, ${goal}엔 조금 못 미쳐요.`;
     }
     if (result.reached && med >= tgt) {
       return `보통이면 ${medRough}으로 ${goal}을 넘겨요. 다만 시작이 나빴다면 ${eok(timing.min)}까지 낮아졌어요.`;
     }
     return `보통이면 ${medRough}이고, 시작한 달에 따라 ${eok(timing.min)}~${eok(timing.max)}까지 갈렸어요.`;
-  }, [timing, result, targetKRW, target]); // eslint-disable-line
+  }, [timing, result, goalKRW, target]); // eslint-disable-line
 
   function submit() {
     setScreen("loading");
@@ -290,14 +290,14 @@ export function BacktestApp({ initial }: { initial: Initial }) {
                 <>
                   <div className="lead rv" style={{ ["--i" as string]: 1 }}>초기 투자금만으로</div>
                   <div className="num pop" style={{ ["--i" as string]: 2 }}>{target}<span className="u">억</span> <span className="u">달성</span></div>
-                  <div className="span rv" style={{ ["--i" as string]: 3 }}>{yearsUsed}년 전 초기 투자금만으로 이미 {eok(result.valueKRW)} · 매달 적립 없이도 OK</div>
+                  <div className="span rv" style={{ ["--i" as string]: 3 }}>{yearsUsed}년 전 초기 투자금만으로 이미 {eok(result.value)} · 매달 적립 없이도 OK</div>
                 </>
               ) : (
                 <>
                   <div className="lead rv" style={{ ["--i" as string]: 1 }}>{yearsUsed}년 안에 {target}억, 매달</div>
                   <div className="num pop" style={{ ["--i" as string]: 2 }}>{manwonParts(animReq).n}<span className="u">{manwonParts(animReq).u}</span></div>
                   <div className="span rv" style={{ ["--i" as string]: 3 }}>
-                    {tickerName(ticker)} 기준{lump > 0 ? ` · 초기 ${lump}만원 포함` : ""} · 원금 {eok(result.principalKRW)} 넣어 {eok(result.valueKRW)} 만들기
+                    {tickerName(ticker)} 기준{lump > 0 ? ` · 초기 ${lump}만원 포함` : ""} · 원금 {eok(result.principal)} 넣어 {eok(result.value)} 만들기
                   </div>
                 </>
               )
@@ -312,8 +312,8 @@ export function BacktestApp({ initial }: { initial: Initial }) {
                 </div>
                 <div className="span rv" style={{ ["--i" as string]: 3 }}>
                   {reached
-                    ? `${target}억을 모을 수 있어요 · ${result.series[0] ? ym(result.series[0].date) : ""}부터 모았다면 지금 ${eok(result.valueKRW)}`
-                    : `${result.series[0] ? ym(result.series[0].date) : ""}부터 모아도 지금 ${eok1(result.valueKRW)} · ${target}억까진 멀어요`}
+                    ? `${target}억을 모을 수 있어요 · ${result.series[0] ? ym(result.series[0].date) : ""}부터 모았다면 지금 ${eok(result.value)}`
+                    : `${result.series[0] ? ym(result.series[0].date) : ""}부터 모아도 지금 ${eok1(result.value)} · ${target}억까진 멀어요`}
                 </div>
               </>
             )}
@@ -324,11 +324,11 @@ export function BacktestApp({ initial }: { initial: Initial }) {
             <div className="clab"><span>자산 성장 (KRW)</span><span>목표 {target}억</span></div>
             <GrowthChart
               series={chartSeries}
-              target={targetKRW} reached={mode === "amount" ? true : reached}
+              target={goalKRW} reached={mode === "amount" ? true : reached}
             />
             <div className="stats">
               <div className="stat"><div className="k">원금</div><div className="v">{eok(animPrincipal)}</div></div>
-              <div className="stat"><div className="k">최종 금액</div><div className={"v" + (mode === "amount" || reached ? " up" : "")}>{eok(result.valueKRW)}</div></div>
+              <div className="stat"><div className="k">최종 금액</div><div className={"v" + (mode === "amount" || reached ? " up" : "")}>{eok(result.value)}</div></div>
               <div className="stat" style={{ cursor: "help" }} onClick={() => setTipOpen((v) => !v)}>
                 <div className="k">연평균 ⓘ</div><div className="v up">{pct(result.cagr)}</div>
               </div>
@@ -355,7 +355,7 @@ export function BacktestApp({ initial }: { initial: Initial }) {
             <div className="card rv" style={{ ["--i" as string]: 6 }}>
               <div className="clab"><span>월별 기록</span><span>매수일 {dayLabel(buyDay)} · {mode === "amount" ? manwon(reqMonthly ?? 0) : `${amount}만원`}</span></div>
               <p className="loglead">달마다 계좌가 얼마였는지 연도별로 접어뒀어요. 연도를 누르면 펼쳐져요.</p>
-              <MonthlyLog months={monthly} targetKRW={targetKRW} />
+              <MonthlyLog months={monthly} target={goalKRW} />
             </div>
           )}
 

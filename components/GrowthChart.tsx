@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { won, ymd, growth } from "@/lib/format";
 
-type Pt = { date: string; valueKRW: number; principalKRW: number };
+type Pt = { date: string; value: number; principal: number };
 
 /** 5천 포인트는 무거우니 표시용 다운샘플(균등 + 마지막 보존). */
 function downsample(pts: Pt[], max: number): Pt[] {
@@ -73,22 +73,22 @@ export function GrowthChart({
     return out;
   }, [pts]);
 
-  const maxV = Math.max(target, ...pts.map((p) => p.valueKRW)) * 1.06 || 1;
+  const maxV = Math.max(target, ...pts.map((p) => p.value)) * 1.06 || 1;
   const x = (i: number) => (pts.length <= 1 ? 0 : (i / (pts.length - 1)) * W);
   const y = (v: number) => H - (v / maxV) * (H - pad);
   const targetY = H - (target / maxV) * (H - pad);
 
-  const d = pts.map((p, i) => `${i === 0 ? "M" : "L"}${x(i).toFixed(1)},${y(p.valueKRW).toFixed(1)}`).join(" ");
+  const d = pts.map((p, i) => `${i === 0 ? "M" : "L"}${x(i).toFixed(1)},${y(p.value).toFixed(1)}`).join(" ");
   const area = pts.length ? `${d} L${W},${H} L0,${H} Z` : "";
   const lastI = pts.length - 1;
   const endX = x(lastI);
-  const endY = y(pts[lastI]?.valueKRW ?? 0);
+  const endY = y(pts[lastI]?.value ?? 0);
 
   // 손을 뗀 기본 상태는 최종 지점, 스크럽 중이면 그 지점.
   const view = scrubIdx != null ? pts[scrubIdx] : pts[lastI];
   const live = scrubIdx != null;
   const dotX = live ? x(scrubIdx) : endX;
-  const dotY = live ? y(pts[scrubIdx].valueKRW) : endY;
+  const dotY = live ? y(pts[scrubIdx].value) : endY;
 
   // 마운트/데이터 변경 시 좌→우 그리기
   useEffect(() => {
@@ -125,8 +125,8 @@ export function GrowthChart({
       <div className={"chart-readout" + (live ? " live" : "")} aria-live="off">
         <span className="ro-date">{view ? ymd(view.date) : ""}</span>
         <span className="ro-vals">
-          원금 <b>{won(view?.principalKRW ?? 0)}</b> → <b className="up">{won(view?.valueKRW ?? 0)}</b>
-          {view && view.principalKRW > 0 && <span className="ro-badge">{growth(view.principalKRW, view.valueKRW)}</span>}
+          원금 <b>{won(view?.principal ?? 0)}</b> → <b className="up">{won(view?.value ?? 0)}</b>
+          {view && view.principal > 0 && <span className="ro-badge">{growth(view.principal, view.value)}</span>}
         </span>
       </div>
 

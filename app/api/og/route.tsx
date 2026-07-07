@@ -58,20 +58,20 @@ export async function GET(req: Request) {
         const maxYears = Math.max(1, Math.floor(monthsBetween(rows[0].date, rows[rows.length - 1].date) / 12));
         const yUsed = Math.min(yrs, maxYears);
         const startDate = startMonthsAgo(rows[rows.length - 1].date, yUsed * 12);
-        const { monthlyKRW, result } = requiredMonthly(rows, { monthlyKRW: 0, initialKRW: lump * 10000, buyDay: d, startDate, targetKRW: g * 100_000_000 });
+        const { monthly, result } = requiredMonthly(rows, { monthly: 0, initial: lump * 10000, buyDay: d, startDate, target: g * 100_000_000 });
         lead = `${yUsed}년 안에 ${g}억 모으려면`;
-        big = monthlyKRW === 0 ? "초기금만으로 달성!" : `매달 ${manwon(monthlyKRW)}`;
-        sub = `${tickerName(t)}(${t}) 기준${lumpLabel} · 원금 ${eok(result.principalKRW)} → ${eok(result.valueKRW)}`;
+        big = monthly === 0 ? "초기금만으로 달성!" : `매달 ${manwon(monthly)}`;
+        sub = `${tickerName(t)}(${t}) 기준${lumpLabel} · 원금 ${eok(result.principal)} → ${eok(result.value)}`;
       } else {
-        const res = runToToday(rows, { monthlyKRW: m * 10000, initialKRW: lump * 10000, buyDay: d, targetKRW: g * 100_000_000 });
+        const res = runToToday(rows, { monthly: m * 10000, initial: lump * 10000, buyDay: d, target: g * 100_000_000 });
         if (res.reached) {
           lead = `지금 ${g}억이 되려면`;
           big = `${res.years}년 ${res.monthsRem}개월 전부터`;
-          sub = `${tickerName(t)}(${t}) · 매달 ${m}만원${lumpLabel} · ${res.series[0] ? ymK(res.series[0].date) : ""}부터 → 지금 ${eok(res.valueKRW)}`;
+          sub = `${tickerName(t)}(${t}) · 매달 ${m}만원${lumpLabel} · ${res.series[0] ? ymK(res.series[0].date) : ""}부터 → 지금 ${eok(res.value)}`;
         } else {
           lead = `${tickerName(t)}(${t}) · 매달 ${m}만원${lumpLabel}`;
           big = `아직 ${g}억은 멀어요`;
-          sub = `전 구간 모아도 지금 ${eok(res.valueKRW)}`;
+          sub = `전 구간 모아도 지금 ${eok(res.value)}`;
         }
       }
     } catch { /* 기본 카드 유지 */ }

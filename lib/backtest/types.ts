@@ -24,9 +24,9 @@ export type Bundle = {
 
 export type BacktestInput = {
   /** 매달 적립액 (KRW) */
-  monthlyKRW: number;
+  monthly: number;
   /** 최초 납입금(목돈, KRW). 시작 시 1회 투입. 기본 0. */
-  initialKRW?: number;
+  initial?: number;
   /** 매수일 (매달 며칠, 1~28). 휴장/주말이면 다음 거래일로 롤. */
   buyDay: number;
   /** 시작일 ISO. 생략 시 데이터 최초일. */
@@ -34,7 +34,7 @@ export type BacktestInput = {
   /** 종료일 ISO. 생략 시 데이터 마지막일. 고정 기간(window) 시뮬용. */
   endDate?: string;
   /** 목표액 KRW. 생략 시 10억. */
-  targetKRW?: number;
+  target?: number;
   /** 물가연동 적립용 월별 CPI (오름차순). 주면 적립액 = base × CPI(매수월)/CPI(시작월). */
   cpi?: { ym: string; idx: number }[];
   /** 배당 재투자 여부(기본 true). false면 미수정 종가(가격수익)로 계산. */
@@ -51,11 +51,11 @@ export type BacktestResult = {
   years: number;
   monthsRem: number;
   /** 일별 시계열 (KRW). 각 날짜의 평가액과 그날까지 누적 납입원금. */
-  series: { date: string; valueKRW: number; principalKRW: number }[];
+  series: { date: string; value: number; principal: number }[];
   /** 누적 납입원금 (KRW) */
-  principalKRW: number;
+  principal: number;
   /** 도달일(미달 시 마지막일) 평가액 (KRW) */
-  valueKRW: number;
+  value: number;
   /** 보유 구간 자산 연복리 수익률 (소수, 0.21 = 21%) */
   cagr: number;
 };

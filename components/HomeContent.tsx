@@ -60,7 +60,7 @@ export async function HomeContent() {
                       {row.r.reached ? (
                         <strong>약 {row.r.years}년 {row.r.monthsRem}개월</strong>
                       ) : (
-                        <span className="cmp-miss">전 구간 모아도 미달 · 현재 약 {eok1(row.r.valueKRW)}</span>
+                        <span className="cmp-miss">전 구간 모아도 미달 · 현재 약 {eok1(row.r.value)}</span>
                       )}
                     </td>
                     <td className="cmp-cagr">{pct(row.r.cagr)}</td>
