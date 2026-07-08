@@ -25,6 +25,16 @@ export type Formatter = {
   ym: (iso: string) => string;
   /** ISO → "2021년 5월 3일" */
   ymd: (iso: string) => string;
+  /** 차트 x축 월 눈금. sameYear=직전 눈금과 같은 해면 연도 생략. ko "7월"/"2025.7", en "Jul"/"Jul ’25" */
+  axisMonth: (year: number, month: number, sameYear: boolean) => string;
+  /** 월별 로그 연도 헤더. ko "2025년", en "2025" */
+  yearLabel: (year: number) => string;
+  /** 월별 로그 월 셀. ko "7월", en "Jul" */
+  monthLabel: (month: number) => string;
+  /** 입력 카운트(원단위)를 시장 단위로 표기(억 롤오버 없음). ko "100만원", en "$700", de "700 €" */
+  unitAmount: (count: number, unitLabel: string) => string;
+  /** 대략 금액(타이밍 중앙값 등). ko "약 10억"(1억↑)·"0.50억", en/de "~$1M" */
+  approx: (v: number) => string;
 };
 
 // ── ko: 억/만 (기존 로직 그대로) ──────────────────────────────
@@ -55,6 +65,11 @@ const KO: Formatter = {
   milestone: (v) => `${v / 1e8}억`,
   ym: (iso) => { const [y, m] = iso.split("-").map(Number); return `${y}년 ${m}월`; },
   ymd: (iso) => { const [y, m, d] = iso.split("-").map(Number); return `${y}년 ${m}월 ${d}일`; },
+  axisMonth: (y, m, same) => (same ? `${m}월` : `${y}.${m}`),
+  yearLabel: (y) => `${y}년`,
+  monthLabel: (m) => `${m}월`,
+  unitAmount: (c, u) => `${c}${u}`,
+  approx: (v) => (v >= 1e8 ? `약 ${Math.round(v / 1e8)}억` : KO.money(v)),
 };
 
 // ── ja: 億/万円 (ko와 같은 만/억 자릿수 체계, 접미사만 다름) ──
@@ -81,6 +96,11 @@ const JA: Formatter = {
   milestone: (v) => (v >= 1e8 ? `${v / 1e8}億` : `${Math.round(v / 1e4).toLocaleString("ja-JP")}万`),
   ym: (iso) => { const [y, m] = iso.split("-").map(Number); return `${y}年${m}月`; },
   ymd: (iso) => { const [y, m, d] = iso.split("-").map(Number); return `${y}年${m}月${d}日`; },
+  axisMonth: (y, m, same) => (same ? `${m}月` : `${y}.${m}`),
+  yearLabel: (y) => `${y}年`,
+  monthLabel: (m) => `${m}月`,
+  unitAmount: (c, u) => `${c}${u}`,
+  approx: (v) => (v >= 1e8 ? `約${Math.round(v / 1e8)}億円` : JA.money(v)),
 };
 
 // ── 서양권 공통(Intl compact) ─────────────────────────────────
@@ -89,6 +109,8 @@ function westernFactory(locale: string, sym: string, symPrefix: boolean): Format
   const roughFmt = new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: 1 });
   const plain = new Intl.NumberFormat(locale, { maximumFractionDigits: 0 });
   const withSym = (s: string) => (symPrefix ? `${sym}${s}` : `${s} ${sym}`);
+  const monthShort = (m: number) =>
+    new Date(Date.UTC(2000, m - 1, 1)).toLocaleDateString(locale, { month: "short", timeZone: "UTC" });
   const self: Formatter = {
     money: (v) => withSym(compactFmt.format(v)),
     compact: (v) => withSym(compactFmt.format(v)),
@@ -107,6 +129,11 @@ function westernFactory(locale: string, sym: string, symPrefix: boolean): Format
     milestone: (v) => withSym(compactFmt.format(v)),
     ym: (iso) => new Date(iso + "T00:00:00Z").toLocaleDateString(locale, { year: "numeric", month: "short", timeZone: "UTC" }),
     ymd: (iso) => new Date(iso + "T00:00:00Z").toLocaleDateString(locale, { year: "numeric", month: "short", day: "numeric", timeZone: "UTC" }),
+    axisMonth: (y, m, same) => (same ? monthShort(m) : `${monthShort(m)} ’${String(y).slice(2)}`),
+    yearLabel: (y) => String(y),
+    monthLabel: (m) => monthShort(m),
+    unitAmount: (c, u) => (symPrefix ? `${u}${plain.format(c)}` : `${plain.format(c)} ${u}`),
+    approx: (v) => `~${self.rough(v)}`,
   };
   return self;
 }

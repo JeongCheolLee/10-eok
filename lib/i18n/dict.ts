@@ -1,6 +1,13 @@
-// UI 문자열 사전. 타입 Dict로 전 로케일 강제. ko가 기준이며, en/ja/de는 번역 완료 전까지
-// ko로 폴백(현재 LOCALES=ko만이라 실제로 ko만 조회됨). P3-b부터 en 채움.
+// UI 문자열 사전. 타입 Dict로 전 로케일 강제(en 미완성 시 tsc가 잡아줌). ko가 기준.
+//  · 서버 컴포넌트(SiteHeader/Footer)는 getDict(locale)를 직접 호출.
+//  · 클라이언트(BacktestApp·GrowthChart·MonthlyLog)도 getMarket/getFormatter와 동일하게 getDict(locale) 조회.
+//  · 숫자/날짜 "포맷"(억/만·$·년월)은 여기 두지 않고 format.ts(getFormatter)에 위임. 여기엔 "카피"만.
+//  · 보간·어순은 함수 엔트리로, <b> 강조가 든 문장은 {pre,bold,post} 파츠로(컴포넌트가 <b>로 감쌈 — 사전은 순수 데이터).
+// ⚠️ ko 값은 현재 렌더 문자열과 바이트 단위로 동일해야 한다(LOCALES=ko만 공개 중). en은 P3-b에서 채우되 활성화(LOCALES)는 검증 후.
 import type { Locale } from "./locales";
+
+/** <b> 강조가 문장 중간에 든 카피. 컴포넌트가 {pre}<b>{bold}</b>{post}로 렌더. */
+type BoldParts = { pre: string; bold: string; post: string };
 
 export type Dict = {
   nav: {
@@ -15,8 +22,119 @@ export type Dict = {
   };
   a11y: { brandHome: string; siteMenu: string };
   footerDisclaimer: string;
+
+  /** BacktestApp(계산기) UI 카피 */
+  calc: {
+    day: { last: string; nth: (d: number) => string };
+    timing: {
+      title: string;
+      lead: (amount: string, years: number) => BoldParts;
+      worst: string;
+      median: string;
+      best: string;
+      note: (worst: string, best: string, samples: number) => string;
+      bridge: {
+        reachedMedianBelow: (value: string, medRough: string, goal: string) => string;
+        reachedMedianAbove: (medRough: string, goal: string, min: string) => string;
+        notReached: (medRough: string, min: string, max: string) => string;
+      };
+    };
+    share: {
+      lumpOnly: (name: string, goal: string) => string;
+      amountMode: (name: string, years: number, goal: string, monthly: string) => string;
+      timeReached: (name: string, lumpStr: string, monthly: string, goal: string, years: number, months: number) => string;
+      timeNotReached: (name: string, goal: string) => string;
+    };
+    toast: { linkCopied: string };
+    error: { loadFailed: { line1: string; line2: string }; retry: string };
+    result: { tapToEdit: string; shareButton: string };
+    loading: { calculating: string };
+    mode: {
+      timeTab: string;
+      amountTab: string;
+      capTime: (goal: string) => BoldParts;
+      capAmount: (goal: string) => BoldParts;
+    };
+    chip: {
+      ticker: string;
+      monthly: string;
+      period: string;
+      lump: string;
+      buyDay: string;
+      goal: string;
+      none: string;
+      periodValue: (y: number) => string;
+    };
+    dropdown: {
+      monthlyLabel: string;
+      yearsLabel: (max: number) => string;
+      lumpLabel: string;
+      buyDayLabel: string;
+      goalLabel: string;
+    };
+    units: { years: string; day: string };
+    hero: {
+      lumpOnlyLead: string;
+      achieved: string;
+      lumpOnlySpan: (years: number, value: string) => string;
+      amountLead: (years: number, goal: string) => string;
+      amountSpan: (name: string, lumpStr: string, principal: string, value: string) => string;
+      timeLeadReached: (lumpStr: string, monthly: string) => string;
+      timeLeadUnder: string;
+      durYear: string;
+      durMonth: string;
+      durIn: string;
+      timeSpanReached: (goal: string, from: string, value: string) => string;
+      timeSpanUnder: (from: string, rough: string, goal: string) => string;
+    };
+    card: {
+      growthTitle: (currency: string) => string;
+      goalLabel: (goal: string) => string;
+      monthlyLogTitle: string;
+      buyDaySummary: (day: string, monthly: string) => string;
+      monthlyLogLead: string;
+    };
+    stat: { principal: string; finalValue: string; cagr: string };
+    tip: { cagr: (pct: string) => string };
+    opt: { inflationLabel: string; inflationDesc: string };
+    stepper: { decrease: string; increase: string };
+    intro: {
+      titleBold: string;
+      titleRest: string;
+      sub: BoldParts;
+      disclaimer: string;
+      startButton: string;
+      hint: (count: number) => string;
+    };
+    form: {
+      capTime: BoldParts;
+      capAmount: BoldParts;
+      tickerLabel: string;
+      lumpLabel: string;
+      monthlyLabel: string;
+      yearsLabel: (max: number) => string;
+      buyDayLabel: string;
+      submitAmount: string;
+      submitTime: string;
+    };
+    select: { searchPlaceholder: string; empty: string };
+  };
+
+  /** GrowthChart(자산 성장 차트) */
+  chart: { readoutPrincipal: string; hoverHint: string };
+
+  /** MonthlyLog(월별 기록) */
+  monthlyLog: {
+    reached: (label: string) => string;
+    reachedGoal: (label: string) => string;
+    breakthrough: (label: string) => string;
+    header: { month: string; principal: string; value: string; return: string };
+  };
 };
 
+// ─────────────────────────────────────────────────────────────
+// ko — 현재 렌더 문자열 그대로(바이트 불변 기준)
+// ─────────────────────────────────────────────────────────────
 const ko: Dict = {
   nav: {
     compare: "종목 비교",
@@ -34,9 +152,277 @@ const ko: Dict = {
     "과거 수익률은 미래 수익을 보장하지 않으며, 본 서비스의 어떤 내용도 투자 권유나 투자 " +
     "자문이 아닙니다. 투자 결정과 그 결과에 대한 책임은 이용자 본인에게 있습니다. " +
     "가격 데이터는 Yahoo Finance, 환율은 미국 세인트루이스 연방준비은행(FRED)에서 가져옵니다.",
+
+  calc: {
+    day: { last: "말일", nth: (d) => `${d}일` },
+    timing: {
+      title: "시작한 달에 따라 이렇게 달라져요",
+      lead: (amount, years) => ({
+        pre: `매달 같은 ${amount}을 똑같이 ${years}년 넣어도, `,
+        bold: "시작한 달",
+        post: "이 언제였냐에 따라 최종 금액이 이만큼 갈렸어요.",
+      }),
+      worst: "운 나빴다면",
+      median: "보통이면",
+      best: "운 좋았다면",
+      note: (worst, best, samples) => `최악: ${worst} 시작 · 최선: ${best} · 과거 시작 시점 ${samples}개 비교`,
+      bridge: {
+        reachedMedianBelow: (value, medRough, goal) =>
+          `위의 ${value}은 이 중 운이 좋았던 편이에요. 보통이면 ${medRough}으로, ${goal}엔 조금 못 미쳐요.`,
+        reachedMedianAbove: (medRough, goal, min) =>
+          `보통이면 ${medRough}으로 ${goal}을 넘겨요. 다만 시작이 나빴다면 ${min}까지 낮아졌어요.`,
+        notReached: (medRough, min, max) =>
+          `보통이면 ${medRough}이고, 시작한 달에 따라 ${min}~${max}까지 갈렸어요.`,
+      },
+    },
+    share: {
+      lumpOnly: (name, goal) => `${name} · 초기 투자금만으로 ${goal} 달성!`,
+      amountMode: (name, years, goal, monthly) => `${name}로 ${years}년 안에 ${goal} 모으려면 매달 ${monthly}!`,
+      timeReached: (name, lumpStr, monthly, goal, years, months) =>
+        `${name}에${lumpStr ? ` ${lumpStr}으로 시작해` : ""} 매달 ${monthly}씩 모았다면 ${goal}까지 ${years}년 ${months}개월!`,
+      timeNotReached: (name, goal) => `${name} 적립 백테스트 — ${goal}까지 얼마나 걸릴까?`,
+    },
+    toast: { linkCopied: "링크가 복사됐어요" },
+    error: {
+      loadFailed: { line1: "데이터를 못 불러왔어요.", line2: "잠시 후 다시 시도해 주세요." },
+      retry: "다시 시도",
+    },
+    result: { tapToEdit: "탭하면 변경", shareButton: "결과 공유하기" },
+    loading: { calculating: "계산 중…" },
+    mode: {
+      timeTab: "기간이 궁금",
+      amountTab: "금액이 궁금",
+      capTime: (goal) => ({ pre: "매달 정한 금액으로 ", bold: `${goal}까지 몇 년`, post: " 걸리는지" }),
+      capAmount: (goal) => ({ pre: `정한 기간 안에 ${goal}을 모으려면 `, bold: "매달 얼마씩", post: " 넣을지" }),
+    },
+    chip: {
+      ticker: "종목",
+      monthly: "매달",
+      period: "기간",
+      lump: "초기금",
+      buyDay: "매수일",
+      goal: "목표",
+      none: "없음",
+      periodValue: (y) => `${y}년 안에`,
+    },
+    dropdown: {
+      monthlyLabel: "매달 적립 금액",
+      yearsLabel: (max) => `목표 기간 (최대 ${max}년)`,
+      lumpLabel: "초기 투자금",
+      buyDayLabel: "매수일 (매달 며칠 · 29일은 말일)",
+      goalLabel: "목표 금액",
+    },
+    units: { years: "년", day: "일" },
+    hero: {
+      lumpOnlyLead: "초기 투자금만으로",
+      achieved: "달성",
+      lumpOnlySpan: (years, value) => `${years}년 전 초기 투자금만으로 이미 ${value} · 매달 적립 없이도 OK`,
+      amountLead: (years, goal) => `${years}년 안에 ${goal}, 매달`,
+      amountSpan: (name, lumpStr, principal, value) =>
+        `${name} 기준${lumpStr ? ` · 초기 ${lumpStr} 포함` : ""} · 원금 ${principal} 넣어 ${value} 만들기`,
+      timeLeadReached: (lumpStr, monthly) => `${lumpStr ? `${lumpStr}으로 시작해 ` : ""}매달 ${monthly}씩이면`,
+      timeLeadUnder: "전 구간 모아도",
+      durYear: "년",
+      durMonth: "개월",
+      durIn: " 만에",
+      timeSpanReached: (goal, from, value) => `${goal}을 모을 수 있어요 · ${from}부터 모았다면 지금 ${value}`,
+      timeSpanUnder: (from, rough, goal) => `${from}부터 모아도 지금 ${rough} · ${goal}까진 멀어요`,
+    },
+    card: {
+      growthTitle: (currency) => `자산 성장 (${currency})`,
+      goalLabel: (goal) => `목표 ${goal}`,
+      monthlyLogTitle: "월별 기록",
+      buyDaySummary: (day, monthly) => `매수일 ${day} · ${monthly}`,
+      monthlyLogLead: "달마다 계좌가 얼마였는지 연도별로 접어뒀어요. 연도를 누르면 펼쳐져요.",
+    },
+    stat: { principal: "원금", finalValue: "최종 금액", cagr: "연평균" },
+    tip: {
+      cagr: (pct) => `연평균 ${pct}는 1년에 평균 이만큼씩 늘었다는 뜻이에요. (과거 수익률 기준)`,
+    },
+    opt: { inflationLabel: "물가만큼 매년 인상", inflationDesc: "적립액을 물가지수만큼 올림" },
+    stepper: { decrease: "줄이기", increase: "늘리기" },
+    intro: {
+      titleBold: "10억 모으기",
+      titleRest: "얼마나 걸릴까?",
+      sub: {
+        pre: "QLD·QQQ·SPY 같은 ETF를 매달 일정 금액씩 모았다면 목표 10억 원까지 얼마나 걸렸을지, 가정 수익률이 아니라 ",
+        bold: "실제 과거의 일별 주가와 그날의 원/달러 환율",
+        post: "로 계산해 드려요.",
+      },
+      disclaimer: "교육·정보 제공용 백테스트입니다. 투자 권유가 아니며, 과거 수익은 미래를 보장하지 않습니다.",
+      startButton: "계산 시작하기",
+      hint: (count) => `종목·금액·날짜만 정하면 끝 · 아래에서 ${count}개 ETF 결과 비교와 투자 가이드도 볼 수 있어요`,
+    },
+    form: {
+      capTime: { pre: "매달 정한 금액으로 ", bold: "10억까지 몇 년", post: " 걸리는지 계산해요" },
+      capAmount: { pre: "정한 기간 안에 10억을 모으려면 ", bold: "매달 얼마씩", post: " 넣을지 계산해요" },
+      tickerLabel: "어떤 종목을 모을까요?",
+      lumpLabel: "시작할 때 넣을 목돈이 있나요? (없으면 0)",
+      monthlyLabel: "매달 얼마씩 넣을까요?",
+      yearsLabel: (max) => `몇 년 안에 모을까요? (최대 ${max}년)`,
+      buyDayLabel: "매달 며칠에 살까요? (29일은 말일)",
+      submitAmount: "필요 금액 계산하기",
+      submitTime: "10억까지 계산하기",
+    },
+    select: { searchPlaceholder: "종목 검색 (이름·티커)", empty: "검색 결과 없음" },
+  },
+
+  chart: { readoutPrincipal: "원금", hoverHint: "차트를 짚으면 그때의 결과가 보여요" },
+
+  monthlyLog: {
+    reached: (label) => `${label} 달성`,
+    reachedGoal: (label) => `${label} 달성 — 목표 도달`,
+    breakthrough: (label) => `${label} 돌파`,
+    header: { month: "월", principal: "원금", value: "금액", return: "수익" },
+  },
 };
 
-const DICTS: Partial<Record<Locale, Dict>> = { ko };
+// ─────────────────────────────────────────────────────────────
+// en — USD 시장. 예시 숫자 $ 현지화, 환율(원/달러) 언급 제거(원자산 USD). 활성화는 검증 후.
+// ─────────────────────────────────────────────────────────────
+const en: Dict = {
+  nav: {
+    compare: "Compare",
+    guides: "Guides",
+    howItWorks: "How it works",
+    about: "About",
+    contact: "Contact",
+    home: "Home",
+    privacy: "Privacy Policy",
+    terms: "Terms",
+  },
+  a11y: { brandHome: "10-eok home", siteMenu: "Site menu" },
+  footerDisclaimer:
+    "10-eok is an informational service that shows backtest results from real historical data. " +
+    "Past returns do not guarantee future results, and nothing here is investment advice or a " +
+    "solicitation. You alone are responsible for your investment decisions and their outcomes. " +
+    "Price data is from Yahoo Finance, and economic data from the Federal Reserve Bank of St. Louis (FRED).",
+
+  calc: {
+    day: { last: "Last day", nth: (d) => `Day ${d}` },
+    timing: {
+      title: "It depends on when you started",
+      lead: (amount, years) => ({
+        pre: `Investing the same ${amount} for the same ${years} years, `,
+        bold: "the month you started",
+        post: " alone swung the final value this much.",
+      }),
+      worst: "Unlucky start",
+      median: "Typical",
+      best: "Lucky start",
+      note: (worst, best, samples) => `Worst: started ${worst} · Best: ${best} · ${samples} past start points compared`,
+      bridge: {
+        reachedMedianBelow: (value, medRough, goal) =>
+          `The ${value} above was on the lucky side. A typical start lands around ${medRough}, a bit short of ${goal}.`,
+        reachedMedianAbove: (medRough, goal, min) =>
+          `A typical start clears ${goal} at around ${medRough}. A bad start, though, fell as low as ${min}.`,
+        notReached: (medRough, min, max) =>
+          `A typical start lands around ${medRough}, ranging from ${min} to ${max} depending on the month you began.`,
+      },
+    },
+    share: {
+      lumpOnly: (name, goal) => `${name} · reached ${goal} from the lump sum alone!`,
+      amountMode: (name, years, goal, monthly) => `With ${name}, reaching ${goal} in ${years} years takes ${monthly}/month!`,
+      timeReached: (name, lumpStr, monthly, goal, years, months) =>
+        `Investing ${monthly}/month in ${name}${lumpStr ? ` starting with ${lumpStr}` : ""} reached ${goal} in ${years}y ${months}m!`,
+      timeNotReached: (name, goal) => `${name} DCA backtest — how long to ${goal}?`,
+    },
+    toast: { linkCopied: "Link copied" },
+    error: {
+      loadFailed: { line1: "Couldn't load the data.", line2: "Please try again in a moment." },
+      retry: "Retry",
+    },
+    result: { tapToEdit: "Tap to edit", shareButton: "Share result" },
+    loading: { calculating: "Calculating…" },
+    mode: {
+      timeTab: "How long?",
+      amountTab: "How much?",
+      capTime: (goal) => ({ pre: "Investing a fixed amount monthly, ", bold: `how many years to ${goal}`, post: "" }),
+      capAmount: (goal) => ({ pre: `To reach ${goal} within a set time, `, bold: "how much per month", post: "" }),
+    },
+    chip: {
+      ticker: "Ticker",
+      monthly: "Monthly",
+      period: "Period",
+      lump: "Lump",
+      buyDay: "Buy day",
+      goal: "Goal",
+      none: "None",
+      periodValue: (y) => `within ${y}y`,
+    },
+    dropdown: {
+      monthlyLabel: "Monthly contribution",
+      yearsLabel: (max) => `Target period (max ${max}y)`,
+      lumpLabel: "Initial lump sum",
+      buyDayLabel: "Buy day (day of month · 29 = last day)",
+      goalLabel: "Goal amount",
+    },
+    units: { years: "yr", day: "" },
+    hero: {
+      lumpOnlyLead: "From the lump sum alone",
+      achieved: "reached",
+      lumpOnlySpan: (years, value) => `Already ${value} from the lump sum ${years} years ago · no monthly needed`,
+      amountLead: (years, goal) => `${goal} in ${years} years, monthly`,
+      amountSpan: (name, lumpStr, principal, value) =>
+        `Based on ${name}${lumpStr ? ` · incl. ${lumpStr} lump` : ""} · invest ${principal} to build ${value}`,
+      timeLeadReached: (lumpStr, monthly) => `${lumpStr ? `Starting with ${lumpStr}, ` : ""}investing ${monthly} monthly`,
+      timeLeadUnder: "Even over the full period",
+      durYear: "y",
+      durMonth: "m",
+      durIn: " to reach",
+      timeSpanReached: (goal, from, value) => `you can reach ${goal} · starting from ${from}, that's ${value} today`,
+      timeSpanUnder: (from, rough, goal) => `from ${from} it's ${rough} today · still far from ${goal}`,
+    },
+    card: {
+      growthTitle: (currency) => `Asset growth (${currency})`,
+      goalLabel: (goal) => `Goal ${goal}`,
+      monthlyLogTitle: "Month by month",
+      buyDaySummary: (day, monthly) => `Buy day ${day} · ${monthly}`,
+      monthlyLogLead: "How much your account held each month, folded by year. Tap a year to expand.",
+    },
+    stat: { principal: "Invested", finalValue: "Final value", cagr: "Annualized" },
+    tip: {
+      cagr: (pct) => `Annualized ${pct} means it grew about this much per year on average. (Based on past returns.)`,
+    },
+    opt: { inflationLabel: "Raise yearly with inflation", inflationDesc: "Increase contributions by the CPI" },
+    stepper: { decrease: "Decrease", increase: "Increase" },
+    intro: {
+      titleBold: "Reaching $1M",
+      titleRest: "how long does it take?",
+      sub: {
+        pre: "If you'd invested a fixed amount every month in an ETF like QQQ, SPY, or VOO toward a $1M goal — we compute it with ",
+        bold: "real historical daily prices",
+        post: ", not assumed returns.",
+      },
+      disclaimer: "An educational, informational backtest. Not investment advice; past returns don't guarantee the future.",
+      startButton: "Start",
+      hint: (count) => `Just pick a ticker, amount, and date · compare ${count} ETFs and read the guides below`,
+    },
+    form: {
+      capTime: { pre: "Investing a fixed amount monthly — ", bold: "how many years to $1M", post: "" },
+      capAmount: { pre: "To reach $1M within a set time — ", bold: "how much per month", post: "" },
+      tickerLabel: "Which ticker?",
+      lumpLabel: "Any starting lump sum? (0 if none)",
+      monthlyLabel: "How much each month?",
+      yearsLabel: (max) => `In how many years? (max ${max}y)`,
+      buyDayLabel: "Which day each month? (29 = last day)",
+      submitAmount: "Calculate the amount",
+      submitTime: "Calculate to $1M",
+    },
+    select: { searchPlaceholder: "Search ticker (name or symbol)", empty: "No results" },
+  },
+
+  chart: { readoutPrincipal: "Principal", hoverHint: "Touch the chart to see the result at that point" },
+
+  monthlyLog: {
+    reached: (label) => `${label} reached`,
+    reachedGoal: (label) => `${label} reached — goal met`,
+    breakthrough: (label) => `${label} passed`,
+    header: { month: "Month", principal: "Principal", value: "Value", return: "Return" },
+  },
+};
+
+const DICTS: Partial<Record<Locale, Dict>> = { ko, en };
 
 export function getDict(locale: Locale): Dict {
   return DICTS[locale] ?? ko;

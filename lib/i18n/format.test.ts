@@ -52,6 +52,20 @@ describe("ko 포맷터 골든 동일성 (구 lib/format.ts 대비)", () => {
       expect(ko.ymd(iso)).toBe(refYmd(iso));
     }
   });
+  it("axisMonth / yearLabel / monthLabel / unitAmount / approx (신규 — GrowthChart·MonthlyLog·칩 라벨)", () => {
+    expect(ko.axisMonth(2025, 7, true)).toBe("7월");
+    expect(ko.axisMonth(2025, 7, false)).toBe("2025.7");
+    expect(ko.yearLabel(2025)).toBe("2025년");
+    expect(ko.monthLabel(3)).toBe("3월");
+    // unitAmount: 입력 카운트 그대로 + 단위. 억 롤오버·콤마 없이 원문(`${n}만원`)과 바이트 동일해야.
+    expect(ko.unitAmount(100, "만원")).toBe("100만원");
+    expect(ko.unitAmount(10, "억")).toBe("10억");
+    expect(ko.unitAmount(100000, "만원")).toBe("100000만원");
+    // approx: 타이밍 중앙값 medRough — 1억↑는 "약 N억", 미만은 money(2자리)
+    expect(ko.approx(50_000_000)).toBe("0.50억");
+    expect(ko.approx(163_000_000)).toBe("약 2억");
+    expect(ko.approx(1_010_285_129)).toBe("약 10억");
+  });
 });
 
 describe("en/ja/de 포맷터 스모크 (크래시 없음 + 통화기호)", () => {
@@ -61,6 +75,13 @@ describe("en/ja/de 포맷터 스모크 (크래시 없음 + 통화기호)", () =>
     expect(en.growth(1e5, 6.2e5)).toBe("6.2x");
     expect(en.pct(0.21)).toBe("+21%");
     expect(en.ym("2020-01-15")).toMatch(/2020/);
+    expect(en.monthLabel(7)).toBe("Jul");
+    expect(en.yearLabel(2025)).toBe("2025");
+    expect(en.axisMonth(2025, 7, true)).toBe("Jul");
+    expect(en.axisMonth(2025, 7, false)).toBe("Jul ’25");
+    expect(en.unitAmount(700, "$")).toBe("$700");
+    expect(en.unitAmount(50_000, "$")).toBe("$50,000");
+    expect(en.approx(1_010_000)).toMatch(/^~\$/);
   });
   it("ja 億円", () => {
     const ja = getFormatter("ja");
@@ -73,6 +94,7 @@ describe("en/ja/de 포맷터 스모크 (크래시 없음 + 통화기호)", () =>
     const de = getFormatter("de");
     expect(de.money(1_010_000)).toMatch(/€$/);
     expect(de.growth(1e5, 6.2e5)).toBe("6.2x");
+    expect(de.unitAmount(600, "€")).toBe("600 €");
   });
 });
 

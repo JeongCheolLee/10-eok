@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Locale } from "@/lib/i18n/locales";
 import { getFormatter } from "@/lib/i18n/format";
+import { getDict } from "@/lib/i18n/dict";
 
 type Pt = { date: string; value: number; principal: number };
 
@@ -27,6 +28,7 @@ export function GrowthChart({
   locale: Locale;
 }) {
   const fmt = getFormatter(locale);
+  const t = getDict(locale).chart;
   const W = 360, H = 128, pad = 8;
   const lineRef = useRef<SVGPathElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -70,7 +72,7 @@ export function GrowthChart({
       let y = fy, m = fm, prevY: number | null = null;
       while (y < ly || (y === ly && m <= lm)) {
         const frac = fracAt(`${y}-${String(m).padStart(2, "0")}`, 7);
-        out.push({ label: prevY === y ? `${m}월` : `${y}.${m}`, frac, anchor: anchorOf(frac) });
+        out.push({ label: fmt.axisMonth(y, m, prevY === y), frac, anchor: anchorOf(frac) });
         prevY = y; m += ms; while (m > 12) { m -= 12; y++; }
       }
     }
@@ -129,7 +131,7 @@ export function GrowthChart({
       <div className={"chart-readout" + (live ? " live" : "")} aria-live="off">
         <span className="ro-date">{view ? fmt.ymd(view.date) : ""}</span>
         <span className="ro-vals">
-          원금 <b>{fmt.compact(view?.principal ?? 0)}</b> → <b className="up">{fmt.compact(view?.value ?? 0)}</b>
+          {t.readoutPrincipal} <b>{fmt.compact(view?.principal ?? 0)}</b> → <b className="up">{fmt.compact(view?.value ?? 0)}</b>
           {view && view.principal > 0 && <span className="ro-badge">{fmt.growth(view.principal, view.value)}</span>}
         </span>
       </div>
@@ -167,7 +169,7 @@ export function GrowthChart({
         </div>
       )}
 
-      <div className={"chart-hint" + (live ? " off" : "")}>차트를 짚으면 그때의 결과가 보여요</div>
+      <div className={"chart-hint" + (live ? " off" : "")}>{t.hoverHint}</div>
     </div>
   );
 }

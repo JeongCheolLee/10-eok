@@ -11,6 +11,7 @@ import { TickerLogo } from "@/components/TickerLogo";
 import type { Locale } from "@/lib/i18n/locales";
 import { getMarket, type Market } from "@/lib/i18n/markets";
 import { getFormatter } from "@/lib/i18n/format";
+import { getDict, type Dict } from "@/lib/i18n/dict";
 import { TICKERS, type TickerInfo, tickerName, tickerTitle, tickerSubtitle, tickerCurrency } from "@/lib/tickers";
 
 
@@ -18,12 +19,18 @@ type Screen = "intro" | "form" | "loading" | "result";
 type Mode = "time" | "amount"; // time=기간이 궁금(정방향), amount=금액이 궁금(역산)
 type Initial = { ticker: string; mode: Mode; amount: number; years: number; lump: number; buyDay: number; target: number; infl: boolean; reinvest: boolean; tax: boolean } | null;
 
-/** 매수일 표시: 29일 이상은 '말일'(그 달 마지막 거래일)로 계산·표시. */
-const dayLabel = (d: number) => (d >= 29 ? "말일" : `${d}일`);
+/** 매수일 표시: 29일 이상은 '말일'(그 달 마지막 거래일)로 계산·표시. 라벨은 로케일 사전에서. */
+const dayLabel = (day: number, t: Dict["calc"]["day"]) => (day >= 29 ? t.last : t.nth(day));
+
+/** <b> 강조가 문장 중간에 든 카피 파츠를 렌더 (사전은 순수 데이터, <b> 구조는 컴포넌트에서). */
+function BoldLine({ p }: { p: { pre: string; bold: string; post: string } }) {
+  return <>{p.pre}<b>{p.bold}</b>{p.post}</>;
+}
 
 export function BacktestApp({ initial, locale }: { initial: Initial; locale: Locale }) {
   const market = getMarket(locale);
   const fmt = getFormatter(locale);
+  const d = getDict(locale);
   // 이 시장에서 고를 수 있는 종목(설정 순서 유지)
   const marketTickers = useMemo(() => TICKERS.filter((t) => market.tickers.includes(t.symbol)), [market]);
 
@@ -81,6 +88,8 @@ export function BacktestApp({ initial, locale }: { initial: Initial; locale: Loc
 
   // 목표·적립·목돈을 시장 입력 단위 → 통화값으로 (ko: 억=1e8, 만원=1e4)
   const goalValue = target * market.goal.unit;
+  const goalStr = fmt.milestone(goalValue); // 목표 라벨 ("10억" | "$1M")
+  const goalParts = fmt.amountParts(goalValue); // 히어로 큰 숫자용 숫자/단위 분리
   // 종목 데이터로 가능한 최대 기간(년). 역산 모드 기간 입력 상한.
   const maxYears = rows ? Math.max(1, Math.floor(monthsBetween(rows[0].date, rows[rows.length - 1].date) / 12)) : 40;
   const yearsUsed = Math.min(years, maxYears);
@@ -156,15 +165,15 @@ export function BacktestApp({ initial, locale }: { initial: Initial; locale: Loc
     if (!timing || !result) return null;
     const med = timing.median;
     const tgt = goalValue;
-    const medRough = med >= 100_000_000 ? `약 ${Math.round(med / 100_000_000)}억` : fmt.money(med);
-    const goal = `${target}억`;
+    const medRough = fmt.approx(med);
+    const goal = fmt.milestone(goalValue);
     if (result.reached && med < tgt) {
-      return `위의 ${fmt.money(result.value)}은 이 중 운이 좋았던 편이에요. 보통이면 ${medRough}으로, ${goal}엔 조금 못 미쳐요.`;
+      return d.calc.timing.bridge.reachedMedianBelow(fmt.money(result.value), medRough, goal);
     }
     if (result.reached && med >= tgt) {
-      return `보통이면 ${medRough}으로 ${goal}을 넘겨요. 다만 시작이 나빴다면 ${fmt.money(timing.min)}까지 낮아졌어요.`;
+      return d.calc.timing.bridge.reachedMedianAbove(medRough, goal, fmt.money(timing.min));
     }
-    return `보통이면 ${medRough}이고, 시작한 달에 따라 ${fmt.money(timing.min)}~${fmt.money(timing.max)}까지 갈렸어요.`;
+    return d.calc.timing.bridge.notReached(medRough, fmt.money(timing.min), fmt.money(timing.max));
   }, [timing, result, goalValue, target]); // eslint-disable-line
 
   function submit() {
@@ -174,23 +183,24 @@ export function BacktestApp({ initial, locale }: { initial: Initial; locale: Loc
   }
   function share() {
     const url = `${location.origin}/?${query}`;
+    const name = tickerName(ticker);
     const text =
       mode === "amount"
         ? (reqMonthly === 0
-            ? `${tickerName(ticker)} · 초기 투자금만으로 ${target}억 달성!`
-            : `${tickerName(ticker)}로 ${yearsUsed}년 안에 ${target}억 모으려면 매달 ${fmt.amount(reqMonthly ?? 0)}!`)
+            ? d.calc.share.lumpOnly(name, goalStr)
+            : d.calc.share.amountMode(name, yearsUsed, goalStr, fmt.amount(reqMonthly ?? 0)))
         : reached
-          ? `${tickerName(ticker)}에${lump > 0 ? ` ${lump}만원으로 시작해` : ""} 매달 ${amount}만원씩 모았다면 ${target}억까지 ${result!.years}년 ${result!.monthsRem}개월!`
-          : `${tickerName(ticker)} 적립 백테스트 — ${target}억까지 얼마나 걸릴까?`;
+          ? d.calc.share.timeReached(name, lump > 0 ? fmt.unitAmount(lump, market.lump.unitLabel) : "", fmt.unitAmount(amount, market.monthly.unitLabel), goalStr, result!.years, result!.monthsRem)
+          : d.calc.share.timeNotReached(name, goalStr);
     if (navigator.share) { navigator.share({ title: "10-eok", text, url }).catch(() => {}); }
-    else { navigator.clipboard?.writeText(`${text} ${url}`); setToast("링크가 복사됐어요"); window.setTimeout(() => setToast(""), 2000); }
+    else { navigator.clipboard?.writeText(`${text} ${url}`); setToast(d.calc.toast.linkCopied); window.setTimeout(() => setToast(""), 2000); }
   }
 
   if (loadErr) {
     return (
       <div className="overlay">
-        <div className="ov-msg">데이터를 못 불러왔어요.<br />잠시 후 다시 시도해 주세요.</div>
-        <button className="btn" style={{ width: "auto", padding: "14px 28px" }} onClick={() => location.reload()}>다시 시도</button>
+        <div className="ov-msg">{d.calc.error.loadFailed.line1}<br />{d.calc.error.loadFailed.line2}</div>
+        <button className="btn" style={{ width: "auto", padding: "14px 28px" }} onClick={() => location.reload()}>{d.calc.error.retry}</button>
       </div>
     );
   }
@@ -198,15 +208,15 @@ export function BacktestApp({ initial, locale }: { initial: Initial; locale: Loc
   return (
     <main className="app">
       <div className="top">
-        {screen === "result" && <div className="tag">탭하면 변경</div>}
+        {screen === "result" && <div className="tag">{d.calc.result.tapToEdit}</div>}
       </div>
 
-      {screen === "intro" && <Intro onStart={() => setScreen("form")} tickerCount={marketTickers.length} />}
+      {screen === "intro" && <Intro onStart={() => setScreen("form")} tickerCount={marketTickers.length} t={d.calc.intro} />}
 
       {screen === "form" && (
         <Form
           ticker={ticker} mode={mode} amount={amount} years={years} maxYears={maxYears} lump={lump} buyDay={buyDay}
-          market={market} tickers={marketTickers}
+          market={market} tickers={marketTickers} t={d.calc}
           onTicker={setTicker} onMode={setMode} onAmount={setAmount} onYears={setYears} onLump={setLump} onDay={setBuyDay} onSubmit={submit}
         />
       )}
@@ -214,78 +224,76 @@ export function BacktestApp({ initial, locale }: { initial: Initial; locale: Loc
       {(screen === "loading" || (screen === "result" && !result)) && (
         <div className="overlay">
           <div className="spinner" />
-          <div className="ov-msg">계산 중…</div>
+          <div className="ov-msg">{d.calc.loading.calculating}</div>
         </div>
       )}
 
       {screen === "result" && result && (
         <div className="reveal" key={revealKey}>
           <div className="modetoggle rv" style={{ ["--i" as string]: 0 }}>
-            <button className={mode === "time" ? "on" : ""} aria-pressed={mode === "time"} onClick={() => { setMode("time"); setEditMode(null); }}>기간이 궁금</button>
-            <button className={mode === "amount" ? "on" : ""} aria-pressed={mode === "amount"} onClick={() => { setMode("amount"); setEditMode(null); }}>금액이 궁금</button>
+            <button className={mode === "time" ? "on" : ""} aria-pressed={mode === "time"} onClick={() => { setMode("time"); setEditMode(null); }}>{d.calc.mode.timeTab}</button>
+            <button className={mode === "amount" ? "on" : ""} aria-pressed={mode === "amount"} onClick={() => { setMode("amount"); setEditMode(null); }}>{d.calc.mode.amountTab}</button>
           </div>
           <p className="mode-cap rv" style={{ ["--i" as string]: 0, marginBottom: 10 }}>
-            {mode === "time"
-              ? <>매달 정한 금액으로 <b>{target}억까지 몇 년</b> 걸리는지</>
-              : <>정한 기간 안에 {target}억을 모으려면 <b>매달 얼마씩</b> 넣을지</>}
+            <BoldLine p={mode === "time" ? d.calc.mode.capTime(goalStr) : d.calc.mode.capAmount(goalStr)} />
           </p>
           <div className="chips-wrap" ref={chipsRef}>
             <div className="chips">
               <button className={"chip rv" + (editMode === "ticker" ? " open" : "")} style={{ ["--i" as string]: 0 }} onClick={() => setEditMode((m) => (m === "ticker" ? null : "ticker"))}>
-                <div className="k">종목</div><div className="v vrow"><TickerLogo symbol={ticker} size={18} />{tickerTitle(ticker)}</div>
+                <div className="k">{d.calc.chip.ticker}</div><div className="v vrow"><TickerLogo symbol={ticker} size={18} />{tickerTitle(ticker)}</div>
               </button>
               {mode === "time" ? (
                 <button className={"chip rv" + (editMode === "amount" ? " open" : "")} style={{ ["--i" as string]: 0 }} onClick={() => setEditMode((m) => (m === "amount" ? null : "amount"))}>
-                  <div className="k">매달</div><div className="v">{amount}만원</div>
+                  <div className="k">{d.calc.chip.monthly}</div><div className="v">{fmt.unitAmount(amount, market.monthly.unitLabel)}</div>
                 </button>
               ) : (
                 <button className={"chip rv" + (editMode === "years" ? " open" : "")} style={{ ["--i" as string]: 0 }} onClick={() => setEditMode((m) => (m === "years" ? null : "years"))}>
-                  <div className="k">기간</div><div className="v">{yearsUsed}년 안에</div>
+                  <div className="k">{d.calc.chip.period}</div><div className="v">{d.calc.chip.periodValue(yearsUsed)}</div>
                 </button>
               )}
               <button className={"chip rv" + (editMode === "lump" ? " open" : "")} style={{ ["--i" as string]: 0 }} onClick={() => setEditMode((m) => (m === "lump" ? null : "lump"))}>
-                <div className="k">초기금</div><div className="v">{lump > 0 ? `${lump}만원` : "없음"}</div>
+                <div className="k">{d.calc.chip.lump}</div><div className="v">{lump > 0 ? fmt.unitAmount(lump, market.lump.unitLabel) : d.calc.chip.none}</div>
               </button>
               <button className={"chip rv" + (editMode === "day" ? " open" : "")} style={{ ["--i" as string]: 0 }} onClick={() => setEditMode((m) => (m === "day" ? null : "day"))}>
-                <div className="k">매수일</div><div className="v">{dayLabel(buyDay)}</div>
+                <div className="k">{d.calc.chip.buyDay}</div><div className="v">{dayLabel(buyDay, d.calc.day)}</div>
               </button>
               <button className={"chip rv" + (editMode === "target" ? " open" : "")} style={{ ["--i" as string]: 0 }} onClick={() => setEditMode((m) => (m === "target" ? null : "target"))}>
-                <div className="k">목표</div><div className="v">{target}억</div>
+                <div className="k">{d.calc.chip.goal}</div><div className="v">{goalStr}</div>
               </button>
             </div>
             {editMode && (
               <div className="chip-dropdown rv" style={{ ["--i" as string]: 0 }}>
                 {editMode === "ticker" && (
-                  <TickerSelect value={ticker} tickers={marketTickers} onChange={(s) => { setTicker(s); setEditMode(null); }} />
+                  <TickerSelect value={ticker} tickers={marketTickers} onChange={(s) => { setTicker(s); setEditMode(null); }} t={d.calc.select} />
                 )}
                 {editMode === "amount" && (
                   <div className="chip-dropdown-field">
-                    <div className="chip-dropdown-label">매달 적립 금액</div>
-                    <StepInput value={amount} onChange={setAmount} min={market.monthly.min} max={market.monthly.max} step={market.monthly.step} suffix={market.monthly.unitLabel} />
+                    <div className="chip-dropdown-label">{d.calc.dropdown.monthlyLabel}</div>
+                    <StepInput value={amount} onChange={setAmount} min={market.monthly.min} max={market.monthly.max} step={market.monthly.step} suffix={market.monthly.unitLabel} t={d.calc.stepper} />
                   </div>
                 )}
                 {editMode === "years" && (
                   <div className="chip-dropdown-field">
-                    <div className="chip-dropdown-label">목표 기간 (최대 {maxYears}년)</div>
-                    <StepInput value={years} onChange={setYears} min={1} max={maxYears} step={1} suffix="년" />
+                    <div className="chip-dropdown-label">{d.calc.dropdown.yearsLabel(maxYears)}</div>
+                    <StepInput value={years} onChange={setYears} min={1} max={maxYears} step={1} suffix={d.calc.units.years} t={d.calc.stepper} />
                   </div>
                 )}
                 {editMode === "lump" && (
                   <div className="chip-dropdown-field">
-                    <div className="chip-dropdown-label">초기 투자금</div>
-                    <StepInput value={lump} onChange={setLump} min={market.lump.min} max={market.lump.max} step={market.lump.step} suffix={market.lump.unitLabel} />
+                    <div className="chip-dropdown-label">{d.calc.dropdown.lumpLabel}</div>
+                    <StepInput value={lump} onChange={setLump} min={market.lump.min} max={market.lump.max} step={market.lump.step} suffix={market.lump.unitLabel} t={d.calc.stepper} />
                   </div>
                 )}
                 {editMode === "day" && (
                   <div className="chip-dropdown-field">
-                    <div className="chip-dropdown-label">매수일 (매달 며칠 · 29일은 말일)</div>
-                    <StepInput value={buyDay} onChange={setBuyDay} min={1} max={29} step={1} suffix="일" labelOverride={(v) => (v >= 29 ? "말일" : null)} />
+                    <div className="chip-dropdown-label">{d.calc.dropdown.buyDayLabel}</div>
+                    <StepInput value={buyDay} onChange={setBuyDay} min={1} max={29} step={1} suffix={d.calc.units.day} labelOverride={(v) => (v >= 29 ? d.calc.day.last : null)} t={d.calc.stepper} />
                   </div>
                 )}
                 {editMode === "target" && (
                   <div className="chip-dropdown-field">
-                    <div className="chip-dropdown-label">목표 금액</div>
-                    <StepInput value={target} onChange={setTarget} min={market.goal.min} max={market.goal.max} step={market.goal.step} suffix={market.goal.unitLabel} />
+                    <div className="chip-dropdown-label">{d.calc.dropdown.goalLabel}</div>
+                    <StepInput value={target} onChange={setTarget} min={market.goal.min} max={market.goal.max} step={market.goal.step} suffix={market.goal.unitLabel} t={d.calc.stepper} />
                   </div>
                 )}
               </div>
@@ -297,32 +305,32 @@ export function BacktestApp({ initial, locale }: { initial: Initial; locale: Loc
             {mode === "amount" ? (
               reqMonthly === 0 ? (
                 <>
-                  <div className="lead rv" style={{ ["--i" as string]: 1 }}>초기 투자금만으로</div>
-                  <div className="num pop" style={{ ["--i" as string]: 2 }}>{target}<span className="u">억</span> <span className="u">달성</span></div>
-                  <div className="span rv" style={{ ["--i" as string]: 3 }}>{yearsUsed}년 전 초기 투자금만으로 이미 {fmt.money(result.value)} · 매달 적립 없이도 OK</div>
+                  <div className="lead rv" style={{ ["--i" as string]: 1 }}>{d.calc.hero.lumpOnlyLead}</div>
+                  <div className="num pop" style={{ ["--i" as string]: 2 }}>{goalParts.n}<span className="u">{goalParts.u}</span> <span className="u">{d.calc.hero.achieved}</span></div>
+                  <div className="span rv" style={{ ["--i" as string]: 3 }}>{d.calc.hero.lumpOnlySpan(yearsUsed, fmt.money(result.value))}</div>
                 </>
               ) : (
                 <>
-                  <div className="lead rv" style={{ ["--i" as string]: 1 }}>{yearsUsed}년 안에 {target}억, 매달</div>
+                  <div className="lead rv" style={{ ["--i" as string]: 1 }}>{d.calc.hero.amountLead(yearsUsed, goalStr)}</div>
                   <div className="num pop" style={{ ["--i" as string]: 2 }}>{fmt.amountParts(animReq).n}<span className="u">{fmt.amountParts(animReq).u}</span></div>
                   <div className="span rv" style={{ ["--i" as string]: 3 }}>
-                    {tickerName(ticker)} 기준{lump > 0 ? ` · 초기 ${lump}만원 포함` : ""} · 원금 {fmt.money(result.principal)} 넣어 {fmt.money(result.value)} 만들기
+                    {d.calc.hero.amountSpan(tickerName(ticker), lump > 0 ? fmt.unitAmount(lump, market.lump.unitLabel) : "", fmt.money(result.principal), fmt.money(result.value))}
                   </div>
                 </>
               )
             ) : (
               <>
                 <div className={"lead rv" + (reached ? "" : " under")} style={{ ["--i" as string]: 1 }}>
-                  {reached ? `${lump > 0 ? `${lump}만원으로 시작해 ` : ""}매달 ${amount}만원씩이면` : "전 구간 모아도"}
+                  {reached ? d.calc.hero.timeLeadReached(lump > 0 ? fmt.unitAmount(lump, market.lump.unitLabel) : "", fmt.unitAmount(amount, market.monthly.unitLabel)) : d.calc.hero.timeLeadUnder}
                 </div>
                 <div className="num pop" style={{ ["--i" as string]: 2 }}>
-                  {Math.floor(heroMonths / 12)}<span className="u">년</span> {heroMonths % 12}<span className="u">개월</span>
-                  {reached && <span className="u"> 만에</span>}
+                  {Math.floor(heroMonths / 12)}<span className="u">{d.calc.hero.durYear}</span> {heroMonths % 12}<span className="u">{d.calc.hero.durMonth}</span>
+                  {reached && <span className="u">{d.calc.hero.durIn}</span>}
                 </div>
                 <div className="span rv" style={{ ["--i" as string]: 3 }}>
                   {reached
-                    ? `${target}억을 모을 수 있어요 · ${result.series[0] ? fmt.ym(result.series[0].date) : ""}부터 모았다면 지금 ${fmt.money(result.value)}`
-                    : `${result.series[0] ? fmt.ym(result.series[0].date) : ""}부터 모아도 지금 ${fmt.rough(result.value)} · ${target}억까진 멀어요`}
+                    ? d.calc.hero.timeSpanReached(goalStr, result.series[0] ? fmt.ym(result.series[0].date) : "", fmt.money(result.value))
+                    : d.calc.hero.timeSpanUnder(result.series[0] ? fmt.ym(result.series[0].date) : "", fmt.rough(result.value), goalStr)}
                 </div>
               </>
             )}
@@ -330,47 +338,47 @@ export function BacktestApp({ initial, locale }: { initial: Initial; locale: Loc
           </div>
 
           <div className="card rv" style={{ ["--i" as string]: 4 }}>
-            <div className="clab"><span>자산 성장 (KRW)</span><span>목표 {target}억</span></div>
+            <div className="clab"><span>{d.calc.card.growthTitle(market.currency)}</span><span>{d.calc.card.goalLabel(goalStr)}</span></div>
             <GrowthChart
               series={chartSeries}
               target={goalValue} reached={mode === "amount" ? true : reached} locale={locale}
             />
             <div className="stats">
-              <div className="stat"><div className="k">원금</div><div className="v">{fmt.money(animPrincipal)}</div></div>
-              <div className="stat"><div className="k">최종 금액</div><div className={"v" + (mode === "amount" || reached ? " up" : "")}>{fmt.money(result.value)}</div></div>
+              <div className="stat"><div className="k">{d.calc.stat.principal}</div><div className="v">{fmt.money(animPrincipal)}</div></div>
+              <div className="stat"><div className="k">{d.calc.stat.finalValue}</div><div className={"v" + (mode === "amount" || reached ? " up" : "")}>{fmt.money(result.value)}</div></div>
               <div className="stat" style={{ cursor: "help" }} onClick={() => setTipOpen((v) => !v)}>
-                <div className="k">연평균 ⓘ</div><div className="v up">{fmt.pct(result.cagr)}</div>
+                <div className="k">{d.calc.stat.cagr} ⓘ</div><div className="v up">{fmt.pct(result.cagr)}</div>
               </div>
             </div>
           </div>
 
-          {tipOpen && <div id="tip">연평균 {fmt.pct(result.cagr)}는 1년에 평균 이만큼씩 늘었다는 뜻이에요. (과거 수익률 기준)</div>}
+          {tipOpen && <div id="tip">{d.calc.tip.cagr(fmt.pct(result.cagr))}</div>}
 
           {timing && (
             <div className="card rv" style={{ ["--i" as string]: 5 }}>
-              <div className="clab"><span>시작한 달에 따라 이렇게 달라져요</span></div>
-              <p className="timing-lead">매달 같은 {fmt.amount(mode === "amount" ? (reqMonthly ?? 0) : amount * market.monthly.unit)}을 똑같이 {Math.round((mode === "amount" ? yearsUsed * 12 : result.months) / 12)}년 넣어도, <b>시작한 달</b>이 언제였냐에 따라 최종 금액이 이만큼 갈렸어요.</p>
+              <div className="clab"><span>{d.calc.timing.title}</span></div>
+              <p className="timing-lead"><BoldLine p={d.calc.timing.lead(fmt.amount(mode === "amount" ? (reqMonthly ?? 0) : amount * market.monthly.unit), Math.round((mode === "amount" ? yearsUsed * 12 : result.months) / 12))} /></p>
               <div className="stats" style={{ borderTop: 0, paddingTop: 0, marginTop: 4 }}>
-                <div className="stat"><div className="k">운 나빴다면</div><div className="v">{fmt.money(timing.min)}</div></div>
-                <div className="stat"><div className="k">보통이면</div><div className="v">{fmt.money(timing.median)}</div></div>
-                <div className="stat"><div className="k">운 좋았다면</div><div className="v up">{fmt.money(timing.max)}</div></div>
+                <div className="stat"><div className="k">{d.calc.timing.worst}</div><div className="v">{fmt.money(timing.min)}</div></div>
+                <div className="stat"><div className="k">{d.calc.timing.median}</div><div className="v">{fmt.money(timing.median)}</div></div>
+                <div className="stat"><div className="k">{d.calc.timing.best}</div><div className="v up">{fmt.money(timing.max)}</div></div>
               </div>
               {timingBridge && <p className="timing-lead" style={{ marginTop: 10, color: "var(--ink)" }}>{timingBridge}</p>}
-              <div className="timing-note">최악: {fmt.ym(timing.minStart)} 시작 · 최선: {fmt.ym(timing.maxStart)} · 과거 시작 시점 {timing.samples}개 비교</div>
+              <div className="timing-note">{d.calc.timing.note(fmt.ym(timing.minStart), fmt.ym(timing.maxStart), timing.samples)}</div>
             </div>
           )}
 
           {monthly.length > 0 && (
             <div className="card rv" style={{ ["--i" as string]: 6 }}>
-              <div className="clab"><span>월별 기록</span><span>매수일 {dayLabel(buyDay)} · {mode === "amount" ? fmt.amount(reqMonthly ?? 0) : `${amount}만원`}</span></div>
-              <p className="loglead">달마다 계좌가 얼마였는지 연도별로 접어뒀어요. 연도를 누르면 펼쳐져요.</p>
+              <div className="clab"><span>{d.calc.card.monthlyLogTitle}</span><span>{d.calc.card.buyDaySummary(dayLabel(buyDay, d.calc.day), mode === "amount" ? fmt.amount(reqMonthly ?? 0) : fmt.unitAmount(amount, market.monthly.unitLabel))}</span></div>
+              <p className="loglead">{d.calc.card.monthlyLogLead}</p>
               <MonthlyLog months={monthly} target={goalValue} locale={locale} />
             </div>
           )}
 
           <div className="opts rv" style={{ ["--i" as string]: 7 }}>
             <label className="opt">
-              <span>물가만큼 매년 인상 <i>적립액을 물가지수만큼 올림</i></span>
+              <span>{d.calc.opt.inflationLabel} <i>{d.calc.opt.inflationDesc}</i></span>
               <input type="checkbox" checked={infl} onChange={(e) => setInfl(e.target.checked)} />
             </label>
             {/* 배당 재투자·양도세 토글은 일단 숨김 (기능 보류)
@@ -386,7 +394,7 @@ export function BacktestApp({ initial, locale }: { initial: Initial; locale: Loc
           </div>
 
           <div className="btnrow rv" style={{ ["--i" as string]: 8, marginBottom: 24 }}>
-            <button className="btn share" onClick={share}>결과 공유하기</button>
+            <button className="btn share" onClick={share}>{d.calc.result.shareButton}</button>
           </div>
         </div>
       )}
@@ -419,10 +427,11 @@ function Confetti() {
   );
 }
 
-function StepInput({ value, onChange, min, max, step, suffix, bare, labelOverride }: {
+function StepInput({ value, onChange, min, max, step, suffix, bare, labelOverride, t }: {
   value: number; onChange: (v: number) => void; min: number; max: number; step: number; suffix: string; bare?: boolean;
   /** 특정 값에서 숫자 입력 대신 정적 라벨을 보여줄 때 (예: 매수일 29 → '말일'). null이면 기본 숫자 입력. */
   labelOverride?: (v: number) => string | null;
+  t: { decrease: string; increase: string };
 }) {
   const [text, setText] = useState(String(value));
   useEffect(() => { setText(String(value)); }, [value]);
@@ -434,7 +443,7 @@ function StepInput({ value, onChange, min, max, step, suffix, bare, labelOverrid
   const label = labelOverride ? labelOverride(value) : null;
   return (
     <div className={"stepper" + (bare ? " bare" : "")}>
-      <button type="button" aria-label="줄이기" onClick={() => onChange(clamp(value - step))}>−</button>
+      <button type="button" aria-label={t.decrease} onClick={() => onChange(clamp(value - step))}>−</button>
       <div className="val">
         {label != null ? (
           <span className="static">{label}</span>
@@ -451,37 +460,32 @@ function StepInput({ value, onChange, min, max, step, suffix, bare, labelOverrid
           </>
         )}
       </div>
-      <button type="button" aria-label="늘리기" onClick={() => onChange(clamp(value + step))}>+</button>
+      <button type="button" aria-label={t.increase} onClick={() => onChange(clamp(value + step))}>+</button>
     </div>
   );
 }
 
-function Intro({ onStart, tickerCount }: { onStart: () => void; tickerCount: number }) {
+function Intro({ onStart, tickerCount, t }: { onStart: () => void; tickerCount: number; t: Dict["calc"]["intro"] }) {
   return (
     <>
       <div className="intro-mid">
-        <h1><b>10억 모으기</b>,<br />얼마나 걸릴까?</h1>
-        <div className="sub">
-          QLD·QQQ·SPY 같은 ETF를 매달 일정 금액씩 모았다면 목표 10억 원까지 얼마나 걸렸을지,
-          가정 수익률이 아니라 <b>실제 과거의 일별 주가와 그날의 원/달러 환율</b>로 계산해 드려요.
-        </div>
-        <div className="intro-disc">
-          교육·정보 제공용 백테스트입니다. 투자 권유가 아니며, 과거 수익은 미래를 보장하지 않습니다.
-        </div>
+        <h1><b>{t.titleBold}</b>,<br />{t.titleRest}</h1>
+        <div className="sub">{t.sub.pre}<b>{t.sub.bold}</b>{t.sub.post}</div>
+        <div className="intro-disc">{t.disclaimer}</div>
       </div>
       <div className="cta">
-        <button className="btn" onClick={onStart}>계산 시작하기</button>
-        <div className="hint">종목·금액·날짜만 정하면 끝 · 아래에서 {tickerCount}개 ETF 결과 비교와 투자 가이드도 볼 수 있어요</div>
+        <button className="btn" onClick={onStart}>{t.startButton}</button>
+        <div className="hint">{t.hint(tickerCount)}</div>
       </div>
     </>
   );
 }
 
 function Form({
-  ticker, mode, amount, years, maxYears, lump, buyDay, market, tickers, onTicker, onMode, onAmount, onYears, onLump, onDay, onSubmit,
+  ticker, mode, amount, years, maxYears, lump, buyDay, market, tickers, t, onTicker, onMode, onAmount, onYears, onLump, onDay, onSubmit,
 }: {
   ticker: string; mode: Mode; amount: number; years: number; maxYears: number; lump: number; buyDay: number;
-  market: Market; tickers: TickerInfo[];
+  market: Market; tickers: TickerInfo[]; t: Dict["calc"];
   onTicker: (v: string) => void; onMode: (m: Mode) => void; onAmount: (v: number) => void; onYears: (v: number) => void; onLump: (v: number) => void; onDay: (v: number) => void; onSubmit: () => void;
 }) {
   return (
@@ -489,47 +493,45 @@ function Form({
       <div className="form-mid">
         <div>
           <div className="modetoggle">
-            <button className={mode === "time" ? "on" : ""} aria-pressed={mode === "time"} onClick={() => onMode("time")}>기간이 궁금</button>
-            <button className={mode === "amount" ? "on" : ""} aria-pressed={mode === "amount"} onClick={() => onMode("amount")}>금액이 궁금</button>
+            <button className={mode === "time" ? "on" : ""} aria-pressed={mode === "time"} onClick={() => onMode("time")}>{t.mode.timeTab}</button>
+            <button className={mode === "amount" ? "on" : ""} aria-pressed={mode === "amount"} onClick={() => onMode("amount")}>{t.mode.amountTab}</button>
           </div>
           <p className="mode-cap">
-            {mode === "time"
-              ? <>매달 정한 금액으로 <b>10억까지 몇 년</b> 걸리는지 계산해요</>
-              : <>정한 기간 안에 10억을 모으려면 <b>매달 얼마씩</b> 넣을지 계산해요</>}
+            <BoldLine p={mode === "time" ? t.form.capTime : t.form.capAmount} />
           </p>
         </div>
         <div className="field">
-          <div className="flabel">어떤 종목을 모을까요?</div>
-          <TickerSelect value={ticker} tickers={tickers} onChange={onTicker} />
+          <div className="flabel">{t.form.tickerLabel}</div>
+          <TickerSelect value={ticker} tickers={tickers} onChange={onTicker} t={t.select} />
         </div>
         <div className="field">
-          <div className="flabel">시작할 때 넣을 목돈이 있나요? (없으면 0)</div>
-          <StepInput value={lump} onChange={onLump} min={market.lump.min} max={market.lump.max} step={market.lump.step} suffix={market.lump.unitLabel} />
+          <div className="flabel">{t.form.lumpLabel}</div>
+          <StepInput value={lump} onChange={onLump} min={market.lump.min} max={market.lump.max} step={market.lump.step} suffix={market.lump.unitLabel} t={t.stepper} />
         </div>
         {mode === "time" ? (
           <div className="field">
-            <div className="flabel">매달 얼마씩 넣을까요?</div>
-            <StepInput value={amount} onChange={onAmount} min={market.monthly.min} max={market.monthly.max} step={market.monthly.step} suffix={market.monthly.unitLabel} />
+            <div className="flabel">{t.form.monthlyLabel}</div>
+            <StepInput value={amount} onChange={onAmount} min={market.monthly.min} max={market.monthly.max} step={market.monthly.step} suffix={market.monthly.unitLabel} t={t.stepper} />
           </div>
         ) : (
           <div className="field">
-            <div className="flabel">몇 년 안에 모을까요? (최대 {maxYears}년)</div>
-            <StepInput value={years} onChange={onYears} min={1} max={maxYears} step={1} suffix="년" />
+            <div className="flabel">{t.form.yearsLabel(maxYears)}</div>
+            <StepInput value={years} onChange={onYears} min={1} max={maxYears} step={1} suffix={t.units.years} t={t.stepper} />
           </div>
         )}
         <div className="field">
-          <div className="flabel">매달 며칠에 살까요? (29일은 말일)</div>
-          <StepInput value={buyDay} onChange={onDay} min={1} max={29} step={1} suffix="일" labelOverride={(v) => (v >= 29 ? "말일" : null)} />
+          <div className="flabel">{t.form.buyDayLabel}</div>
+          <StepInput value={buyDay} onChange={onDay} min={1} max={29} step={1} suffix={t.units.day} labelOverride={(v) => (v >= 29 ? t.day.last : null)} t={t.stepper} />
         </div>
       </div>
       <div className="cta">
-        <button className="btn" onClick={onSubmit}>{mode === "amount" ? "필요 금액 계산하기" : "10억까지 계산하기"}</button>
+        <button className="btn" onClick={onSubmit}>{mode === "amount" ? t.form.submitAmount : t.form.submitTime}</button>
       </div>
     </>
   );
 }
 
-function TickerSelect({ value, tickers, onChange }: { value: string; tickers: TickerInfo[]; onChange: (s: string) => void }) {
+function TickerSelect({ value, tickers, onChange, t }: { value: string; tickers: TickerInfo[]; onChange: (s: string) => void; t: Dict["calc"]["select"] }) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const s = q.trim().toLowerCase();
@@ -545,7 +547,7 @@ function TickerSelect({ value, tickers, onChange }: { value: string; tickers: Ti
       </button>
       {open && (
         <div className="select-panel">
-          <input className="select-search" placeholder="종목 검색 (이름·티커)" value={q} onChange={(e) => setQ(e.target.value)} autoFocus />
+          <input className="select-search" placeholder={t.searchPlaceholder} value={q} onChange={(e) => setQ(e.target.value)} autoFocus />
           <div className="select-list">
             {list.map((t) => (
               <button key={t.symbol} className={"select-item" + (t.symbol === value ? " sel" : "")} onClick={() => { onChange(t.symbol); setOpen(false); setQ(""); }}>
@@ -553,7 +555,7 @@ function TickerSelect({ value, tickers, onChange }: { value: string; tickers: Ti
                 <span className="pcol"><span className="pn">{tickerTitle(t.symbol)}</span><span className="ps">{tickerSubtitle(t.symbol)}</span></span>
               </button>
             ))}
-            {list.length === 0 && <div className="select-empty">검색 결과 없음</div>}
+            {list.length === 0 && <div className="select-empty">{t.empty}</div>}
           </div>
         </div>
       )}
