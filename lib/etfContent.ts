@@ -1,9 +1,15 @@
 // 종목별 고유 분석 콘텐츠 (E-E-A-T·thin 콘텐츠 보강용).
 // 멀티에이전트 작성 + YMYL 적대 검증을 거친 결과를 데이터로 보관하고, /etf/[symbol] 에서 렌더.
+import type { Locale } from "./i18n/locales";
+import { ETF_EN } from "./content/etf/en";
+import { ETF_JA } from "./content/etf/ja";
+import { ETF_DE } from "./content/etf/de";
+
 export type EtfSection = { h: string; paras: string[] };
 export type EtfContent = { lead: string; sections: EtfSection[] };
 
-export const ETF_CONTENT: Record<string, EtfContent> = {
+// ko(기준). en/ja/de는 lib/content/etf/*(7개 USD 종목 — FX는 시장별 개작, 세금은 일반화; KODEX는 ko 전용).
+const ETF_KO: Record<string, EtfContent> = {
   "QLD": {
     "lead": "QLD(ProShares Ultra QQQ)는 미국 나스닥100 지수의 '하루' 수익률을 2배로 따라가도록 만든 레버리지 ETF입니다. 2006년에 상장돼 데이터가 길어 적립식 백테스트에 자주 등장하죠. 애플·마이크로소프트·엔비디아 같은 기술 대형주가 가득한 지수를, 빌린 돈을 보태 하루 단위로 2배 밟는 구조라고 보면 됩니다.",
     "sections": [
@@ -276,3 +282,10 @@ export const ETF_CONTENT: Record<string, EtfContent> = {
     ]
   }
 };
+
+const ETF_BY_LOCALE: Record<Locale, Record<string, EtfContent>> = { ko: ETF_KO, en: ETF_EN, ja: ETF_JA, de: ETF_DE };
+
+/** 종목·로케일별 분석 콘텐츠. 로케일에 없으면 ko로 폴백(ko 불변, KODEX는 ko 전용). */
+export function getEtfContent(symbol: string, locale: Locale): EtfContent | undefined {
+  return ETF_BY_LOCALE[locale]?.[symbol] ?? ETF_KO[symbol];
+}

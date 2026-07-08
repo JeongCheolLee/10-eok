@@ -9,7 +9,8 @@ import { TICKERS, tickerName, tickerCurrency } from "@/lib/tickers";
 import { bundleToRows, type Bundle } from "@/lib/backtest/types";
 import { runToToday } from "@/lib/backtest/simulate";
 import { eok, pct } from "@/lib/format";
-import { ETF_CONTENT } from "@/lib/etfContent";
+import { getEtfContent } from "@/lib/etfContent";
+import type { Locale } from "@/lib/i18n/locales";
 import { Sources } from "@/components/Sources";
 import type { SourceId } from "@/lib/sources";
 
@@ -112,8 +113,8 @@ export async function generateMetadata({ params }: { params: Promise<{ symbol: s
   };
 }
 
-export default async function EtfPage({ params }: { params: Promise<{ symbol: string }> }) {
-  const { symbol } = await params;
+export default async function EtfPage({ params }: { params: Promise<{ lang: string; symbol: string }> }) {
+  const { lang, symbol } = await params;
   const info = resolve(symbol);
   if (!info) notFound();
 
@@ -122,7 +123,7 @@ export default async function EtfPage({ params }: { params: Promise<{ symbol: st
   const lc = sym.toLowerCase();
   const label = tickerCurrency(sym) === "KRW" ? tickerName(sym) : sym;
   const blurb = BLURB[sym] ?? { line: `${tickerName(sym)} 적립식 백테스트 결과입니다.`, guides: [{ href: "/guides", label: "투자 가이드" }] };
-  const content = ETF_CONTENT[sym];
+  const content = getEtfContent(sym, lang as Locale);
   const startYm = r.series[0] ? r.series[0].date.slice(0, 7).replace("-", "년 ") + "월" : "";
   const appHref = `/?t=${sym}&m=${M}&d=${D}&g=${G}`;
   const title = `${label} 적립식 백테스트`;
