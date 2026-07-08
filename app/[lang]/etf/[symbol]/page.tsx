@@ -6,21 +6,20 @@ import { notFound } from "next/navigation";
 import { ContentShell } from "@/components/ContentShell";
 import { JsonLd, articleLd, pageBreadcrumbLd } from "@/components/JsonLd";
 import { TICKERS, tickerName, tickerCurrency } from "@/lib/tickers";
-import { bundleToRows, type Bundle } from "@/lib/backtest/types";
+import { composeRows, type PxBundle, type FxBundle } from "@/lib/backtest/compose";
 import { runToToday } from "@/lib/backtest/simulate";
-import { eok, pct } from "@/lib/format";
 import { getEtfContent } from "@/lib/etfContent";
+import { getMarket, type Market } from "@/lib/i18n/markets";
+import { getFormatter } from "@/lib/i18n/format";
+import { getDict } from "@/lib/i18n/dict";
+import { langAlternates, localeHref } from "@/lib/i18n/seo";
 import type { Locale } from "@/lib/i18n/locales";
 import { Sources } from "@/components/Sources";
 import type { SourceId } from "@/lib/sources";
 
-// 기본 시나리오: 매달 100만원, 1일, 목표 10억
-const M = 100;
-const D = 1;
-const G = 10;
-
-type Blurb = { line: string; guides: { href: string; label: string }[] };
-const BLURB: Record<string, Blurb> = {
+// ko 전용(불변) — 현재 렌더 문구·순서·구조를 그대로 보존. 새 로케일은 RELATED_SLUGS/GUIDE_LABEL 사용.
+type KoBlurb = { line: string; guides: { href: string; label: string }[] };
+const BLURB_KO: Record<string, KoBlurb> = {
   QLD: {
     line: "QLD는 미국 나스닥100 지수의 하루 수익률을 2배로 추종하는 레버리지 ETF입니다. 변동이 큰 만큼 적립식 효과도, 위험도 함께 커집니다.",
     guides: [
@@ -78,56 +77,124 @@ const BLURB: Record<string, Blurb> = {
     ],
   },
 };
+function koBlurb(sym: string): KoBlurb {
+  return BLURB_KO[sym] ?? { line: `${tickerName(sym)} 적립식 백테스트 결과입니다.`, guides: [{ href: "/guides", label: "투자 가이드" }] };
+}
 
-export function generateStaticParams() {
-  return TICKERS.map((t) => ({ symbol: t.symbol.toLowerCase() }));
+// en/ja/de(신규 로케일) 관련 가이드 — 가이드 7편 중 번역이 끝난 6편만 사용(overseas-tax·fx-impact는 ko 전용).
+const RELATED_SLUGS: Record<string, string[]> = {
+  QLD: ["qld", "leverage-etf-risk"],
+  TQQQ: ["leverage-etf-risk", "qld"],
+  QQQ: ["etf-basics", "dca"],
+  SPY: ["etf-basics", "dca-vs-lumpsum"],
+  VOO: ["etf-basics", "nasdaq100-vs-sp500"],
+  SCHD: ["etf-basics", "dca-vs-lumpsum"],
+  VT: ["etf-basics", "dca"],
+  SOXX: ["etf-basics", "dca"],
+  VGT: ["etf-basics", "dca"],
+  VNQ: ["etf-basics", "dca-vs-lumpsum"],
+  GLD: ["etf-basics", "dca"],
+  TLT: ["etf-basics", "dca"],
+  AGG: ["etf-basics", "dca"],
+  JEPI: ["etf-basics", "dca-vs-lumpsum"],
+  JEPQ: ["etf-basics", "dca-vs-lumpsum"],
+};
+const GUIDE_LABEL: Record<string, Record<Locale, string>> = {
+  qld: { ko: "QLD란 무엇인가", en: "What Is QLD?", ja: "QLDとは何か", de: "Was ist QLD?" },
+  "leverage-etf-risk": { ko: "레버리지 ETF의 위험", en: "The Risks of Leveraged ETFs", ja: "レバレッジETFのリスク", de: "Das Risiko von Hebel-ETFs" },
+  "etf-basics": { ko: "ETF가 뭔가요?", en: "What Is an ETF?", ja: "ETFって何?", de: "Was ist ein ETF?" },
+  dca: { ko: "적립식 투자의 원리", en: "The Logic of DCA", ja: "積立投資(DCA)の仕組み", de: "Das Prinzip des Sparplans (DCA)" },
+  "dca-vs-lumpsum": { ko: "적립식 vs 거치식", en: "DCA vs. Lump Sum", ja: "積立投資 vs 一括投資", de: "Sparplan vs. Einmalanlage" },
+  "nasdaq100-vs-sp500": { ko: "나스닥100 vs S&P 500", en: "Nasdaq-100 vs. S&P 500", ja: "ナスダック100 vs S&P 500", de: "Nasdaq 100 vs. S&P 500" },
+};
+function relatedGuides(sym: string, locale: Locale): { href: string; label: string }[] {
+  const slugs = RELATED_SLUGS[sym] ?? ["etf-basics", "dca"];
+  return slugs.map((slug) => ({ href: localeHref(locale, `/guides/${slug}`), label: GUIDE_LABEL[slug][locale] }));
+}
+
+export function generateStaticParams({ params }: { params: { lang: string } }) {
+  const market = getMarket(params.lang as Locale);
+  return market.tickers.map((symbol) => ({ symbol: symbol.toLowerCase() }));
 }
 
 function resolve(symbolParam: string) {
   return TICKERS.find((t) => t.symbol.toLowerCase() === symbolParam.toLowerCase()) ?? null;
 }
 
-async function compute(symbol: string) {
-  const file = path.join(process.cwd(), "public", "data", `${symbol.toLowerCase()}.json`);
-  const b = JSON.parse(await fs.readFile(file, "utf8")) as Bundle;
-  return runToToday(bundleToRows(b), { monthly: M * 10000, buyDay: D, target: G * 100_000_000 });
+/** 미국 대표 티커는 원어 그대로(sym), KRW 종목(KODEX)만 한국어 이름 사용 — locale과 무관, 자산의 원 통화 기준. */
+function tickerLabel(symbol: string): string {
+  return tickerCurrency(symbol) === "KRW" ? tickerName(symbol) : symbol;
 }
 
-function display(symbol: string) {
+async function compute(symbol: string, market: Market) {
+  const dataDir = path.join(process.cwd(), "public", "data");
+  const fx = market.fxFile ? (JSON.parse(await fs.readFile(path.join(dataDir, market.fxFile), "utf8")) as FxBundle) : null;
+  const px = JSON.parse(await fs.readFile(path.join(dataDir, "px", `${symbol.toLowerCase()}.json`), "utf8")) as PxBundle;
+  const isNative = tickerCurrency(symbol) === market.currency;
+  const monthly = market.monthly.default * market.monthly.unit;
+  const target = market.goal.default * market.goal.unit;
+  const r = runToToday(composeRows(px, isNative ? null : fx), { monthly, buyDay: 1, target });
+  return { r, isNative };
+}
+
+/** ko는 기존 문자열 슬라이스 그대로(불변, 앞자리 0 유지: "2002년 01월"). 신규 로케일은 공용 포맷터. */
+function startYmLabel(dateIso: string | undefined, locale: Locale, fmt: ReturnType<typeof getFormatter>): string {
+  if (!dateIso) return "";
+  if (locale === "ko") return dateIso.slice(0, 7).replace("-", "년 ") + "월";
+  return fmt.ym(dateIso);
+}
+
+function display(symbol: string): string {
   return tickerCurrency(symbol) === "KRW" ? `${tickerName(symbol)}(${symbol})` : `${symbol}(${tickerName(symbol)})`;
 }
 
-export async function generateMetadata({ params }: { params: Promise<{ symbol: string }> }): Promise<Metadata> {
-  const { symbol } = await params;
+export async function generateMetadata({ params }: { params: Promise<{ lang: string; symbol: string }> }): Promise<Metadata> {
+  const { lang, symbol } = await params;
+  const locale = lang as Locale;
   const info = resolve(symbol);
-  if (!info) return {};
-  const label = tickerCurrency(info.symbol) === "KRW" ? tickerName(info.symbol) : info.symbol;
-  const title = `${label} 적립식 백테스트 — 매달 ${M}만원이면 10억까지? · 10-eok`;
-  const description = `${display(info.symbol)}에 매달 ${M}만원씩 적립했다면 10억까지 얼마나 걸렸을지, 실제 과거 가격으로 계산한 결과와 직접 계산하는 도구를 제공합니다.`;
+  const market = getMarket(locale);
+  if (!info || !market.tickers.includes(info.symbol)) return {};
+  const fmt = getFormatter(locale);
+  const d = getDict(locale);
+  const label = tickerLabel(info.symbol);
+  const monthlyStr = fmt.unitAmount(market.monthly.default, market.monthly.unitLabel);
+  const goalStr = fmt.milestone(market.goal.default * market.goal.unit);
+  const title = d.etf.metaTitle(label, monthlyStr, goalStr);
+  const description = d.etf.metaDesc(display(info.symbol), monthlyStr, goalStr);
+  const ogImg = `/api/og?t=${info.symbol}&m=${market.monthly.default}&d=1&g=${market.goal.default}`;
   return {
     title,
     description,
-    alternates: { canonical: `/etf/${info.symbol.toLowerCase()}` },
-    openGraph: { title, description, type: "article", images: [{ url: `/api/og?t=${info.symbol}&m=${M}&d=${D}&g=${G}`, width: 1200, height: 630 }] },
-    twitter: { card: "summary_large_image", title, images: [`/api/og?t=${info.symbol}&m=${M}&d=${D}&g=${G}`] },
+    alternates: langAlternates(locale, `/etf/${info.symbol.toLowerCase()}`),
+    openGraph: { title, description, type: "article", images: [{ url: ogImg, width: 1200, height: 630 }] },
+    twitter: { card: "summary_large_image", title, images: [ogImg] },
   };
 }
 
 export default async function EtfPage({ params }: { params: Promise<{ lang: string; symbol: string }> }) {
   const { lang, symbol } = await params;
+  const locale = lang as Locale;
   const info = resolve(symbol);
   if (!info) notFound();
+  const market = getMarket(locale);
+  if (!market.tickers.includes(info.symbol)) notFound();
 
-  const r = await compute(info.symbol);
+  const fmt = getFormatter(locale);
+  const d = getDict(locale);
+  const { r, isNative } = await compute(info.symbol, market);
   const sym = info.symbol;
   const lc = sym.toLowerCase();
-  const label = tickerCurrency(sym) === "KRW" ? tickerName(sym) : sym;
-  const blurb = BLURB[sym] ?? { line: `${tickerName(sym)} 적립식 백테스트 결과입니다.`, guides: [{ href: "/guides", label: "투자 가이드" }] };
-  const content = getEtfContent(sym, lang as Locale);
-  const startYm = r.series[0] ? r.series[0].date.slice(0, 7).replace("-", "년 ") + "월" : "";
-  const appHref = `/?t=${sym}&m=${M}&d=${D}&g=${G}`;
-  const title = `${label} 적립식 백테스트`;
-  const sourceIds: SourceId[] = tickerCurrency(sym) === "USD" ? ["yahoo", "fredFx"] : ["yahoo"];
+  const label = tickerLabel(sym);
+  const content = getEtfContent(sym, locale);
+  const monthlyStr = fmt.unitAmount(market.monthly.default, market.monthly.unitLabel);
+  const goalStr = fmt.milestone(market.goal.default * market.goal.unit);
+  const startYm = startYmLabel(r.series[0]?.date, locale, fmt);
+  const appHref = `${localeHref(locale, "/")}?t=${sym}&m=${market.monthly.default}&d=1&g=${market.goal.default}`;
+  const title = d.etf.pageTitle(label);
+  const leadFallback = locale === "ko" ? koBlurb(sym).line : d.etf.fallbackBlurb(label);
+  const articleDesc = locale === "ko" ? koBlurb(sym).line : (content?.lead ?? d.etf.fallbackBlurb(label));
+  const guides = locale === "ko" ? koBlurb(sym).guides : relatedGuides(sym, locale);
+  const sourceIds: SourceId[] = isNative ? ["yahoo"] : ["yahoo", "fredFx"];
   if (sym === "QLD") sourceIds.push("prosharesQld");
   if (sym === "TQQQ") sourceIds.push("prosharesTqqq");
   if (sym === "VOO") sourceIds.push("vanguardVoo");
@@ -135,34 +202,32 @@ export default async function EtfPage({ params }: { params: Promise<{ lang: stri
   if (sym === "VT") sourceIds.push("vanguardVt");
 
   return (
-    <ContentShell title={title} desc={`매달 ${M}만원씩 모았다면 10억까지 얼마나 걸렸을까`} crumb={`종목 · ${label}`}>
-      <JsonLd data={articleLd({ path: `/etf/${lc}`, title, description: blurb.line })} />
+    <ContentShell title={title} desc={d.etf.pageDesc(monthlyStr, goalStr)} crumb={d.etf.crumb(label)}>
+      <JsonLd data={articleLd({ path: `/etf/${lc}`, title, description: articleDesc })} />
       <JsonLd data={pageBreadcrumbLd(label, `/etf/${lc}`)} />
 
-      <p>{content?.lead ?? blurb.line}</p>
+      <p>{content?.lead ?? leadFallback}</p>
 
       <div className="callout">
         {r.reached ? (
           <>
-            <strong>매달 {M}만원씩이면 약 {r.years}년 {r.monthsRem}개월 만에 10억</strong>
+            <strong>{d.etf.reachedHeadline(monthlyStr, r.years, r.monthsRem, goalStr)}</strong>
             <br />
-            {startYm}부터 모았다면 지금 약 {eok(r.value)} · 원금 {eok(r.principal)} · 연평균 {pct(r.cagr)}
+            {d.etf.reachedDetail(startYm, fmt.money(r.value), fmt.money(r.principal), fmt.pct(r.cagr))}
           </>
         ) : (
           <>
-            <strong>아직 10억까지는 더 걸려요</strong>
+            <strong>{d.etf.notReachedHeadline(goalStr)}</strong>
             <br />
-            전 구간 모아도 지금 약 {eok(r.value)} · 원금 {eok(r.principal)} · 연평균 {pct(r.cagr)}
+            {d.etf.notReachedDetail(fmt.money(r.value), fmt.money(r.principal), fmt.pct(r.cagr))}
           </>
         )}
-        <div className="sub">
-          ※ 매수일 {D}일 · 목표 10억 · 실제 과거 {tickerCurrency(sym) === "USD" ? "가격과 그날 환율" : "가격"} 기준. 과거 수익률은 미래를 보장하지 않습니다.
-        </div>
+        <div className="sub">{d.etf.note(d.calc.day.nth(1), goalStr, isNative ? d.etf.priceBasisPlain : d.etf.priceBasisFx)}</div>
       </div>
 
       <p style={{ marginTop: 16 }}>
         <Link href={appHref} className="btn-inline">
-          내 조건으로 직접 계산해보기 →
+          {d.etf.cta}
         </Link>
       </p>
 
@@ -177,27 +242,30 @@ export default async function EtfPage({ params }: { params: Promise<{ lang: stri
         ))
       ) : (
         <>
-          <h2>이 결과를 어떻게 읽어야 하나</h2>
-          <p>
-            위 숫자는 {startYm ? `${startYm}부터 ` : ""}매달 같은 날 같은 금액을 적립했다고 가정한 <strong>과거 시뮬레이션</strong>입니다.
-            실제로는 매수 타이밍·세금·수수료·심리적 요인이 모두 다르게 작용합니다. 특히 레버리지 상품은 같은 구간이라도 시작 시점에 따라 결과가 크게 달라집니다.
-          </p>
+          <h2>{d.etf.fallbackHeading}</h2>
+          <p>{d.etf.fallbackBody(startYm)}</p>
         </>
       )}
-      <p>금액·매수일·목표 금액을 바꿔 보고 싶다면 위 버튼으로 직접 계산해 보세요.</p>
+      <p>{d.etf.editHint}</p>
 
-      <h2>함께 읽어보세요</h2>
+      <h2>{d.etf.relatedHeading}</h2>
       <ul>
-        {blurb.guides.map((g) => (
-          <li key={g.href}><Link href={g.href}>{g.label}</Link></li>
+        {guides.map((g) => (
+          <li key={g.href}>
+            <Link href={g.href}>{g.label}</Link>
+          </li>
         ))}
-        <li><Link href="/compare">{TICKERS.length}개 ETF 비교</Link></li>
-        <li><Link href="/how-it-works">계산 방법 &amp; 자주 묻는 질문</Link></li>
+        <li>
+          <Link href={localeHref(locale, "/compare")}>{d.etf.compareLink(market.tickers.length)}</Link>
+        </li>
+        <li>
+          <Link href={localeHref(locale, "/how-it-works")}>{d.etf.howItWorksLink}</Link>
+        </li>
       </ul>
 
       <Sources ids={sourceIds} />
 
-      <p className="note">본 내용은 정보 제공이며 투자 권유나 자문이 아닙니다. 투자 결정은 스스로 판단하셔야 합니다.</p>
+      <p className="note">{d.etf.legalNote}</p>
     </ContentShell>
   );
 }

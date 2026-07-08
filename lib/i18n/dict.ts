@@ -132,6 +132,31 @@ export type Dict = {
     breakthrough: (label: string) => string;
     header: { month: string; principal: string; value: string; return: string };
   };
+
+  /** /etf/[symbol] 종목 상세 페이지 */
+  etf: {
+    metaTitle: (label: string, monthly: string, goal: string) => string;
+    metaDesc: (display: string, monthly: string, goal: string) => string;
+    pageTitle: (label: string) => string;
+    pageDesc: (monthly: string, goal: string) => string;
+    crumb: (label: string) => string;
+    reachedHeadline: (monthly: string, years: number, months: number, goal: string) => string;
+    reachedDetail: (from: string, value: string, principal: string, cagr: string) => string;
+    notReachedHeadline: (goal: string) => string;
+    notReachedDetail: (value: string, principal: string, cagr: string) => string;
+    note: (buyDay: string, goal: string, priceBasis: string) => string;
+    priceBasisFx: string;
+    priceBasisPlain: string;
+    cta: string;
+    fallbackHeading: string;
+    fallbackBody: (from: string) => string;
+    editHint: string;
+    relatedHeading: string;
+    compareLink: (n: number) => string;
+    howItWorksLink: string;
+    legalNote: string;
+    fallbackBlurb: (name: string) => string;
+  };
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -281,6 +306,33 @@ const ko: Dict = {
     reachedGoal: (label) => `${label} 달성 — 목표 도달`,
     breakthrough: (label) => `${label} 돌파`,
     header: { month: "월", principal: "원금", value: "금액", return: "수익" },
+  },
+
+  etf: {
+    metaTitle: (label, monthly, goal) => `${label} 적립식 백테스트 — 매달 ${monthly}이면 ${goal}까지? · 10-eok`,
+    metaDesc: (display, monthly, goal) =>
+      `${display}에 매달 ${monthly}씩 적립했다면 ${goal}까지 얼마나 걸렸을지, 실제 과거 가격으로 계산한 결과와 직접 계산하는 도구를 제공합니다.`,
+    pageTitle: (label) => `${label} 적립식 백테스트`,
+    pageDesc: (monthly, goal) => `매달 ${monthly}씩 모았다면 ${goal}까지 얼마나 걸렸을까`,
+    crumb: (label) => `종목 · ${label}`,
+    reachedHeadline: (monthly, years, months, goal) => `매달 ${monthly}씩이면 약 ${years}년 ${months}개월 만에 ${goal}`,
+    reachedDetail: (from, value, principal, cagr) => `${from}부터 모았다면 지금 약 ${value} · 원금 ${principal} · 연평균 ${cagr}`,
+    notReachedHeadline: (goal) => `아직 ${goal}까지는 더 걸려요`,
+    notReachedDetail: (value, principal, cagr) => `전 구간 모아도 지금 약 ${value} · 원금 ${principal} · 연평균 ${cagr}`,
+    note: (buyDay, goal, priceBasis) =>
+      `※ 매수일 ${buyDay} · 목표 ${goal} · 실제 과거 ${priceBasis} 기준. 과거 수익률은 미래를 보장하지 않습니다.`,
+    priceBasisFx: "가격과 그날 환율",
+    priceBasisPlain: "가격",
+    cta: "내 조건으로 직접 계산해보기 →",
+    fallbackHeading: "이 결과를 어떻게 읽어야 하나",
+    fallbackBody: (from) =>
+      `위 숫자는 ${from ? `${from}부터 ` : ""}매달 같은 날 같은 금액을 적립했다고 가정한 과거 시뮬레이션입니다. 실제로는 매수 타이밍·세금·수수료·심리적 요인이 모두 다르게 작용합니다. 특히 레버리지 상품은 같은 구간이라도 시작 시점에 따라 결과가 크게 달라집니다.`,
+    editHint: "금액·매수일·목표 금액을 바꿔 보고 싶다면 위 버튼으로 직접 계산해 보세요.",
+    relatedHeading: "함께 읽어보세요",
+    compareLink: (n) => `${n}개 ETF 비교`,
+    howItWorksLink: "계산 방법 & 자주 묻는 질문",
+    legalNote: "본 내용은 정보 제공이며 투자 권유나 자문이 아닙니다. 투자 결정은 스스로 판단하셔야 합니다.",
+    fallbackBlurb: (name) => `${name} 적립식 백테스트 결과입니다.`,
   },
 };
 
@@ -432,6 +484,33 @@ const en: Dict = {
     breakthrough: (label) => `${label} passed`,
     header: { month: "Month", principal: "Invested", value: "Value", return: "Return" },
   },
+
+  etf: {
+    metaTitle: (label, monthly, goal) => `${label} DCA Backtest — ${monthly}/month to ${goal}? · 10-eok`,
+    metaDesc: (display, monthly, goal) =>
+      `${display} DCA backtest: if you'd invested ${monthly} every month, see how long it took to reach ${goal} using real historical prices — plus a calculator to run your own numbers.`,
+    pageTitle: (label) => `${label} DCA Backtest`,
+    pageDesc: (monthly, goal) => `If you'd invested ${monthly} every month, how long to ${goal}?`,
+    crumb: (label) => `Ticker · ${label}`,
+    reachedHeadline: (monthly, years, months, goal) => `Investing ${monthly}/month reaches ${goal} in about ${years}y ${months}m`,
+    reachedDetail: (from, value, principal, cagr) => `Investing since ${from}, that's about ${value} today · invested ${principal} · annualized ${cagr}`,
+    notReachedHeadline: (goal) => `Still has a way to go to reach ${goal}`,
+    notReachedDetail: (value, principal, cagr) => `Even over the full period, that's about ${value} today · invested ${principal} · annualized ${cagr}`,
+    note: (buyDay, goal, priceBasis) =>
+      `※ Buy day: ${buyDay} · Goal: ${goal} · Based on actual past ${priceBasis}. Past returns don't guarantee the future.`,
+    priceBasisFx: "prices and that day's exchange rate",
+    priceBasisPlain: "prices",
+    cta: "Try it with your own numbers →",
+    fallbackHeading: "How to read this result",
+    fallbackBody: (from) =>
+      `The figures above are a historical simulation assuming you invested the same amount on the same day every month${from ? ` starting ${from}` : ""}. In reality, timing, taxes, fees, and psychology all play a role. Leveraged products in particular can produce very different results depending on when you start, even over the same period.`,
+    editHint: "Want to change the amount, buy day, or goal? Use the button above to calculate it yourself.",
+    relatedHeading: "Related reading",
+    compareLink: (n) => `Compare ${n} ETFs`,
+    howItWorksLink: "How it works & FAQ",
+    legalNote: "This content is for informational purposes and is not investment advice or a recommendation. You are solely responsible for your investment decisions.",
+    fallbackBlurb: (name) => `${name} DCA backtest results.`,
+  },
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -581,6 +660,33 @@ const ja: Dict = {
     reachedGoal: (label) => `${label}達成 — 目標到達`,
     breakthrough: (label) => `${label}突破`,
     header: { month: "月", principal: "元本", value: "評価額", return: "リターン" },
+  },
+
+  etf: {
+    metaTitle: (label, monthly, goal) => `${label}積立バックテスト — 毎月${monthly}なら${goal}まで何年? · 10-eok`,
+    metaDesc: (display, monthly, goal) =>
+      `${display}に毎月${monthly}ずつ積み立てていたら、${goal}まで何年かかったかを実際の過去の価格で計算した結果と、自分で計算できるツールを提供します。`,
+    pageTitle: (label) => `${label}積立バックテスト`,
+    pageDesc: (monthly, goal) => `毎月${monthly}ずつ積み立てたら、${goal}までどれくらいかかる?`,
+    crumb: (label) => `銘柄 · ${label}`,
+    reachedHeadline: (monthly, years, months, goal) => `毎月${monthly}ずつなら約${years}年${months}か月で${goal}`,
+    reachedDetail: (from, value, principal, cagr) => `${from}から積み立てたら、今は約${value} · 元本${principal} · 年平均${cagr}`,
+    notReachedHeadline: (goal) => `まだ${goal}までは時間がかかります`,
+    notReachedDetail: (value, principal, cagr) => `全期間積み立てても、今は約${value} · 元本${principal} · 年平均${cagr}`,
+    note: (buyDay, goal, priceBasis) =>
+      `※買付日 ${buyDay} · 目標 ${goal} · 実際の過去の${priceBasis}基準。過去のリターンは将来を保証しません。`,
+    priceBasisFx: "価格とその日の為替レート",
+    priceBasisPlain: "価格",
+    cta: "自分の条件で計算してみる →",
+    fallbackHeading: "この結果をどう読むか",
+    fallbackBody: (from) =>
+      `上の数字は${from ? `${from}から` : ""}毎月同じ日に同じ金額を積み立てたと仮定した過去のシミュレーションです。実際には買付のタイミング・税金・手数料・心理的な要因がすべて異なる形で影響します。特にレバレッジ商品は同じ期間でも開始時点によって結果が大きく変わります。`,
+    editHint: "金額・買付日・目標金額を変えてみたい場合は、上のボタンから自分で計算してみてください。",
+    relatedHeading: "あわせて読みたい",
+    compareLink: (n) => `${n}銘柄のETF比較`,
+    howItWorksLink: "計算方法 & よくある質問",
+    legalNote: "本内容は情報提供であり、投資勧誘や助言ではありません。投資判断はご自身の責任で行ってください。",
+    fallbackBlurb: (name) => `${name}積立バックテストの結果です。`,
   },
 };
 
@@ -733,6 +839,33 @@ const de: Dict = {
     reachedGoal: (label) => `${label} erreicht — Ziel geschafft`,
     breakthrough: (label) => `${label} überschritten`,
     header: { month: "Monat", principal: "Eingezahlt", value: "Wert", return: "Rendite" },
+  },
+
+  etf: {
+    metaTitle: (label, monthly, goal) => `${label} Sparplan-Backtest — ${monthly}/Monat bis ${goal}? · 10-eok`,
+    metaDesc: (display, monthly, goal) =>
+      `${display}: Wenn du monatlich ${monthly} investiert hättest, siehst du hier, wie lange es bis ${goal} gedauert hätte — berechnet mit echten historischen Kursen, plus ein Rechner für deine eigenen Zahlen.`,
+    pageTitle: (label) => `${label} Sparplan-Backtest`,
+    pageDesc: (monthly, goal) => `Wenn du monatlich ${monthly} angelegt hättest — wie lange bis ${goal}?`,
+    crumb: (label) => `ETF · ${label}`,
+    reachedHeadline: (monthly, years, months, goal) => `Mit ${monthly}/Monat erreichst du ${goal} nach etwa ${years} J. ${months} M.`,
+    reachedDetail: (from, value, principal, cagr) => `Seit ${from} angelegt, wären das heute etwa ${value} · eingezahlt ${principal} · jährlich ${cagr}`,
+    notReachedHeadline: (goal) => `Bis ${goal} ist es noch ein Stück`,
+    notReachedDetail: (value, principal, cagr) => `Selbst über den gesamten Zeitraum sind es heute etwa ${value} · eingezahlt ${principal} · jährlich ${cagr}`,
+    note: (buyDay, goal, priceBasis) =>
+      `※ Kauftag ${buyDay} · Ziel ${goal} · Basierend auf echten historischen ${priceBasis}. Vergangene Renditen garantieren nicht die Zukunft.`,
+    priceBasisFx: "Kursen und dem damaligen Wechselkurs",
+    priceBasisPlain: "Kursen",
+    cta: "Mit deinen eigenen Zahlen rechnen →",
+    fallbackHeading: "Wie du dieses Ergebnis liest",
+    fallbackBody: (from) =>
+      `Die Zahlen oben sind eine historische Simulation${from ? ` ab ${from}` : ""}, bei der jeden Monat am selben Tag derselbe Betrag angelegt wurde. In der Praxis spielen Timing, Steuern, Gebühren und Psychologie ebenfalls eine Rolle. Besonders bei gehebelten Produkten können die Ergebnisse je nach Startzeitpunkt selbst im gleichen Zeitraum stark variieren.`,
+    editHint: "Möchtest du Betrag, Kauftag oder Ziel ändern? Nutze den Button oben, um es selbst zu berechnen.",
+    relatedHeading: "Weiterlesen",
+    compareLink: (n) => `${n} ETFs vergleichen`,
+    howItWorksLink: "So funktioniert's & FAQ",
+    legalNote: "Dieser Inhalt dient nur der Information und ist keine Anlageberatung oder -empfehlung. Deine Anlageentscheidungen triffst du eigenverantwortlich.",
+    fallbackBlurb: (name) => `${name} Sparplan-Backtest-Ergebnisse.`,
   },
 };
 
