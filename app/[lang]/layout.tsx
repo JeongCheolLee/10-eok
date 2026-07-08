@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import "../globals.css";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
+import { LocaleBanner } from "@/components/LocaleBanner";
 import { SITE_URL } from "@/lib/site";
 import { LOCALES, isLocale } from "@/lib/i18n/locales";
 import { getMarket } from "@/lib/i18n/markets";
@@ -58,6 +59,7 @@ export default async function RootLayout({
         )}
       </head>
       <body>
+        <LocaleBanner />
         <SiteHeader locale={lang} />
         {children}
         <SiteFooter locale={lang} />
