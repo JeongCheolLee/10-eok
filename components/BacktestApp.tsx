@@ -13,6 +13,7 @@ import { getMarket, type Market } from "@/lib/i18n/markets";
 import { getFormatter } from "@/lib/i18n/format";
 import { getDict, type Dict } from "@/lib/i18n/dict";
 import { TICKERS, type TickerInfo, tickerInfo, tickerName, tickerTitle, tickerSubtitle, tickerCurrency } from "@/lib/tickers";
+import { tickerDesc } from "@/lib/i18n/tickerNames";
 
 
 type Screen = "intro" | "form" | "loading" | "result";
@@ -192,7 +193,7 @@ export function BacktestApp({ initial, locale }: { initial: Initial; locale: Loc
   }
   function share() {
     const url = `${location.origin}/?${query}`;
-    const name = tickerName(ticker);
+    const name = tickerDesc(ticker, locale);
     const text =
       mode === "amount"
         ? (reqMonthly === 0
@@ -273,7 +274,7 @@ export function BacktestApp({ initial, locale }: { initial: Initial; locale: Loc
             {editMode && (
               <div className="chip-dropdown rv" style={{ ["--i" as string]: 0 }}>
                 {editMode === "ticker" && (
-                  <TickerSelect value={ticker} tickers={marketTickers} onChange={(s) => { setTicker(s); setEditMode(null); }} t={d.calc.select} />
+                  <TickerSelect value={ticker} tickers={marketTickers} onChange={(s) => { setTicker(s); setEditMode(null); }} t={d.calc.select} locale={locale} />
                 )}
                 {editMode === "amount" && (
                   <div className="chip-dropdown-field">
@@ -323,7 +324,7 @@ export function BacktestApp({ initial, locale }: { initial: Initial; locale: Loc
                   <div className="lead rv" style={{ ["--i" as string]: 1 }}>{d.calc.hero.amountLead(yearsUsed, goalStr)}</div>
                   <div className="num pop" style={{ ["--i" as string]: 2 }}>{fmt.amountParts(animReq).n}<span className="u">{fmt.amountParts(animReq).u}</span></div>
                   <div className="span rv" style={{ ["--i" as string]: 3 }}>
-                    {d.calc.hero.amountSpan(tickerName(ticker), lump > 0 ? fmt.unitAmount(lump, market.lump.unitLabel) : "", fmt.money(result.principal), fmt.money(result.value))}
+                    {d.calc.hero.amountSpan(tickerDesc(ticker, locale), lump > 0 ? fmt.unitAmount(lump, market.lump.unitLabel) : "", fmt.money(result.principal), fmt.money(result.value))}
                   </div>
                 </>
               )
@@ -515,7 +516,7 @@ function Form({
         </div>
         <div className="field">
           <div className="flabel">{t.form.tickerLabel}</div>
-          <TickerSelect value={ticker} tickers={tickers} onChange={onTicker} t={t.select} />
+          <TickerSelect value={ticker} tickers={tickers} onChange={onTicker} t={t.select} locale={market.locale} />
         </div>
         <div className="field">
           <div className="flabel">{t.form.lumpLabel}</div>
@@ -544,17 +545,19 @@ function Form({
   );
 }
 
-function TickerSelect({ value, tickers, onChange, t }: { value: string; tickers: TickerInfo[]; onChange: (s: string) => void; t: Dict["calc"]["select"] }) {
+function TickerSelect({ value, tickers, onChange, t, locale }: { value: string; tickers: TickerInfo[]; onChange: (s: string) => void; t: Dict["calc"]["select"]; locale: Locale }) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const s = q.trim().toLowerCase();
-  const list = tickers.filter((t) => !s || t.symbol.toLowerCase().includes(s) || t.name.toLowerCase().includes(s));
+  // 부제(카테고리)는 로케일별. ko는 기존 tickerSubtitle(한국 주식/한국어 이름), en/ja/de는 tickerDesc 번역.
+  const subOf = (sym: string) => (locale === "ko" ? tickerSubtitle(sym) : tickerDesc(sym, locale));
+  const list = tickers.filter((it) => !s || it.symbol.toLowerCase().includes(s) || subOf(it.symbol).toLowerCase().includes(s));
   return (
     <div className="select">
       <button className="select-btn" aria-haspopup="listbox" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
         <span className="select-cur">
           <TickerLogo symbol={value} size={26} />
-          <span className="pcol"><span className="pn">{tickerTitle(value)}</span><span className="ps">{tickerSubtitle(value)}</span></span>
+          <span className="pcol"><span className="pn">{tickerTitle(value)}</span><span className="ps">{subOf(value)}</span></span>
         </span>
         <span className="caret">▾</span>
       </button>
@@ -562,10 +565,10 @@ function TickerSelect({ value, tickers, onChange, t }: { value: string; tickers:
         <div className="select-panel">
           <input className="select-search" placeholder={t.searchPlaceholder} value={q} onChange={(e) => setQ(e.target.value)} autoFocus />
           <div className="select-list">
-            {list.map((t) => (
-              <button key={t.symbol} className={"select-item" + (t.symbol === value ? " sel" : "")} onClick={() => { onChange(t.symbol); setOpen(false); setQ(""); }}>
-                <TickerLogo symbol={t.symbol} size={28} />
-                <span className="pcol"><span className="pn">{tickerTitle(t.symbol)}</span><span className="ps">{tickerSubtitle(t.symbol)}</span></span>
+            {list.map((it) => (
+              <button key={it.symbol} className={"select-item" + (it.symbol === value ? " sel" : "")} onClick={() => { onChange(it.symbol); setOpen(false); setQ(""); }}>
+                <TickerLogo symbol={it.symbol} size={28} />
+                <span className="pcol"><span className="pn">{tickerTitle(it.symbol)}</span><span className="ps">{subOf(it.symbol)}</span></span>
               </button>
             ))}
             {list.length === 0 && <div className="select-empty">{t.empty}</div>}
