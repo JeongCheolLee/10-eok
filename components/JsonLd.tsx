@@ -1,4 +1,6 @@
 import { SITE_URL, AUTHOR, LAST_UPDATED } from "@/lib/site";
+import { DEFAULT_LOCALE, type Locale } from "@/lib/i18n/locales";
+import { getMarket } from "@/lib/i18n/markets";
 
 // schema.org JSON-LD 를 <script> 로 렌더. 서버 컴포넌트에서 사용.
 export function JsonLd({ data }: { data: object }) {
@@ -9,17 +11,17 @@ const ORG = { "@type": "Organization", name: "10-eok", url: SITE_URL };
 // YMYL(금융) 신뢰 신호: 글의 author 는 실명 개인. 운영 주체(publisher)는 Organization 유지.
 const PERSON = { "@type": "Person", name: AUTHOR, url: `${SITE_URL}/about` };
 
-export function webSiteLd() {
+export function webSiteLd(lang: Locale = DEFAULT_LOCALE) {
   return {
     "@context": "https://schema.org",
     "@type": "WebSite",
     name: "10-eok",
     url: SITE_URL,
-    inLanguage: "ko",
+    inLanguage: lang,
   };
 }
 
-export function softwareAppLd() {
+export function softwareAppLd(lang: Locale = DEFAULT_LOCALE) {
   return {
     "@context": "https://schema.org",
     "@type": "WebApplication",
@@ -27,10 +29,10 @@ export function softwareAppLd() {
     url: SITE_URL,
     applicationCategory: "FinanceApplication",
     operatingSystem: "Web",
-    inLanguage: "ko",
+    inLanguage: lang,
     description:
       "과거에 매달 일정 금액을 ETF에 투자했다면 10억까지 얼마나 걸렸을지 실제 가격과 환율로 계산하는 백테스트 서비스.",
-    offers: { "@type": "Offer", price: "0", priceCurrency: "KRW" },
+    offers: { "@type": "Offer", price: "0", priceCurrency: getMarket(lang).currency },
   };
 }
 
@@ -59,7 +61,7 @@ export function faqLd(qa: { q: string; a: string }[]) {
 }
 
 // 가이드용: Article + BreadcrumbList 를 한 그래프로.
-export function guideLd({ path, title, description, name, dateModified = LAST_UPDATED }: { path: string; title: string; description: string; name: string; dateModified?: string }) {
+export function guideLd({ path, title, description, name, dateModified = LAST_UPDATED, lang = DEFAULT_LOCALE }: { path: string; title: string; description: string; name: string; dateModified?: string; lang?: Locale }) {
   return {
     "@context": "https://schema.org",
     "@graph": [
@@ -67,7 +69,7 @@ export function guideLd({ path, title, description, name, dateModified = LAST_UP
         "@type": "Article",
         headline: title,
         description,
-        inLanguage: "ko",
+        inLanguage: lang,
         mainEntityOfPage: `${SITE_URL}${path}`,
         author: PERSON,
         publisher: ORG,
@@ -88,13 +90,13 @@ export function pageBreadcrumbLd(name: string, path: string) {
 }
 
 // 범용 Article
-export function articleLd({ path, title, description, dateModified = LAST_UPDATED }: { path: string; title: string; description: string; dateModified?: string }) {
+export function articleLd({ path, title, description, dateModified = LAST_UPDATED, lang = DEFAULT_LOCALE }: { path: string; title: string; description: string; dateModified?: string; lang?: Locale }) {
   return {
     "@context": "https://schema.org",
     "@type": "Article",
     headline: title,
     description,
-    inLanguage: "ko",
+    inLanguage: lang,
     mainEntityOfPage: `${SITE_URL}${path}`,
     author: PERSON,
     publisher: ORG,
