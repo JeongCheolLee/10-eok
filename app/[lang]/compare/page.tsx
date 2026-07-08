@@ -1,22 +1,48 @@
 import type { Metadata } from "next";
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { ContentShell } from "@/components/ContentShell";
 import { JsonLd, articleLd, pageBreadcrumbLd } from "@/components/JsonLd";
+import { ResultsTable } from "@/components/ResultsTable";
 import { computeTickerResults } from "@/lib/etfResults";
 import { getMarket } from "@/lib/i18n/markets";
 import { getFormatter } from "@/lib/i18n/format";
-import { langAlternates } from "@/lib/i18n/seo";
+import { langAlternates, localeHref } from "@/lib/i18n/seo";
 import type { Locale } from "@/lib/i18n/locales";
+import { COMPARE_EN } from "@/lib/content/pages/en";
+import { COMPARE_JA } from "@/lib/content/pages/ja";
+import { COMPARE_DE } from "@/lib/content/pages/de";
 
 const TITLE_KO = (n: number) => `${n}개 ETF 비교 — 매달 100만원이면 10억까지 누가 빨랐나`;
 const DESC_KO = "QLD·TQQQ·QQQ·SPY·VOO·SCHD·VT·KODEX 200을 매달 100만원씩 적립했다고 가정해, 10억 도달 기간·연평균 수익률을 실제 과거 데이터로 비교하고 각 종목의 성격과 위험을 정리합니다.";
+
+// ko 외 로케일의 비교 페이지 콘텐츠(번역 산문 + 표 문자열). ko는 아래 KoBody가 자체 보유.
+type CompareEntry = {
+  metaTitle: string;
+  metaDescription: string;
+  head: { title: string; desc: string; crumb: string };
+  tableHeaders: { ticker: string; timeToGoal: string; cagr: string; dataStart: string };
+  missLabel: (rough: string) => string;
+  asOf: (ym: string) => string;
+  tableNote: string;
+  Body: (p: { table: ReactNode }) => ReactNode;
+};
+const COMPARE_CONTENT: Record<Exclude<Locale, "ko">, CompareEntry> = { en: COMPARE_EN, ja: COMPARE_JA, de: COMPARE_DE };
 
 export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
   const { lang } = await params;
   const locale = lang as Locale;
   const market = getMarket(locale);
   const n = market.tickers.length;
-  if (locale !== "ko") return { alternates: langAlternates(locale, "/compare") };
+  if (locale !== "ko") {
+    const c = COMPARE_CONTENT[locale];
+    return {
+      title: `${c.metaTitle} · 10-eok`,
+      description: c.metaDescription,
+      alternates: langAlternates(locale, "/compare"),
+      openGraph: { title: c.head.title, description: c.metaDescription, type: "article", images: [{ url: `/api/og?l=${locale}`, width: 1200, height: 630 }] },
+    };
+  }
   const title = TITLE_KO(n);
   return {
     title: `${title} · 10-eok`,
@@ -121,9 +147,25 @@ function KoBody({ rows, dataEnd, n }: { rows: Awaited<ReturnType<typeof computeT
   );
 }
 
-// TODO(P3-b2): en/ja/de 번역 통합 전 임시 — LOCALES=["ko"]라 미노출.
-function StubBody({ locale }: { locale: Locale }) {
-  return <p>Content for {locale} is coming soon.</p>;
+// en/ja/de 비교 본문: 번역 산문의 Body에 라이브 결과 표(+데이터 시작 열·주석)를 주입.
+// KoBody의 표 구조를 ResultsTable로 렌더하고 fmt/market만 로케일별로 연결한다.
+function LocaleBody({ locale, rows, dataEnd }: { locale: Exclude<Locale, "ko">; rows: Awaited<ReturnType<typeof computeTickerResults>>["rows"]; dataEnd: string | null }) {
+  const fmt = getFormatter(locale);
+  const c = COMPARE_CONTENT[locale];
+  const asOf = dataEnd ? c.asOf(fmt.ym(dataEnd)) : "";
+  const table = (
+    <>
+      <ResultsTable rows={rows} fmt={fmt} locale={locale} headers={c.tableHeaders} missLabel={c.missLabel} showDataStart />
+      <p className="cmp-note">{asOf}{c.tableNote}</p>
+    </>
+  );
+  return (
+    <>
+      <JsonLd data={articleLd({ path: localeHref(locale, "/compare"), title: c.head.title, description: c.metaDescription, lang: locale })} />
+      <JsonLd data={pageBreadcrumbLd(c.head.crumb, localeHref(locale, "/compare"))} />
+      {c.Body({ table })}
+    </>
+  );
 }
 
 export default async function ComparePage({ params }: { params: Promise<{ lang: string }> }) {
@@ -132,14 +174,13 @@ export default async function ComparePage({ params }: { params: Promise<{ lang: 
   const market = getMarket(locale);
   const { rows, dataEnd } = await computeTickerResults(market);
   const n = market.tickers.length;
+  const head = locale === "ko"
+    ? { title: `${n}개 ETF, 10억까지 비교`, desc: "매달 100만원씩 적립했다면 — 실제 과거 데이터로 본 종목별 결과와 성격", crumb: "종목 비교" }
+    : COMPARE_CONTENT[locale].head;
 
   return (
-    <ContentShell
-      title={locale === "ko" ? `${n}개 ETF, 10억까지 비교` : `${n} ETFs`}
-      desc={locale === "ko" ? `매달 100만원씩 적립했다면 — 실제 과거 데이터로 본 종목별 결과와 성격` : undefined}
-      crumb={locale === "ko" ? "종목 비교" : "Compare"}
-    >
-      {locale === "ko" ? <KoBody rows={rows} dataEnd={dataEnd} n={n} /> : <StubBody locale={locale} />}
+    <ContentShell title={head.title} desc={head.desc} crumb={head.crumb}>
+      {locale === "ko" ? <KoBody rows={rows} dataEnd={dataEnd} n={n} /> : <LocaleBody locale={locale} rows={rows} dataEnd={dataEnd} />}
     </ContentShell>
   );
 }

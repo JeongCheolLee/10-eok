@@ -21,6 +21,8 @@ export type Formatter = {
   growth: (principal: number, value: number) => string;
   /** 이정표/목표 라벨(정수 단위). ko "5억", ja "5億"/"1000万", en "$500K", de "500.000 €" */
   milestone: (v: number) => string;
+  /** 도달 기간(대략) — 표 셀용. ko "약 13년 7개월" / en "~13y 7m" / ja "約13年7か月" / de "~13 J. 7 M." */
+  dur: (years: number, months: number) => string;
   /** ISO → "2020년 1월" */
   ym: (iso: string) => string;
   /** ISO → "2021년 5월 3일" */
@@ -62,6 +64,7 @@ const KO: Formatter = {
   amount: (v) => { const p = KO.amountParts(v); return `${p.n}${p.u}`; },
   pct: (frac) => { const v = Math.round(frac * 100); return (v >= 0 ? "+" : "") + v + "%"; },
   growth: koGrowth,
+  dur: (y, m) => `약 ${y}년 ${m}개월`,
   milestone: (v) => `${v / 1e8}억`,
   ym: (iso) => { const [y, m] = iso.split("-").map(Number); return `${y}년 ${m}월`; },
   ymd: (iso) => { const [y, m, d] = iso.split("-").map(Number); return `${y}년 ${m}월 ${d}일`; },
@@ -93,6 +96,7 @@ const JA: Formatter = {
     const r = Math.round((ratio - 1) * 100);
     return (r >= 0 ? "+" : "") + r + "%";
   },
+  dur: (y, m) => `約${y}年${m}か月`,
   milestone: (v) => (v >= 1e8 ? `${v / 1e8}億` : `${Math.round(v / 1e4).toLocaleString("ja-JP")}万`),
   ym: (iso) => { const [y, m] = iso.split("-").map(Number); return `${y}年${m}月`; },
   ymd: (iso) => { const [y, m, d] = iso.split("-").map(Number); return `${y}年${m}月${d}日`; },
@@ -111,6 +115,7 @@ function westernFactory(locale: string, sym: string, symPrefix: boolean): Format
   const withSym = (s: string) => (symPrefix ? `${sym}${s}` : `${s} ${sym}`);
   const monthShort = (m: number) =>
     new Date(Date.UTC(2000, m - 1, 1)).toLocaleDateString(locale, { month: "short", timeZone: "UTC" });
+  const isDe = locale.startsWith("de");
   const self: Formatter = {
     money: (v) => withSym(compactFmt.format(v)),
     compact: (v) => withSym(compactFmt.format(v)),
@@ -126,6 +131,7 @@ function westernFactory(locale: string, sym: string, symPrefix: boolean): Format
       const r = Math.round((ratio - 1) * 100);
       return (r >= 0 ? "+" : "") + r + "%";
     },
+    dur: (y, m) => (isDe ? `~${y} J. ${m} M.` : `~${y}y ${m}m`),
     milestone: (v) => withSym(compactFmt.format(v)),
     ym: (iso) => new Date(iso + "T00:00:00Z").toLocaleDateString(locale, { year: "numeric", month: "short", timeZone: "UTC" }),
     ymd: (iso) => new Date(iso + "T00:00:00Z").toLocaleDateString(locale, { year: "numeric", month: "short", day: "numeric", timeZone: "UTC" }),

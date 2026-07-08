@@ -1,9 +1,14 @@
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { computeTickerResults } from "@/lib/etfResults";
 import { getMarket } from "@/lib/i18n/markets";
 import { getFormatter } from "@/lib/i18n/format";
 import type { Locale } from "@/lib/i18n/locales";
 import { localeHref } from "@/lib/i18n/seo";
+import { ResultsTable } from "@/components/ResultsTable";
+import { HOME_EN } from "@/lib/content/pages/en";
+import { HOME_JA } from "@/lib/content/pages/ja";
+import { HOME_DE } from "@/lib/content/pages/de";
 
 // 홈("/")에 서버 렌더되는 본문. 계산기(BacktestApp, 클라이언트)만으로는 크롤러/심사자에게
 // 보이는 텍스트가 거의 없으므로, 이 도구의 고유 가치(실제 과거 데이터로 계산한 결과)를
@@ -116,9 +121,25 @@ function KoBody({ rows, dataEnd }: { rows: Awaited<ReturnType<typeof computeTick
   );
 }
 
-// TODO(P3-b2): en/ja/de 번역 통합 전 임시 — LOCALES=["ko"]라 미노출.
-function StubBody({ locale }: { locale: Locale }) {
-  return <p>Content for {locale} is coming soon.</p>;
+// en/ja/de 홈 본문: 번역 산문(lib/content/pages)의 Body에 라이브 결과 표를 주입.
+// KoBody와 동일한 표 구조를 ResultsTable로 렌더하고 fmt/market만 로케일별로 연결한다.
+type Rows = Awaited<ReturnType<typeof computeTickerResults>>["rows"];
+type HomeEntry = {
+  tableHeaders: { ticker: string; timeToGoal: string; cagr: string };
+  missLabel: (rough: string) => string;
+  asOf: (ym: string) => string;
+  Body: (p: { table: ReactNode; asOf: string }) => ReactNode;
+};
+const HOME_CONTENT: Record<Exclude<Locale, "ko">, HomeEntry> = { en: HOME_EN, ja: HOME_JA, de: HOME_DE };
+
+function LocaleBody({ locale, rows, dataEnd }: { locale: Exclude<Locale, "ko">; rows: Rows; dataEnd: string | null }) {
+  const fmt = getFormatter(locale);
+  const content = HOME_CONTENT[locale];
+  const table = (
+    <ResultsTable rows={rows} fmt={fmt} locale={locale} headers={content.tableHeaders} missLabel={content.missLabel} showDataStart={false} />
+  );
+  const asOf = dataEnd ? content.asOf(fmt.ym(dataEnd)) : "";
+  return <>{content.Body({ table, asOf })}</>;
 }
 
 export async function HomeContent({ locale }: { locale: Locale }) {
@@ -129,7 +150,7 @@ export async function HomeContent({ locale }: { locale: Locale }) {
     <section className="home-editorial">
       <div className="content">
         <article className="prose">
-          {locale === "ko" ? <KoBody rows={rows} dataEnd={dataEnd} /> : <StubBody locale={locale} />}
+          {locale === "ko" ? <KoBody rows={rows} dataEnd={dataEnd} /> : <LocaleBody locale={locale} rows={rows} dataEnd={dataEnd} />}
         </article>
       </div>
     </section>

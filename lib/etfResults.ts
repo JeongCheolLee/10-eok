@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { tickerName, tickerCurrency } from "@/lib/tickers";
+import { tickerDesc } from "@/lib/i18n/tickerNames";
 import type { BacktestResult } from "@/lib/backtest/types";
 import { composeRows, type PxBundle, type FxBundle } from "@/lib/backtest/compose";
 import { runToToday } from "@/lib/backtest/simulate";
@@ -30,10 +31,11 @@ export async function computeTickerResults(market: Market): Promise<{ rows: Tick
       const isNative = tickerCurrency(symbol) === market.currency;
       const r = runToToday(composeRows(px, isNative ? null : fx), { monthly, buyDay: 1, target });
       // ko만 통화가 섞인 시장(KODEX=KRW 나머지=USD)이라 원어 이름/구분 라벨이 필요. 그 외 시장은 전부 동일 통화.
+      // sub(부제)는 로케일별 카테고리 설명 — ko는 tickerName과 바이트 동일, en/ja/de는 tickerDesc 번역.
       out.push({
         symbol,
         label: isNative && market.locale === "ko" ? tickerName(symbol) : symbol,
-        sub: isNative && market.locale === "ko" ? "한국 ETF" : tickerName(symbol),
+        sub: isNative && market.locale === "ko" ? "한국 ETF" : tickerDesc(symbol, market.locale),
         isNative,
         r,
       });
