@@ -7,6 +7,11 @@ export type TickerInfo = {
   color: string; // 모노그램 아바타 배경색
   currency?: "USD" | "KRW"; // 기본 USD
   short?: string; // 모노그램에 표시할 짧은 라벨 (없으면 symbol)
+  // 상장 이전 구간을 유사 전략 지수(proxy)로 스케일 접합해 합성. 생성기가 데이터를 만들고,
+  // UI는 이 필드가 있으면 "상장 이전은 근사치" 안내를 띄운다. label은 안내에 쓸 프록시 이름.
+  splice?: { proxy: string; label: string };
+  // 상장이 늦어 데이터 이력이 짧음(장기 백테스트 한계). UI가 "이력 짧음" 안내를 띄운다.
+  shortHistory?: boolean;
 };
 
 // ETF만 (단일 종목 제외). 검색 가능한 드롭다운으로 고르며, 추후 ETF 추가 용이.
@@ -18,6 +23,14 @@ export const TICKERS: TickerInfo[] = [
   { symbol: "VOO", name: "S&P 500 (뱅가드)", color: "#ea580c" },
   { symbol: "SCHD", name: "미국 배당성장", color: "#0d9488" },
   { symbol: "VT", name: "전세계 주식", color: "#16a34a" },
+  { symbol: "SOXX", name: "미국 반도체", color: "#db2777" },
+  { symbol: "VGT", name: "미국 기술주", color: "#1d4ed8" },
+  { symbol: "VNQ", name: "미국 리츠", color: "#0891b2" },
+  { symbol: "GLD", name: "금", color: "#ca8a04" },
+  { symbol: "TLT", name: "미국 장기국채", color: "#7c3aed" },
+  { symbol: "AGG", name: "미국 종합채권", color: "#64748b" },
+  { symbol: "JEPI", name: "미국 커버드콜", color: "#4d7c0f", splice: { proxy: "^BXM", label: "CBOE S&P 500 커버드콜 지수(BXM)" } },
+  { symbol: "JEPQ", name: "나스닥 커버드콜", color: "#b91c1c", shortHistory: true },
   { symbol: "069500.KS", name: "KODEX 200", color: "#c0392b", currency: "KRW", short: "K200" },
 ];
 

@@ -118,6 +118,8 @@ export type Dict = {
       submitTime: string;
     };
     select: { searchPlaceholder: string; empty: string };
+    /** 데이터 특성 안내 — 합성 접합(상장 이전 근사)·짧은 이력. */
+    dataNote: { synthetic: (label: string) => string; short: string };
   };
 
   /** GrowthChart(자산 성장 차트) */
@@ -265,6 +267,11 @@ const ko: Dict = {
       submitTime: "10억까지 계산하기",
     },
     select: { searchPlaceholder: "종목 검색 (이름·티커)", empty: "검색 결과 없음" },
+    dataNote: {
+      synthetic: (label) =>
+        `상장 이전 구간은 ${label}로 대체한 근사치입니다. 같은 전략의 지수를 이어 붙인 것이라 실제 운용 결과와는 다를 수 있어요.`,
+      short: "상장한 지 얼마 되지 않아 데이터 기간이 짧습니다. 장기 적립 결과로 해석할 때 유의하세요.",
+    },
   },
 
   chart: { readoutPrincipal: "원금", hoverHint: "차트를 짚으면 그때의 결과가 보여요" },
@@ -410,6 +417,11 @@ const en: Dict = {
       submitTime: "Calculate to $1M",
     },
     select: { searchPlaceholder: "Search ticker (name or symbol)", empty: "No results" },
+    dataNote: {
+      synthetic: (label) =>
+        `The period before this fund's inception is approximated with ${label}. It splices in a same-strategy index, so it may differ from the fund's actual results.`,
+      short: "This fund launched recently, so its history is short. Interpret long-term accumulation results with care.",
+    },
   },
 
   chart: { readoutPrincipal: "Principal", hoverHint: "Touch the chart to see the result at that point" },

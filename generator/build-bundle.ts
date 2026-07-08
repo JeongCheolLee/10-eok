@@ -7,7 +7,7 @@ import { join } from "node:path";
 import { alignSeries, type PricePoint, type FxPoint } from "../lib/backtest/align";
 import type { Bundle } from "../lib/backtest/types";
 import type { PxBundle, FxBundle } from "../lib/backtest/compose";
-import { TICKERS, tickerCurrency } from "../lib/tickers";
+import { TICKERS, tickerCurrency, tickerInfo } from "../lib/tickers";
 
 // TICKER env 지정 시 그 종목만, 없으면 레지스트리 전체.
 const ONLY = process.env.TICKER;
@@ -16,8 +16,9 @@ const UA = "Mozilla/5.0 (compatible; 10-eok-bot/0.1)";
 // 데이터 무결성 가드 임계값. 잘린/부분 응답(HTTP 200이지만 몇 달치만 온 경우)이
 // alignSeries 검증(길이>0·단조·양수)만 통과해 정상 번들을 덮어쓰는 것을 막는다.
 const MIN_PRICE_ROWS = 200; // 종목당 최소 거래일 수 (약 10개월 미만이면 이상)
-// fx 파일 시작 하한: 최초 상장 종목(SPY 1993)보다 충분히 이전이면 forward-fill에 지장 없음.
-const FX_FILE_START = "1990-01-01";
+// fx 파일 시작 하한: 최초 데이터 시작(JEPI 합성 접합이 ^BXM 1988-06까지 소급)보다 충분히
+// 이전이어야 compose 시 앞부분이 환율 없어 탈락하지 않는다. DEXKOUS는 1981-04부터 존재.
+const FX_FILE_START = "1985-01-01";
 const MIN_CPI_ROWS = 100; // CPI 최소 개월 수
 const MIN_FX_ROWS = 1000; // DEXKOUS 일별은 수천 개 — 그 미만이면 잘린 응답
 const FX_STALE_DAYS = 14; // 환율 마지막일이 가격 최신일보다 이만큼 뒤처지면 이상(잘림/중단)
@@ -107,6 +108,32 @@ function guardBundle(file: string, next: Bundle): void {
   }
 }
 
+/**
+ * 상장 이전 구간을 유사 전략 지수(proxy)로 스케일 접합해 합성 이력을 만든다.
+ * 접합 배율 = 실제 첫날 가격 ÷ 그 날짜(이하 최근접) 프록시 가격. 프록시 앞부분에 이 배율을
+ * 곱해 실제 데이터 앞에 이어 붙이면, 접합점에서 값이 연속이 된다. (근사치 — UI가 안내)
+ * 프록시가 실제 상장 이후에만 존재하면 접합 불가 → 실제 데이터만 반환.
+ */
+async function spliceProxy(real: PricePoint[], proxySymbol: string): Promise<PricePoint[]> {
+  const proxy = await fetchPrices(proxySymbol);
+  if (real.length === 0 || proxy.length === 0) return real;
+  const realStart = real[0].date;
+  let anchor: PricePoint | undefined;
+  for (const p of proxy) {
+    if (p.date <= realStart) anchor = p;
+    else break;
+  }
+  if (!anchor || anchor.price <= 0) {
+    console.warn(`  ${proxySymbol}: 접합점(${realStart} 이하) 없음 — 합성 생략, 실제 데이터만 사용`);
+    return real;
+  }
+  const factor = real[0].price / anchor.price;
+  const pre = proxy
+    .filter((p) => p.date < realStart)
+    .map((p) => ({ date: p.date, price: round(p.price * factor, 4), raw: round((p.raw ?? p.price) * factor, 4) }));
+  return [...pre, ...real];
+}
+
 function isoUTC(epochSec: number): string {
   return new Date(epochSec * 1000).toISOString().slice(0, 10);
 }
@@ -136,7 +163,14 @@ async function main() {
   // 레거시 {ticker}.json은 전환기 동안 병행 생성(외부 참조 대비), 이후 제거 예정.
   const pendingPx: { file: string; px: PxBundle }[] = [];
   for (const ticker of symbols) {
-    const prices = await fetchPrices(ticker);
+    let prices = await fetchPrices(ticker);
+    // 합성 접합: 상장 이전 구간을 유사 전략 지수로 스케일해 앞에 붙인다(레지스트리 splice 설정).
+    const splice = tickerInfo(ticker).splice;
+    if (splice) {
+      const realStart = prices[0]?.date;
+      prices = await spliceProxy(prices, splice.proxy);
+      console.log(`  ${ticker}: ${splice.proxy} 접합 — 합성 ${prices[0]?.date} ~ (실제 상장 ${realStart})`);
+    }
     // 한국 종목은 원화 자산 → 환율=1 (1900년 더미 1점을 forward-fill). 미국은 실제 환율.
     const rows =
       tickerCurrency(ticker) === "KRW"

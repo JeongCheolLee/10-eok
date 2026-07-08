@@ -12,7 +12,7 @@ import type { Locale } from "@/lib/i18n/locales";
 import { getMarket, type Market } from "@/lib/i18n/markets";
 import { getFormatter } from "@/lib/i18n/format";
 import { getDict, type Dict } from "@/lib/i18n/dict";
-import { TICKERS, type TickerInfo, tickerName, tickerTitle, tickerSubtitle, tickerCurrency } from "@/lib/tickers";
+import { TICKERS, type TickerInfo, tickerInfo, tickerName, tickerTitle, tickerSubtitle, tickerCurrency } from "@/lib/tickers";
 
 
 type Screen = "intro" | "form" | "loading" | "result";
@@ -108,6 +108,14 @@ export function BacktestApp({ initial, locale }: { initial: Initial; locale: Loc
 
   const result = calc?.result ?? null;
   const reqMonthly = calc?.reqMonthly ?? null;
+
+  // 데이터 특성 안내: 상장 이전을 유사 지수로 합성 접합한 종목(splice) / 이력이 짧은 종목(shortHistory).
+  const tinfo = tickerInfo(ticker);
+  const dataNote = tinfo.splice
+    ? d.calc.dataNote.synthetic(tinfo.splice.label)
+    : tinfo.shortHistory
+      ? d.calc.dataNote.short
+      : null;
 
   // 타이밍 리스크: 같은 플랜·같은 기간을 시작 시점만 바꿔봤을 때의 최종 평가액 폭
   const timing = useMemo(() => {
@@ -351,6 +359,8 @@ export function BacktestApp({ initial, locale }: { initial: Initial; locale: Loc
               </div>
             </div>
           </div>
+
+          {dataNote && <p className="data-note rv" style={{ ["--i" as string]: 4 }}>ⓘ {dataNote}</p>}
 
           {tipOpen && <div id="tip">{d.calc.tip.cagr(fmt.pct(result.cagr))}</div>}
 
