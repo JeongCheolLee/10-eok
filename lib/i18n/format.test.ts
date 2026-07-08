@@ -65,6 +65,9 @@ describe("ko 포맷터 골든 동일성 (구 lib/format.ts 대비)", () => {
     expect(ko.approx(50_000_000)).toBe("0.50억");
     expect(ko.approx(163_000_000)).toBe("약 2억");
     expect(ko.approx(1_010_285_129)).toBe("약 10억");
+    // dur: 표 도달 기간 셀(약 N년 M개월)
+    expect(ko.dur(13, 7)).toBe("약 13년 7개월");
+    expect(ko.dur(10, 0)).toBe("약 10년 0개월");
   });
 });
 
@@ -82,6 +85,7 @@ describe("en/ja/de 포맷터 스모크 (크래시 없음 + 통화기호)", () =>
     expect(en.unitAmount(700, "$")).toBe("$700");
     expect(en.unitAmount(50_000, "$")).toBe("$50,000");
     expect(en.approx(1_010_000)).toMatch(/^~\$/);
+    expect(en.dur(13, 7)).toBe("~13y 7m");
   });
   it("ja 億円", () => {
     const ja = getFormatter("ja");
@@ -89,12 +93,14 @@ describe("en/ja/de 포맷터 스모크 (크래시 없음 + 통화기호)", () =>
     expect(ja.compact(100_000)).toBe("10万円");
     expect(ja.growth(1e7, 6.2e7)).toBe("6.2倍");
     expect(ja.ym("2020-01-15")).toBe("2020年1月");
+    expect(ja.dur(13, 7)).toBe("約13年7か月");
   });
   it("de EUR", () => {
     const de = getFormatter("de");
     expect(de.money(1_010_000)).toMatch(/€$/);
     expect(de.growth(1e5, 6.2e5)).toBe("6.2x");
     expect(de.unitAmount(600, "€")).toBe("600 €");
+    expect(de.dur(13, 7)).toBe("~13 J. 7 M.");
   });
 });
 

@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { localeHref } from "@/lib/i18n/seo";
 import { Sources } from "@/components/Sources";
@@ -974,8 +975,10 @@ export const HOME_JA = {
   },
   // 目標未達の銘柄に表示する文言。rough = 現在の概算評価額(フォーマット済み文字列)
   missLabel: (rough: string) => `全期間積み立てても未達 · 現在約${rough}`,
+  // 表の前置き文の「データ基準時点」接頭辞(ロケール別)。ymはfmt.ymでロケール整形済みの文字列。
+  asOf: (ym: string) => `${ym}時点のデータです。`,
 
-  Body: () => (
+  Body: ({ table, asOf }: { table: ReactNode; asOf: string }) => (
     <>
       <h2 id="intro">毎月積み立てていたら1億円まで、どれくらいかかったか</h2>
       <p>
@@ -997,10 +1000,10 @@ export const HOME_JA = {
         立てていたら、今1億円になっているか」を意味します。配当は再投資、税金・手数料は除いた基本的な仮定です。
       </p>
 
-      {/* 実データのテーブル(<table>)はここに統合側で挿入。tableHeaders / missLabel を使用。 */}
+      {table}
 
       <p className="cmp-note">
-        ※ 各銘柄でデータの開始時期が異なるため、期間を単純に比較するのは難しい点にご注意ください。構成・リスクまで
+        ※ {asOf}各銘柄でデータの開始時期が異なるため、期間を単純に比較するのは難しい点にご注意ください。構成・リスクまで
         含めて比較した<Link href={localeHref("ja", "/compare")}>15銘柄のETF比較</Link>を参考にするか、銘柄をタップ
         すると詳細・自分での計算に進めます。
       </p>
@@ -1186,6 +1189,7 @@ export const COMPARE_JA = {
   head: {
     title: "15銘柄のETF、1億円までを比較",
     desc: "毎月10万円ずつ積み立てたら — 実際の過去データで見る銘柄別の結果と特徴",
+    crumb: "銘柄比較",
   },
 
   // 表ヘッダー(4列。データ開始年を含む)
@@ -1195,11 +1199,13 @@ export const COMPARE_JA = {
     cagr: "年平均",
     dataStart: "データ開始",
   },
+  missLabel: (rough: string) => `全期間積み立てても未達 · 現在約${rough}`,
+  asOf: (ym: string) => `${ym}時点のデータです。`,
   tableNote:
-    "※ 最新の市場データ時点の値です。データの開始時期が銘柄によって異なるため、期間を1対1で単純比較するのは" +
+    "データの開始時期が銘柄によって異なるため、期間を1対1で単純比較するのは" +
     "難しい点にご注意ください。配当再投資ON、税金・手数料は除いた基本的な仮定です。",
 
-  Body: () => (
+  Body: ({ table }: { table: ReactNode }) => (
     <>
       <p>
         同じ金額を毎月同じように積み立てても、どのETFに入れるかによって結果は大きく変わります。以下は10-eokが
@@ -1208,7 +1214,7 @@ export const COMPARE_JA = {
         「約何年前から積み立てていたら、今1億円になっているか」を意味します。
       </p>
 
-      {/* 実データのテーブル(<table>)はここに統合側で挿入。tableHeaders / tableNote を使用。 */}
+      {table}
 
       <h2>レバレッジが速く見える理由</h2>
       <p>

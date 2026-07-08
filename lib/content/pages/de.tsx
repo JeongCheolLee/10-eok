@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { localeHref } from "@/lib/i18n/seo";
 import { Sources } from "@/components/Sources";
@@ -1135,7 +1136,9 @@ export const HOME_DE = {
     cagr: "Jährliche Rendite",
   },
   missLabel: (rough: string) => `Auch über den gesamten Zeitraum nicht erreicht · aktuell etwa ${rough}`,
-  Body: () => (
+  // Präfix "Datenstand" vor dem Tabellen-Absatz (locale-spezifisch). ym ist bereits per fmt.ym formatiert.
+  asOf: (ym: string) => `Stand der Daten: ${ym}. `,
+  Body: ({ table, asOf }: { table: ReactNode; asOf: string }) => (
     <>
       <h2 id="intro">Wie lange bis 1 Mio. €, wenn du jeden Monat gespart hättest</h2>
       <p>
@@ -1165,11 +1168,10 @@ export const HOME_DE = {
         berücksichtigt.
       </p>
 
-      {/* TABLE: integrator rendert hier <table className="cmp"> mit Live-Zeilen aus
-          computeTickerResults; Spaltenköpfe siehe HOME_DE.tableHeaders, "nicht erreicht"-Fall
-          siehe HOME_DE.missLabel. */}
+      {table}
 
       <p className="cmp-note">
+        {asOf}
         Die Datenhistorie beginnt für jeden ETF zu einem anderen Zeitpunkt, daher lässt sich die
         Dauer nicht ohne Weiteres 1:1 vergleichen. Im ausführlichen{" "}
         <Link href={localeHref("de", "/compare")}>ETF-Vergleich</Link> siehst du Zusammensetzung und
@@ -1380,12 +1382,13 @@ export const HOW_IT_WORKS_DE = {
 };
 
 export const COMPARE_DE = {
-  metaTitle: "ETF-Vergleich — wer erreicht 1 Mio. € am schnellsten bei 600 €/Monat? · 10-eok",
+  metaTitle: "ETF-Vergleich — wer erreicht 1 Mio. € am schnellsten bei 600 €/Monat?",
   metaDescription:
     "QLD, TQQQ, QQQ, SPY, VOO, SCHD, VT und weitere ETFs im Vergleich: mit echten historischen Kursen berechnet, wie lange es bei 600 €/Monat bis 1 Mio. € gedauert hätte, plus jährliche Rendite, Zusammensetzung und Risiko jedes ETFs.",
   head: {
     title: "ETF-Vergleich, Zeit bis 1 Mio. €",
     desc: "Bei 600 €/Monat — echte historische Ergebnisse und Charakter jedes ETFs",
+    crumb: "Vergleich",
   },
   tableHeaders: {
     ticker: "ETF",
@@ -1393,9 +1396,11 @@ export const COMPARE_DE = {
     cagr: "Jährlich",
     dataStart: "Datenbeginn",
   },
+  missLabel: (rough: string) => `Auch über den gesamten Zeitraum nicht erreicht · aktuell etwa ${rough}`,
+  asOf: (ym: string) => `Stand der Daten: ${ym}. `,
   tableNote:
     "Die Datenhistorie beginnt für jeden ETF zu einem anderen Zeitpunkt, daher lässt sich die Dauer nicht 1:1 vergleichen. Basisannahme: Dividenden reinvestiert, Steuern und Gebühren nicht berücksichtigt.",
-  Body: () => (
+  Body: ({ table }: { table: ReactNode }) => (
     <>
       <p>
         Auch wenn du jeden Monat denselben Betrag anlegst, unterscheidet sich das Ergebnis stark
@@ -1407,9 +1412,7 @@ export const COMPARE_DE = {
         Jahren du hättest anfangen müssen, damit du heute bei 1 Mio. € stehst.
       </p>
 
-      {/* TABLE: integrator rendert hier <table className="cmp"> mit Live-Zeilen aus
-          computeTickerResults; Spaltenköpfe siehe COMPARE_DE.tableHeaders, Fußnote siehe
-          COMPARE_DE.tableNote (ggf. mit vorangestelltem Datenstand). */}
+      {table}
 
       <h2>Warum Hebel-ETFs schneller wirken</h2>
       <p>

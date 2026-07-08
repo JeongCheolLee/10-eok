@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { localeHref } from "@/lib/i18n/seo";
 import { Sources } from "@/components/Sources";
@@ -1088,8 +1089,10 @@ export const HOME_EN = {
     cagr: "Annualized return",
   },
   missLabel: (rough: string) => `Didn't reach it even over the full period · currently about ${rough}`,
+  // 표 위 문단의 "데이터 기준 시점" 접두사(로케일별). ym은 fmt.ym으로 이미 로케일 포맷된 문자열.
+  asOf: (ym: string) => `Data as of ${ym}. `,
 
-  Body: () => (
+  Body: ({ table, asOf }: { table: ReactNode; asOf: string }) => (
     <>
       <h2 id="intro">If you'd invested every month, how long to reach $1M?</h2>
       <p>
@@ -1115,10 +1118,10 @@ export const HOME_EN = {
         excluded by default.
       </p>
 
-      {/* ETF comparison table renders here (live data) — see tableHeaders / missLabel above */}
+      {table}
 
       <p className="cmp-note">
-        {/* dataEndLabel(dataEnd) "as of" prefix goes here, e.g. "Data as of Jul 2026. " */}
+        {asOf}
         Each ETF's data starts at a different point, so comparing the raw duration isn't quite
         apples-to-apples. See the full{" "}
         <Link href={localeHref("en", "/compare")}>ETF comparison</Link> for composition and risk
@@ -1372,6 +1375,7 @@ export const COMPARE_EN = {
   head: {
     title: "ETF comparison, side by side to $1M",
     desc: "If you'd invested $700 every month — results and character by ticker, from real historical data",
+    crumb: "Compare",
   },
 
   tableHeaders: {
@@ -1380,10 +1384,12 @@ export const COMPARE_EN = {
     cagr: "Annualized",
     dataStart: "Data starts",
   },
+  missLabel: (rough: string) => `Didn't reach it even over the full period · currently about ${rough}`,
+  asOf: (ym: string) => `Data as of ${ym}. `,
   tableNote:
     "Each fund's data starts at a different point, so comparing the raw duration isn't quite apples-to-apples. Assumes dividends reinvested (ON), taxes and fees excluded, by default.",
 
-  Body: () => (
+  Body: ({ table }: { table: ReactNode }) => (
     <>
       <p>
         Save the same amount every month, and where you put it still changes the outcome a lot. Below
@@ -1393,7 +1399,7 @@ export const COMPARE_EN = {
         words, "if you'd started saving about this many years ago, you'd be at $1M today."
       </p>
 
-      {/* ETF comparison table renders here (live data) — see tableHeaders / tableNote above */}
+      {table}
 
       <h2>Why leverage looks faster</h2>
       <p>
