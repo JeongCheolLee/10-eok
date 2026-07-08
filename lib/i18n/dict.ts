@@ -567,6 +567,11 @@ const ja: Dict = {
       submitTime: "1億円まで計算する",
     },
     select: { searchPlaceholder: "銘柄検索 (名前・ティッカー)", empty: "検索結果なし" },
+    dataNote: {
+      synthetic: (label) =>
+        `上場前の期間は${label}で代用した近似値です。同じ戦略の指数をつないでいるため、実際の運用結果とは異なる場合があります。`,
+      short: "上場してから日が浅く、データ期間が短めです。長期積立の結果として解釈する際はご注意ください。",
+    },
   },
 
   chart: { readoutPrincipal: "元本", hoverHint: "チャートをなぞると、その時点の結果が見られます" },
@@ -714,6 +719,11 @@ const de: Dict = {
       submitTime: "Bis 1 Mio. € berechnen",
     },
     select: { searchPlaceholder: "ETF suchen (Name oder Symbol)", empty: "Keine Ergebnisse" },
+    dataNote: {
+      synthetic: (label) =>
+        `Der Zeitraum vor Auflegung des Fonds wird mit ${label} angenähert. Es wird ein Index derselben Strategie angefügt und kann daher vom tatsächlichen Fondsergebnis abweichen.`,
+      short: "Dieser Fonds wurde erst kürzlich aufgelegt, daher ist die Historie kurz. Interpretieren Sie langfristige Sparergebnisse mit Vorsicht.",
+    },
   },
 
   chart: { readoutPrincipal: "Eingezahlt", hoverHint: "Fahre über den Chart, um das Ergebnis an diesem Punkt zu sehen" },
