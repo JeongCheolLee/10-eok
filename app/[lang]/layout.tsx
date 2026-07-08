@@ -25,9 +25,9 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
       locale: ogLocale,
       title: "10-eok · 과거에 매달 모았다면 10억까지 얼마나",
       description: SITE_DESC,
-      images: [{ url: "/api/og", width: 1200, height: 630 }],
+      images: [{ url: `/api/og?l=${lang}`, width: 1200, height: 630 }],
     },
-    twitter: { card: "summary_large_image", title: "10-eok", description: SITE_DESC, images: ["/api/og"] },
+    twitter: { card: "summary_large_image", title: "10-eok", description: SITE_DESC, images: [`/api/og?l=${lang}`] },
     other: { "google-adsense-account": ADSENSE_CLIENT },
   };
 }

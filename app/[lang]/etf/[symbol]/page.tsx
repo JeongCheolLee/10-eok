@@ -161,7 +161,7 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
   const goalStr = fmt.milestone(market.goal.default * market.goal.unit);
   const title = d.etf.metaTitle(label, monthlyStr, goalStr);
   const description = d.etf.metaDesc(display(info.symbol), monthlyStr, goalStr);
-  const ogImg = `/api/og?t=${info.symbol}&m=${market.monthly.default}&d=1&g=${market.goal.default}`;
+  const ogImg = `/api/og?l=${locale}&t=${info.symbol}&m=${market.monthly.default}&d=1&g=${market.goal.default}`;
   return {
     title,
     description,
