@@ -3,6 +3,7 @@ import { BacktestApp } from "@/components/BacktestApp";
 import { HomeContent } from "@/components/HomeContent";
 import { JsonLd, webSiteLd, softwareAppLd } from "@/components/JsonLd";
 import { TICKERS, tickerName } from "@/lib/tickers";
+import type { Locale } from "@/lib/i18n/locales";
 
 type SP = Record<string, string | string[] | undefined>;
 
@@ -46,13 +47,13 @@ export async function generateMetadata({ searchParams }: { searchParams: Promise
   };
 }
 
-export default async function Home({ searchParams }: { searchParams: Promise<SP> }) {
-  const sp = await searchParams;
+export default async function Home({ params, searchParams }: { params: Promise<{ lang: string }>; searchParams: Promise<SP> }) {
+  const [{ lang }, sp] = await Promise.all([params, searchParams]);
   return (
     <>
       <JsonLd data={webSiteLd()} />
       <JsonLd data={softwareAppLd()} />
-      <BacktestApp initial={parseInitial(sp)} />
+      <BacktestApp initial={parseInitial(sp)} locale={lang as Locale} />
       <HomeContent />
     </>
   );

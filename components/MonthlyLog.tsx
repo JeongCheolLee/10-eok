@@ -2,15 +2,16 @@
 import { useMemo } from "react";
 import type { MonthPoint } from "@/lib/backtest/monthly";
 import { milestoneMonths } from "@/lib/backtest/monthly";
-import { won, growth } from "@/lib/format";
+import type { Locale } from "@/lib/i18n/locales";
+import { getMarket } from "@/lib/i18n/markets";
+import { getFormatter } from "@/lib/i18n/format";
 
-/** 이정표 후보(억). 목표보다 낮은 것만 "돌파" 배지로 쓰고, 목표 자체는 "달성" 행으로 표시. */
-const NICE_EOK = [1, 5, 10, 50, 100, 500];
-const milLabel = (krw: number) => `${krw / 1e8}억`;
-
-export function MonthlyLog({ months, target }: { months: MonthPoint[]; target: number }) {
+export function MonthlyLog({ months, target, locale }: { months: MonthPoint[]; target: number; locale: Locale }) {
+  const fmt = getFormatter(locale);
+  const milLabel = fmt.milestone;
   const model = useMemo(() => {
-    const thresholds = NICE_EOK.map((n) => n * 1e8).filter((t) => t < target);
+    // 시장별 이정표 사다리에서 목표 미만만 "돌파" 배지 대상
+    const thresholds = getMarket(locale).milestones.filter((t) => t < target);
     const mileMap = milestoneMonths(months, thresholds); // ym → 그 달 최고 돌파액
     const targetHit = months.find((m) => m.value >= target);
     const targetYm = targetHit?.ym ?? null;
@@ -25,7 +26,7 @@ export function MonthlyLog({ months, target }: { months: MonthPoint[]; target: n
     // 연도별 배지: 그 해에 목표 달성 or 이정표 돌파가 있으면 최고 금액 라벨.
     const yearBadge = new Map<string, string>();
     for (const y of years) {
-      if (targetYm && targetYm.slice(0, 4) === y) yearBadge.set(y, `${target / 1e8}억 달성`);
+      if (targetYm && targetYm.slice(0, 4) === y) yearBadge.set(y, `${milLabel(target)} 달성`);
       else {
         let best = 0;
         for (const [ym, amt] of mileMap) if (ym.slice(0, 4) === y) best = Math.max(best, amt);
@@ -33,7 +34,7 @@ export function MonthlyLog({ months, target }: { months: MonthPoint[]; target: n
       }
     }
     return { years, byYear, mileMap, yearBadge, targetYm };
-  }, [months, target]);
+  }, [months, target, locale]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { years, byYear, mileMap, yearBadge, targetYm } = model;
   const lastYear = years[years.length - 1];
@@ -49,7 +50,7 @@ export function MonthlyLog({ months, target }: { months: MonthPoint[]; target: n
               <span className="yname">{y}년</span>
               {yearBadge.has(y) && <span className="ymile">{yearBadge.get(y)}</span>}
               <span className="ysum">
-                <b>{won(last.value)}</b> · <span className={last.value >= last.principal ? "pos" : "negv"}>{growth(last.principal, last.value)}</span>
+                <b>{fmt.compact(last.value)}</b> · <span className={last.value >= last.principal ? "pos" : "negv"}>{fmt.growth(last.principal, last.value)}</span>
               </span>
               <span className="caret" aria-hidden="true">▶</span>
             </summary>
@@ -63,13 +64,13 @@ export function MonthlyLog({ months, target }: { months: MonthPoint[]; target: n
                 return (
                   <div key={m.ym}>
                     {mileAmt != null && (
-                      <div className="mile">{isTarget ? `${target / 1e8}억 달성 — 목표 도달` : `${milLabel(mileAmt)} 돌파`}</div>
+                      <div className="mile">{isTarget ? `${milLabel(target)} 달성 — 목표 도달` : `${milLabel(mileAmt)} 돌파`}</div>
                     )}
                     <div className={"mrow" + (isTarget ? " hit" : "")}>
                       <span className="mm">{mm}월</span>
-                      <span className="pr">{won(m.principal)}</span>
-                      <span className="va">{won(m.value)}</span>
-                      <span className={"rt " + (up ? "pos" : "negv")}>{growth(m.principal, m.value)}</span>
+                      <span className="pr">{fmt.compact(m.principal)}</span>
+                      <span className="va">{fmt.compact(m.value)}</span>
+                      <span className={"rt " + (up ? "pos" : "negv")}>{fmt.growth(m.principal, m.value)}</span>
                     </div>
                   </div>
                 );

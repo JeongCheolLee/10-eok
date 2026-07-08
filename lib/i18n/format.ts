@@ -19,6 +19,8 @@ export type Formatter = {
   pct: (frac: number) => string;
   /** 원금 대비 증감: 2배↑ "6.2배"/"6.2x", 그 미만 "+21%". 원금 0이면 "". */
   growth: (principal: number, value: number) => string;
+  /** 이정표/목표 라벨(정수 단위). ko "5억", ja "5億"/"1000万", en "$500K", de "500.000 €" */
+  milestone: (v: number) => string;
   /** ISO → "2020년 1월" */
   ym: (iso: string) => string;
   /** ISO → "2021년 5월 3일" */
@@ -50,6 +52,7 @@ const KO: Formatter = {
   amount: (v) => { const p = KO.amountParts(v); return `${p.n}${p.u}`; },
   pct: (frac) => { const v = Math.round(frac * 100); return (v >= 0 ? "+" : "") + v + "%"; },
   growth: koGrowth,
+  milestone: (v) => `${v / 1e8}억`,
   ym: (iso) => { const [y, m] = iso.split("-").map(Number); return `${y}년 ${m}월`; },
   ymd: (iso) => { const [y, m, d] = iso.split("-").map(Number); return `${y}년 ${m}월 ${d}일`; },
 };
@@ -75,6 +78,7 @@ const JA: Formatter = {
     const r = Math.round((ratio - 1) * 100);
     return (r >= 0 ? "+" : "") + r + "%";
   },
+  milestone: (v) => (v >= 1e8 ? `${v / 1e8}億` : `${Math.round(v / 1e4).toLocaleString("ja-JP")}万`),
   ym: (iso) => { const [y, m] = iso.split("-").map(Number); return `${y}年${m}月`; },
   ymd: (iso) => { const [y, m, d] = iso.split("-").map(Number); return `${y}年${m}月${d}日`; },
 };
@@ -100,6 +104,7 @@ function westernFactory(locale: string, sym: string, symPrefix: boolean): Format
       const r = Math.round((ratio - 1) * 100);
       return (r >= 0 ? "+" : "") + r + "%";
     },
+    milestone: (v) => withSym(compactFmt.format(v)),
     ym: (iso) => new Date(iso + "T00:00:00Z").toLocaleDateString(locale, { year: "numeric", month: "short", timeZone: "UTC" }),
     ymd: (iso) => new Date(iso + "T00:00:00Z").toLocaleDateString(locale, { year: "numeric", month: "short", day: "numeric", timeZone: "UTC" }),
   };

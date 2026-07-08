@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { won, ymd, growth } from "@/lib/format";
+import type { Locale } from "@/lib/i18n/locales";
+import { getFormatter } from "@/lib/i18n/format";
 
 type Pt = { date: string; value: number; principal: number };
 
@@ -18,11 +19,14 @@ export function GrowthChart({
   series,
   target,
   reached,
+  locale,
 }: {
   series: Pt[];
   target: number;
   reached: boolean;
+  locale: Locale;
 }) {
+  const fmt = getFormatter(locale);
   const W = 360, H = 128, pad = 8;
   const lineRef = useRef<SVGPathElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -123,10 +127,10 @@ export function GrowthChart({
   return (
     <div className="growth">
       <div className={"chart-readout" + (live ? " live" : "")} aria-live="off">
-        <span className="ro-date">{view ? ymd(view.date) : ""}</span>
+        <span className="ro-date">{view ? fmt.ymd(view.date) : ""}</span>
         <span className="ro-vals">
-          원금 <b>{won(view?.principal ?? 0)}</b> → <b className="up">{won(view?.value ?? 0)}</b>
-          {view && view.principal > 0 && <span className="ro-badge">{growth(view.principal, view.value)}</span>}
+          원금 <b>{fmt.compact(view?.principal ?? 0)}</b> → <b className="up">{fmt.compact(view?.value ?? 0)}</b>
+          {view && view.principal > 0 && <span className="ro-badge">{fmt.growth(view.principal, view.value)}</span>}
         </span>
       </div>
 
