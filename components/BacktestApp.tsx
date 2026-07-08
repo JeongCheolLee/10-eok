@@ -67,24 +67,25 @@ export function BacktestApp({ initial, locale }: { initial: Initial; locale: Loc
     const fetchJson = (path: string) =>
       fetch(path).then((r) => { if (!r.ok) throw new Error(path); return r.json(); });
     const pxP: Promise<PxBundle> = fetchJson(`/data/px/${ticker.toLowerCase()}.json`);
-    // 원화 종목은 환율 불필요(자산 통화 = 타깃 통화). 미국 종목은 USD/KRW 1회 로드 후 재사용.
+    // 자산 통화 = 타깃 통화면 환율 불필요(ko의 KODEX, en의 USD 종목). 그 외엔 시장 환율 파일 1회 로드·재사용.
     const fxP: Promise<FxBundle | null> =
-      tickerCurrency(ticker) === "KRW"
+      tickerCurrency(ticker) === market.currency || !market.fxFile
         ? Promise.resolve(null)
-        : (fxRef.current ??= fetchJson(`/data/fx/krw.json`));
+        : (fxRef.current ??= fetchJson(`/data/${market.fxFile}`));
     Promise.all([pxP, fxP])
       .then(([px, fx]) => { if (cancel) return; const rw = composeRows(px, fx); cacheRef.current[ticker] = rw; setRows(rw); })
       .catch(() => { if (!cancel) { fxRef.current = null; setLoadErr(true); } });
     return () => { cancel = true; };
-  }, [ticker]);
+  }, [ticker, market]);
 
   // 물가연동용 CPI 1회 로드
   useEffect(() => {
-    fetch("/data/cpi-kr.json")
+    if (!market.cpiFile) { setCpi(null); return; }
+    fetch(`/data/${market.cpiFile}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((j) => { if (j?.series) setCpi(j.series.map(([ym, idx]: [string, number]) => ({ ym, idx }))); })
       .catch(() => {});
-  }, []);
+  }, [market]);
 
   // 목표·적립·목돈을 시장 입력 단위 → 통화값으로 (ko: 억=1e8, 만원=1e4)
   const goalValue = target * market.goal.unit;
@@ -377,10 +378,12 @@ export function BacktestApp({ initial, locale }: { initial: Initial; locale: Loc
           )}
 
           <div className="opts rv" style={{ ["--i" as string]: 7 }}>
-            <label className="opt">
-              <span>{d.calc.opt.inflationLabel} <i>{d.calc.opt.inflationDesc}</i></span>
-              <input type="checkbox" checked={infl} onChange={(e) => setInfl(e.target.checked)} />
-            </label>
+            {market.cpiFile && (
+              <label className="opt">
+                <span>{d.calc.opt.inflationLabel} <i>{d.calc.opt.inflationDesc}</i></span>
+                <input type="checkbox" checked={infl} onChange={(e) => setInfl(e.target.checked)} />
+              </label>
+            )}
             {/* 배당 재투자·양도세 토글은 일단 숨김 (기능 보류)
             <label className="opt">
               <span>배당 재투자 <i>끄면 주가만(가격수익), 배당 제외</i></span>

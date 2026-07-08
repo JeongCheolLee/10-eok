@@ -412,17 +412,309 @@ const en: Dict = {
     select: { searchPlaceholder: "Search ticker (name or symbol)", empty: "No results" },
   },
 
-  chart: { readoutPrincipal: "Principal", hoverHint: "Touch the chart to see the result at that point" },
+  chart: { readoutPrincipal: "Invested", hoverHint: "Touch the chart to see the result at that point" },
 
   monthlyLog: {
     reached: (label) => `${label} reached`,
     reachedGoal: (label) => `${label} reached — goal met`,
     breakthrough: (label) => `${label} passed`,
-    header: { month: "Month", principal: "Principal", value: "Value", return: "Return" },
+    header: { month: "Month", principal: "Invested", value: "Value", return: "Return" },
   },
 };
 
-const DICTS: Partial<Record<Locale, Dict>> = { ko, en };
+// ─────────────────────────────────────────────────────────────
+// ja — JPY 시장. 億/万円, ドル/円 환율(ja/de엔 환율이 핵심 가치). です・ます 친근체. 활성화는 검증 후.
+// ─────────────────────────────────────────────────────────────
+const ja: Dict = {
+  nav: {
+    compare: "銘柄比較",
+    guides: "投資ガイド",
+    howItWorks: "計算方法",
+    about: "サービス紹介",
+    contact: "お問い合わせ",
+    home: "ホーム",
+    privacy: "プライバシーポリシー",
+    terms: "利用規約",
+  },
+  a11y: { brandHome: "10-eok ホーム", siteMenu: "サイトメニュー" },
+  footerDisclaimer:
+    "10-eok は、実際の過去データを使ったバックテスト結果をお見せする情報提供サービスです。" +
+    "過去のリターンは将来の収益を保証するものではなく、本サービスのいかなる内容も投資勧誘や投資" +
+    "助言ではありません。投資の判断とその結果についての責任は利用者ご自身にあります。" +
+    "価格データは Yahoo Finance、為替・経済データは米セントルイス連邦準備銀行(FRED)から取得しています。",
+
+  calc: {
+    day: { last: "末日", nth: (d) => `${d}日` },
+    timing: {
+      title: "始めた月によって、こんなに変わります",
+      lead: (amount, years) => ({
+        pre: `同じ${amount}を同じように${years}年間積み立てても、`,
+        bold: "始めた月",
+        post: "がいつだったかで、最終評価額がこれだけ変わりました。",
+      }),
+      worst: "運が悪いと",
+      median: "普通なら",
+      best: "運が良いと",
+      note: (worst, best, samples) => `最悪: ${worst}スタート · 最良: ${best} · 過去の開始時点${samples}件を比較`,
+      bridge: {
+        reachedMedianBelow: (value, medRough, goal) =>
+          `上の${value}は運が良かったほうです。普通なら${medRough}ほどで、${goal}には少し届きません。`,
+        reachedMedianAbove: (medRough, goal, min) =>
+          `普通なら${medRough}ほどで${goal}を超えます。ただ、始めた時期が悪いと${min}まで下がりました。`,
+        notReached: (medRough, min, max) =>
+          `普通なら${medRough}ほどで、始めた月によって${min}〜${max}まで変わりました。`,
+      },
+    },
+    share: {
+      lumpOnly: (name, goal) => `${name} · 初期資金だけで${goal}達成!`,
+      amountMode: (name, years, goal, monthly) => `${name}で${years}年以内に${goal}を貯めるには毎月${monthly}!`,
+      timeReached: (name, lumpStr, monthly, goal, years, months) =>
+        `${name}に${lumpStr ? `${lumpStr}で始めて` : ""}毎月${monthly}ずつ積み立てたら${goal}まで${years}年${months}か月!`,
+      timeNotReached: (name, goal) => `${name}積立バックテスト — ${goal}まで何年かかる?`,
+    },
+    toast: { linkCopied: "リンクをコピーしました" },
+    error: {
+      loadFailed: { line1: "データを読み込めませんでした。", line2: "しばらくしてからもう一度お試しください。" },
+      retry: "再試行",
+    },
+    result: { tapToEdit: "タップで変更", shareButton: "結果をシェア" },
+    loading: { calculating: "計算中…" },
+    mode: {
+      timeTab: "期間を知りたい",
+      amountTab: "金額を知りたい",
+      capTime: (goal) => ({ pre: "毎月決めた金額で ", bold: `${goal}まで何年`, post: "かかるか" }),
+      capAmount: (goal) => ({ pre: `決めた期間内に${goal}を貯めるには `, bold: "毎月いくらずつ", post: "入れるか" }),
+    },
+    chip: {
+      ticker: "銘柄",
+      monthly: "毎月",
+      period: "期間",
+      lump: "初期資金",
+      buyDay: "買付日",
+      goal: "目標",
+      none: "なし",
+      periodValue: (y) => `${y}年以内`,
+    },
+    dropdown: {
+      monthlyLabel: "毎月の積立額",
+      yearsLabel: (max) => `目標期間 (最大${max}年)`,
+      lumpLabel: "初期投資額",
+      buyDayLabel: "買付日 (毎月何日 · 29日は末日)",
+      goalLabel: "目標金額",
+    },
+    units: { years: "年", day: "" },
+    hero: {
+      lumpOnlyLead: "初期資金だけで",
+      achieved: "達成",
+      lumpOnlySpan: (years, value) => `${years}年前の初期資金だけで、すでに${value} · 毎月の積立なしでもOK`,
+      amountLead: (years, goal) => `${years}年で${goal}、毎月`,
+      amountSpan: (name, lumpStr, principal, value) =>
+        `${name}基準${lumpStr ? ` · 初期${lumpStr}を含む` : ""} · 元本${principal}を入れて${value}をつくる`,
+      timeLeadReached: (lumpStr, monthly) => `${lumpStr ? `${lumpStr}で始めて ` : ""}毎月${monthly}ずつなら`,
+      timeLeadUnder: "全期間積み立てても",
+      durYear: "年",
+      durMonth: "か月",
+      durIn: "で",
+      timeSpanReached: (goal, from, value) => `${goal}に到達できます · ${from}から積み立てたら今は${value}`,
+      timeSpanUnder: (from, rough, goal) => `${from}から積み立てても今は${rough} · ${goal}にはまだ遠いです`,
+    },
+    card: {
+      growthTitle: (currency) => `資産の成長 (${currency})`,
+      goalLabel: (goal) => `目標 ${goal}`,
+      monthlyLogTitle: "月ごとの記録",
+      buyDaySummary: (day, monthly) => `買付日 ${day} · ${monthly}`,
+      monthlyLogLead: "毎月口座がいくらだったかを年ごとにまとめてあります。年をタップすると開きます。",
+    },
+    stat: { principal: "元本", finalValue: "最終評価額", cagr: "年平均" },
+    tip: {
+      cagr: (pct) => `年平均${pct}は、1年で平均このくらい増えたという意味です。(過去のリターン基準)`,
+    },
+    opt: { inflationLabel: "物価に合わせて毎年増額", inflationDesc: "積立額を物価指数(CPI)の分だけ引き上げ" },
+    stepper: { decrease: "減らす", increase: "増やす" },
+    intro: {
+      titleBold: "1億円を貯めるのに",
+      titleRest: "何年かかる?",
+      sub: {
+        pre: "QQQ・SPY・VOO のような ETF を毎月一定額ずつ積み立てたら、目標の1億円までどれくらいかかったか。仮定のリターンではなく、",
+        bold: "実際の過去の日次株価と、その日のドル/円 為替レート",
+        post: "で計算します。",
+      },
+      disclaimer: "教育・情報提供のためのバックテストです。投資勧誘ではなく、過去のリターンは将来を保証しません。",
+      startButton: "計算をはじめる",
+      hint: (count) => `銘柄・金額・日付を決めるだけ · 下では${count}件のETF結果の比較や投資ガイドも見られます`,
+    },
+    form: {
+      capTime: { pre: "毎月決めた金額で ", bold: "1億円まで何年", post: "かかるか計算します" },
+      capAmount: { pre: "決めた期間内に1億円を貯めるには ", bold: "毎月いくらずつ", post: "入れるか計算します" },
+      tickerLabel: "どの銘柄を積み立てますか?",
+      lumpLabel: "始めるときに入れる初期資金はありますか?(なければ0)",
+      monthlyLabel: "毎月いくらずつ入れますか?",
+      yearsLabel: (max) => `何年で貯めますか?(最大${max}年)`,
+      buyDayLabel: "毎月何日に買いますか?(29日は末日)",
+      submitAmount: "必要な金額を計算する",
+      submitTime: "1億円まで計算する",
+    },
+    select: { searchPlaceholder: "銘柄検索 (名前・ティッカー)", empty: "検索結果なし" },
+  },
+
+  chart: { readoutPrincipal: "元本", hoverHint: "チャートをなぞると、その時点の結果が見られます" },
+
+  monthlyLog: {
+    reached: (label) => `${label}達成`,
+    reachedGoal: (label) => `${label}達成 — 目標到達`,
+    breakthrough: (label) => `${label}突破`,
+    header: { month: "月", principal: "元本", value: "評価額", return: "リターン" },
+  },
+};
+
+// ─────────────────────────────────────────────────────────────
+// de — EUR 시장. du체·€(접미사), Euro/Dollar 환율. EUR 데이터 1999~. 활성화는 검증 후.
+// ─────────────────────────────────────────────────────────────
+const de: Dict = {
+  nav: {
+    compare: "Vergleichen",
+    guides: "Ratgeber",
+    howItWorks: "So funktioniert's",
+    about: "Über uns",
+    contact: "Kontakt",
+    home: "Start",
+    privacy: "Datenschutz",
+    terms: "AGB",
+  },
+  a11y: { brandHome: "10-eok Startseite", siteMenu: "Menü" },
+  footerDisclaimer:
+    "10-eok ist ein Informationsdienst, der Backtest-Ergebnisse auf Basis echter historischer Daten zeigt. " +
+    "Vergangene Renditen sind keine Garantie für zukünftige Ergebnisse, und nichts hier ist eine Anlageberatung " +
+    "oder -empfehlung. Für deine Anlageentscheidungen und deren Ergebnisse bist allein du verantwortlich. " +
+    "Die Kursdaten stammen von Yahoo Finance, der Euro/Dollar-Wechselkurs von der Federal Reserve Bank of St. Louis (FRED).",
+
+  calc: {
+    day: { last: "Letzter Tag", nth: (d) => `Tag ${d}` },
+    timing: {
+      title: "Es hängt davon ab, wann du gestartet bist",
+      lead: (amount, years) => ({
+        pre: `Selbst mit demselben ${amount} über dieselben ${years} Jahre hat `,
+        bold: "der Startmonat",
+        post: " allein den Endwert so stark schwanken lassen.",
+      }),
+      worst: "Ungünstiger Start",
+      median: "Normalfall",
+      best: "Glücklicher Start",
+      note: (worst, best, samples) =>
+        `Am schlechtesten: Start ${worst} · Am besten: ${best} · ${samples} vergangene Startpunkte verglichen`,
+      bridge: {
+        reachedMedianBelow: (value, medRough, goal) =>
+          `Die ${value} oben waren eher Glückssache. Ein normaler Start landet bei rund ${medRough}, knapp unter ${goal}.`,
+        reachedMedianAbove: (medRough, goal, min) =>
+          `Ein normaler Start knackt ${goal} bei rund ${medRough}. Ein schlechter Start fiel dagegen auf bis zu ${min}.`,
+        notReached: (medRough, min, max) =>
+          `Ein normaler Start landet bei rund ${medRough} und reichte je nach Startmonat von ${min} bis ${max}.`,
+      },
+    },
+    share: {
+      lumpOnly: (name, goal) => `${name} · ${goal} allein mit dem Startkapital erreicht!`,
+      amountMode: (name, years, goal, monthly) =>
+        `Mit ${name} brauchst du ${monthly}/Monat, um in ${years} Jahren ${goal} zu erreichen!`,
+      timeReached: (name, lumpStr, monthly, goal, years, months) =>
+        `${monthly}/Monat in ${name}${lumpStr ? ` mit ${lumpStr} zum Start` : ""} erreichten ${goal} in ${years}J ${months}M!`,
+      timeNotReached: (name, goal) => `${name} Sparplan-Backtest — wie lange bis ${goal}?`,
+    },
+    toast: { linkCopied: "Link kopiert" },
+    error: {
+      loadFailed: { line1: "Daten konnten nicht geladen werden.", line2: "Bitte versuch es gleich noch einmal." },
+      retry: "Erneut versuchen",
+    },
+    result: { tapToEdit: "Zum Ändern tippen", shareButton: "Ergebnis teilen" },
+    loading: { calculating: "Wird berechnet…" },
+    mode: {
+      timeTab: "Wie lange?",
+      amountTab: "Wie viel?",
+      capTime: (goal) => ({ pre: "Mit einem festen Betrag pro Monat, ", bold: `wie viele Jahre bis ${goal}`, post: "" }),
+      capAmount: (goal) => ({ pre: `Um ${goal} in einer festen Zeit zu erreichen, `, bold: "wie viel pro Monat", post: "" }),
+    },
+    chip: {
+      ticker: "ETF",
+      monthly: "Monatlich",
+      period: "Zeitraum",
+      lump: "Startkapital",
+      buyDay: "Kauftag",
+      goal: "Ziel",
+      none: "Keins",
+      periodValue: (y) => `in ${y} J`,
+    },
+    dropdown: {
+      monthlyLabel: "Monatliche Sparrate",
+      yearsLabel: (max) => `Zielzeitraum (max. ${max} J)`,
+      lumpLabel: "Anfängliches Startkapital",
+      buyDayLabel: "Kauftag (Tag im Monat · 29 = letzter Tag)",
+      goalLabel: "Zielbetrag",
+    },
+    units: { years: "J", day: "" },
+    hero: {
+      lumpOnlyLead: "Allein mit dem Startkapital",
+      achieved: "erreicht",
+      lumpOnlySpan: (years, value) => `Schon ${value} allein aus dem Startkapital vor ${years} Jahren · ganz ohne monatliches Sparen`,
+      amountLead: (years, goal) => `${goal} in ${years} Jahren, monatlich`,
+      amountSpan: (name, lumpStr, principal, value) =>
+        `Basierend auf ${name}${lumpStr ? ` · inkl. ${lumpStr} Startkapital` : ""} · ${principal} einzahlen, um ${value} aufzubauen`,
+      timeLeadReached: (lumpStr, monthly) => `${lumpStr ? `Mit ${lumpStr} zum Start, ` : ""}${monthly} monatlich angelegt`,
+      timeLeadUnder: "Selbst über den gesamten Zeitraum",
+      durYear: "J",
+      durMonth: "M",
+      durIn: " später",
+      timeSpanReached: (goal, from, value) => `erreichst du ${goal} · seit ${from} wären das heute ${value}`,
+      timeSpanUnder: (from, rough, goal) => `sind es seit ${from} heute ${rough} · noch weit von ${goal} entfernt`,
+    },
+    card: {
+      growthTitle: (currency) => `Vermögensentwicklung (${currency})`,
+      goalLabel: (goal) => `Ziel ${goal}`,
+      monthlyLogTitle: "Monat für Monat",
+      buyDaySummary: (day, monthly) => `Kauftag ${day} · ${monthly}`,
+      monthlyLogLead: "Wie viel dein Depot in jedem Monat wert war, nach Jahren zusammengefaltet. Tippe auf ein Jahr, um es aufzuklappen.",
+    },
+    stat: { principal: "Eingezahlt", finalValue: "Endwert", cagr: "Jährlich" },
+    tip: {
+      cagr: (pct) => `Jährlich ${pct} heißt, es ist im Schnitt etwa so viel pro Jahr gewachsen. (Auf Basis vergangener Renditen.)`,
+    },
+    opt: { inflationLabel: "Jährlich mit der Inflation erhöhen", inflationDesc: "Sparrate um den Verbraucherpreisindex erhöhen" },
+    stepper: { decrease: "Verringern", increase: "Erhöhen" },
+    intro: {
+      titleBold: "1 Mio. € ansparen —",
+      titleRest: "wie lange dauert das?",
+      sub: {
+        pre: "Hättest du jeden Monat einen festen Betrag in einen ETF wie QQQ, SPY oder VOO gesteckt — wie lange bis zum Ziel von 1 Mio. €? Wir rechnen es nicht mit angenommenen Renditen, sondern mit ",
+        bold: "echten historischen Tageskursen und dem Euro/Dollar-Wechselkurs von damals",
+        post: ".",
+      },
+      disclaimer: "Ein Backtest zu Bildungs- und Informationszwecken. Keine Anlageberatung; vergangene Renditen garantieren nicht die Zukunft.",
+      startButton: "Los geht's",
+      hint: (count) => `Nur ETF, Betrag und Datum wählen · unten kannst du ${count} ETFs vergleichen und die Ratgeber lesen`,
+    },
+    form: {
+      capTime: { pre: "Mit einem festen Betrag pro Monat — ", bold: "wie viele Jahre bis 1 Mio. €", post: "" },
+      capAmount: { pre: "Um 1 Mio. € in einer festen Zeit zu erreichen — ", bold: "wie viel pro Monat", post: "" },
+      tickerLabel: "Welchen ETF möchtest du besparen?",
+      lumpLabel: "Hast du ein Startkapital zum Loslegen? (0 wenn nicht)",
+      monthlyLabel: "Wie viel möchtest du monatlich anlegen?",
+      yearsLabel: (max) => `In wie vielen Jahren? (max. ${max} J)`,
+      buyDayLabel: "An welchem Tag im Monat kaufst du? (29 = letzter Tag)",
+      submitAmount: "Betrag berechnen",
+      submitTime: "Bis 1 Mio. € berechnen",
+    },
+    select: { searchPlaceholder: "ETF suchen (Name oder Symbol)", empty: "Keine Ergebnisse" },
+  },
+
+  chart: { readoutPrincipal: "Eingezahlt", hoverHint: "Fahre über den Chart, um das Ergebnis an diesem Punkt zu sehen" },
+
+  monthlyLog: {
+    reached: (label) => `${label} erreicht`,
+    reachedGoal: (label) => `${label} erreicht — Ziel geschafft`,
+    breakthrough: (label) => `${label} überschritten`,
+    header: { month: "Monat", principal: "Eingezahlt", value: "Wert", return: "Rendite" },
+  },
+};
+
+const DICTS: Partial<Record<Locale, Dict>> = { ko, en, ja, de };
 
 export function getDict(locale: Locale): Dict {
   return DICTS[locale] ?? ko;

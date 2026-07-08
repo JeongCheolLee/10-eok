@@ -84,7 +84,7 @@ export const MARKETS: Record<Locale, Market> = {
     ogLocale: "ja_JP",
     currency: "JPY",
     fxFile: "fx/jpy.json", // FRED DEXJPUS (JPY/USD)
-    cpiFile: "cpi/jp.json",
+    cpiFile: null, // JP 현행 CPI 시리즈 미확정 → 물가 토글 숨김(추후 확보 시 파일 추가)
     numFmt: "jaOku",
     // 目標 1億円(1~100億, 1億 step 단위=1e6? 아니오 — 億=1e8), 毎月 10万円, 元金 0~
     // 억엔 체계: 목표 count 1 = 1億円(1e8엔). 기본 1억엔.

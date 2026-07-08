@@ -76,6 +76,48 @@ async function fetchCpiKr(): Promise<{ ym: string; idx: number }[]> {
   return out;
 }
 
+// 추가 통화 환율(ja/de) — 정렬엔 안 쓰이고 프론트 compose 전용(px×fx). EUR은 DEXUSEU(USD/EUR)라 역수.
+const EXTRA_FX: { file: string; id: string; pair: string; invert: boolean; dec: number }[] = [
+  { file: "jpy.json", id: "DEXJPUS", pair: "USDJPY", invert: false, dec: 4 },
+  { file: "eur.json", id: "DEXUSEU", pair: "USDEUR", invert: true, dec: 6 },
+];
+// 추가 물가지수(en/de). US=CPIAUCSL(현행), EA=Eurostat HICP. JP는 현행 시리즈 미확정 → 생략(토글 숨김).
+const EXTRA_CPI: { file: string; id: string }[] = [
+  { file: "us.json", id: "CPIAUCSL" },
+  { file: "ea.json", id: "CP0000EZ19M086NEST" },
+];
+async function fetchFxSeries(id: string, invert: boolean, dec: number): Promise<[string, number][]> {
+  const url = `https://fred.stlouisfed.org/graph/fredgraph.csv?id=${id}`;
+  const res = await fetch(url, { headers: { "User-Agent": UA } });
+  if (!res.ok) throw new Error(`FRED ${id} HTTP ${res.status}`);
+  const text = await res.text();
+  const rows: [string, number][] = [];
+  for (const line of text.split("\n").slice(1)) {
+    const [date, val] = line.split(",");
+    if (!date || val == null) continue;
+    const rate = Number(val.trim());
+    if (!Number.isFinite(rate) || rate <= 0) continue; // 결측 "."
+    if (date.trim() < FX_FILE_START) continue;
+    rows.push([date.trim(), round(invert ? 1 / rate : rate, dec)]);
+  }
+  return rows;
+}
+async function fetchCpiSeries(id: string): Promise<{ ym: string; idx: number }[]> {
+  const url = `https://fred.stlouisfed.org/graph/fredgraph.csv?id=${id}`;
+  const res = await fetch(url, { headers: { "User-Agent": UA } });
+  if (!res.ok) throw new Error(`FRED ${id} HTTP ${res.status}`);
+  const text = await res.text();
+  const out: { ym: string; idx: number }[] = [];
+  for (const line of text.split("\n").slice(1)) {
+    const [date, val] = line.split(",");
+    if (!date || val == null) continue;
+    const idx = Number(val.trim());
+    if (!Number.isFinite(idx) || idx <= 0) continue;
+    out.push({ ym: date.trim().slice(0, 7), idx: round(idx, 3) });
+  }
+  return out;
+}
+
 /**
  * 새 번들이 기존 정상 번들을 안전하게 대체할 수 있는지 검증. 이상 시 throw → 커밋 차단.
  * - 절대 하한: 행 수가 MIN_PRICE_ROWS 미만이면 잘린 응답으로 간주.
@@ -198,6 +240,19 @@ async function main() {
   const cpiJson = JSON.stringify({ base: cpi[0]?.ym, series: cpi.map((c) => [c.ym, c.idx]) });
   writeFileSync(join(dir, "cpi-kr.json"), cpiJson);
   writeFileSync(join(dir, "cpi", "kr.json"), cpiJson);
+  // 추가 통화 환율(ja/de) + 물가지수(en/de). ko 데이터와 독립·additive. 실패 시 throw→커밋 차단.
+  for (const f of EXTRA_FX) {
+    const rows = await fetchFxSeries(f.id, f.invert, f.dec);
+    if (rows.length < MIN_FX_ROWS) throw new Error(`FRED ${f.id}: ${rows.length}행 < 최소 ${MIN_FX_ROWS}개 — 잘린 응답 의심`);
+    writeFileSync(join(dir, "fx", f.file), JSON.stringify({ pair: f.pair, source: f.invert ? `${f.id} (inverted)` : f.id, generatedAt: new Date().toISOString(), rows }));
+    console.log(`  fx/${f.file}: ${rows.length}행 (${f.id}${f.invert ? " 역수" : ""})`);
+  }
+  for (const c of EXTRA_CPI) {
+    const series = await fetchCpiSeries(c.id);
+    if (series.length < MIN_CPI_ROWS) throw new Error(`FRED ${c.id}: ${series.length}개월 < 최소 ${MIN_CPI_ROWS}개월 — 잘린 응답 의심`);
+    writeFileSync(join(dir, "cpi", c.file), JSON.stringify({ base: series[0]?.ym, series: series.map((s) => [s.ym, s.idx]) }));
+    console.log(`  cpi/${c.file}: ${series.length}개월 (${c.id})`);
+  }
   console.log(`  fx/krw: ${fxBundle.rows.length}행 (${FX_FILE_START}~)`);
   console.log(`  cpi-kr: ${cpi.length}개월, ${cpi[0]?.ym} ~ ${cpi[cpi.length - 1]?.ym}`);
   console.log(`[build-bundle] 완료: ${pending.length}개 종목(레거시+px) + fx + cpi 기록`);
