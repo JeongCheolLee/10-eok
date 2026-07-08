@@ -42,7 +42,7 @@ export type Market = {
   tax: { rate: number; exemption: number } | null;
 };
 
-const USD_TICKERS = ["QLD", "TQQQ", "QQQ", "SPY", "VOO", "SCHD", "VT"];
+const USD_TICKERS = ["QLD", "TQQQ", "QQQ", "SPY", "VOO", "SCHD", "VT", "SOXX", "VGT", "VNQ", "GLD", "TLT", "AGG", "JEPI", "JEPQ"];
 
 export const MARKETS: Record<Locale, Market> = {
   ko: {
