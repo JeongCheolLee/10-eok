@@ -1,16 +1,25 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ContentShell } from "@/components/ContentShell";
 import { Sources } from "@/components/Sources";
 import { JsonLd, guideLd } from "@/components/JsonLd";
+import type { Locale } from "@/lib/i18n/locales";
+import { langAlternates } from "@/lib/i18n/seo";
 
-export const metadata: Metadata = {
-  title: "해외주식·ETF 세금 기초 · 10-eok",
-  description: "해외주식·ETF의 양도소득세·배당소득세와 국내 상장 종목과의 과세 차이를 기초부터 정리합니다.",
-  alternates: { canonical: "/guides/overseas-tax" },
-};
+// ko 전용 가이드(한국 세금). en/ja/de에서는 404 — hreflang도 ko만.
+export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
+  const { lang } = await params;
+  return {
+    title: "해외주식·ETF 세금 기초 · 10-eok",
+    description: "해외주식·ETF의 양도소득세·배당소득세와 국내 상장 종목과의 과세 차이를 기초부터 정리합니다.",
+    alternates: langAlternates(lang as Locale, "/guides/overseas-tax", ["ko"]),
+  };
+}
 
-export default function Page() {
+export default async function Page({ params }: { params: Promise<{ lang: string }> }) {
+  const { lang } = await params;
+  if (lang !== "ko") notFound();
   return (
     <ContentShell title="해외주식·ETF 세금 기초" desc="양도세·배당세, 무엇이 어떻게 다른가" crumb="가이드 · 세금">
       <JsonLd data={guideLd({ path: "/guides/overseas-tax", title: "해외주식·ETF 세금 기초", description: "해외주식·ETF의 양도소득세·배당소득세와 국내 상장 종목과의 과세 차이를 기초부터 정리합니다.", name: "해외주식·ETF 세금 기초" })} />

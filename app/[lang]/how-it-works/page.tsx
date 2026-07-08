@@ -1,14 +1,15 @@
 import type { Metadata } from "next";
+import type { ReactNode } from "react";
 import { ContentShell } from "@/components/ContentShell";
 import { JsonLd, faqLd } from "@/components/JsonLd";
+import type { Locale } from "@/lib/i18n/locales";
+import { getDict } from "@/lib/i18n/dict";
+import { langAlternates } from "@/lib/i18n/seo";
+import { HOW_IT_WORKS_EN } from "@/lib/content/pages/en";
+import { HOW_IT_WORKS_JA } from "@/lib/content/pages/ja";
+import { HOW_IT_WORKS_DE } from "@/lib/content/pages/de";
 
-export const metadata: Metadata = {
-  title: "계산 방법 & 자주 묻는 질문 · 10-eok",
-  description: "10-eok이 실제 과거 가격과 환율로 어떻게 백테스트를 계산하는지, 그리고 자주 묻는 질문을 정리했어요.",
-  alternates: { canonical: "/how-it-works" },
-};
-
-const FAQ = [
+const FAQ_KO = [
   { q: "결과가 미래 수익을 보장하나요?", a: "아니요. 모든 결과는 '과거에 그렇게 했다면'의 기록일 뿐이며, 과거 수익률은 미래를 보장하지 않습니다." },
   { q: "왜 QLD부터인가요?", a: "데이터가 길고(2006년~) 변동이 커서 적립식 효과를 보여주기 좋기 때문입니다. 종목은 점차 늘릴 예정입니다." },
   { q: "'연평균'은 무슨 뜻인가요?", a: "보유 구간 동안 자산 가치가 1년에 평균 몇 %씩 늘었는지를 나타낸 값(연복리 수익률)입니다." },
@@ -18,10 +19,9 @@ const FAQ = [
   { q: "실제로 이대로 투자하면 되나요?", a: "본 서비스는 정보 제공 도구이며 투자 권유나 자문이 아닙니다. 레버리지 상품의 위험을 충분히 이해하고 투자 결정은 스스로 판단하셔야 합니다." },
 ];
 
-export default function Page() {
+function KoBody() {
   return (
-    <ContentShell title="계산 방법 & 자주 묻는 질문" desc="10-eok이 결과를 어떻게 만들어내는지" crumb="계산 방법">
-      <JsonLd data={faqLd(FAQ)} />
+    <>
       <h2>한눈에 보는 계산 절차</h2>
       <ol>
         <li>선택한 종목의 <strong>일별 수정주가</strong>와 <strong>일별 원/달러 환율</strong>을 가져옵니다.</li>
@@ -65,6 +65,47 @@ export default function Page() {
       <p className="note">
         계산 로직의 자세한 동작은 <a href="/guides">가이드</a>에서 더 읽어볼 수 있어요.
       </p>
+    </>
+  );
+}
+
+type Entry = {
+  metaTitle: string;
+  metaDescription: string;
+  head: { title: string; desc: string };
+  // FAQPage 구조화 데이터용(있을 때만 emit). ja/de는 본문에 FAQ가 있으나 배열 미노출 → JSON-LD 생략.
+  faq?: { q: string; a: string }[];
+  Body: () => ReactNode;
+};
+const DATA: Record<Locale, Entry> = {
+  ko: {
+    metaTitle: "계산 방법 & 자주 묻는 질문 · 10-eok",
+    metaDescription: "10-eok이 실제 과거 가격과 환율로 어떻게 백테스트를 계산하는지, 그리고 자주 묻는 질문을 정리했어요.",
+    head: { title: "계산 방법 & 자주 묻는 질문", desc: "10-eok이 결과를 어떻게 만들어내는지" },
+    faq: FAQ_KO,
+    Body: KoBody,
+  },
+  en: HOW_IT_WORKS_EN,
+  ja: HOW_IT_WORKS_JA,
+  de: HOW_IT_WORKS_DE,
+};
+
+export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
+  const { lang } = await params;
+  const locale = (lang as Locale) in DATA ? (lang as Locale) : "ko";
+  const d = DATA[locale];
+  return { title: d.metaTitle, description: d.metaDescription, alternates: langAlternates(locale, "/how-it-works") };
+}
+
+export default async function Page({ params }: { params: Promise<{ lang: string }> }) {
+  const { lang } = await params;
+  const locale = (lang as Locale) in DATA ? (lang as Locale) : "ko";
+  const d = DATA[locale];
+  const Body = d.Body;
+  return (
+    <ContentShell title={d.head.title} desc={d.head.desc} crumb={getDict(locale).nav.howItWorks}>
+      {d.faq && <JsonLd data={faqLd(d.faq)} />}
+      <Body />
     </ContentShell>
   );
 }

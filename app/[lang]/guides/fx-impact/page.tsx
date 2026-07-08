@@ -1,16 +1,25 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ContentShell } from "@/components/ContentShell";
 import { Sources } from "@/components/Sources";
 import { JsonLd, guideLd } from "@/components/JsonLd";
+import type { Locale } from "@/lib/i18n/locales";
+import { langAlternates } from "@/lib/i18n/seo";
 
-export const metadata: Metadata = {
-  title: "환율이 수익률에 미치는 영향 · 10-eok",
-  description: "원화로 달러 자산(미국 ETF)을 살 때, 환율이 수익을 어떻게 더하거나 깎는지 시나리오로 설명합니다.",
-  alternates: { canonical: "/guides/fx-impact" },
-};
+// ko 전용 가이드(원화 관점 환율). en/ja/de에서는 404 — hreflang도 ko만.
+export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
+  const { lang } = await params;
+  return {
+    title: "환율이 수익률에 미치는 영향 · 10-eok",
+    description: "원화로 달러 자산(미국 ETF)을 살 때, 환율이 수익을 어떻게 더하거나 깎는지 시나리오로 설명합니다.",
+    alternates: langAlternates(lang as Locale, "/guides/fx-impact", ["ko"]),
+  };
+}
 
-export default function Page() {
+export default async function Page({ params }: { params: Promise<{ lang: string }> }) {
+  const { lang } = await params;
+  if (lang !== "ko") notFound();
   return (
     <ContentShell title="환율이 수익률에 미치는 영향" desc="원화로 달러 자산을 살 때 생기는 또 하나의 변수" crumb="가이드 · 환율">
       <JsonLd data={guideLd({ path: "/guides/fx-impact", title: "환율이 수익률에 미치는 영향", description: "원화로 달러 자산(미국 ETF)을 살 때, 환율이 수익을 어떻게 더하거나 깎는지 시나리오로 설명합니다.", name: "환율이 수익률에 미치는 영향" })} />
