@@ -3,17 +3,31 @@ import Link from "next/link";
 import { ContentShell } from "@/components/ContentShell";
 import { Sources } from "@/components/Sources";
 import { JsonLd, guideLd } from "@/components/JsonLd";
+import type { Locale } from "@/lib/i18n/locales";
+import { langAlternates } from "@/lib/i18n/seo";
+import { LEVERAGE_ETF_RISK_EN } from "@/lib/content/pages/en";
+import { LEVERAGE_ETF_RISK_JA } from "@/lib/content/pages/ja";
+import { LEVERAGE_ETF_RISK_DE } from "@/lib/content/pages/de";
 
-export const metadata: Metadata = {
-  title: "레버리지 ETF의 위험 · 10-eok",
-  description: "2·3배의 수익만큼 큰 손실, 그리고 변동성 끌림(volatility decay)이라는 숨은 함정을 숫자로 설명합니다.",
-  alternates: { canonical: "/guides/leverage-etf-risk" },
+const KO = {
+  metaTitle: "레버리지 ETF의 위험",
+  metaDescription: "2·3배의 수익만큼 큰 손실, 그리고 변동성 끌림(volatility decay)이라는 숨은 함정을 숫자로 설명합니다.",
+  head: { title: "레버리지 ETF의 위험", desc: "2배는 수익에도, 손실에도 적용됩니다", crumb: "가이드 · 위험" },
+};
+const LOCALES_DATA: Record<Locale, { metaTitle: string; metaDescription: string; head: { title: string; desc: string; crumb: string } }> = {
+  ko: KO, en: LEVERAGE_ETF_RISK_EN, ja: LEVERAGE_ETF_RISK_JA, de: LEVERAGE_ETF_RISK_DE,
 };
 
-export default function Page() {
+export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
+  const { lang } = await params;
+  const locale = (lang as Locale) in LOCALES_DATA ? (lang as Locale) : "ko";
+  const d = LOCALES_DATA[locale];
+  return { title: `${d.metaTitle} · 10-eok`, description: d.metaDescription, alternates: langAlternates(locale, "/guides/leverage-etf-risk") };
+}
+
+function KoBody() {
   return (
-    <ContentShell title="레버리지 ETF의 위험" desc="2배는 수익에도, 손실에도 적용됩니다" crumb="가이드 · 위험">
-      <JsonLd data={guideLd({ path: "/guides/leverage-etf-risk", title: "레버리지 ETF의 위험", description: "2·3배의 수익만큼 큰 손실, 그리고 변동성 끌림(volatility decay)이라는 숨은 함정을 숫자로 설명합니다.", name: "레버리지 ETF의 위험" })} />
+    <>
       <p>
         QLD(2배)나 TQQQ(3배) 같은 레버리지 ETF는 상승장에서 눈부신 수익을 보여줍니다. 백테스트
         결과만 보면 &ldquo;왜 진작 안 샀을까&rdquo; 싶을 정도죠. 하지만 그 수익에는 반드시 같은
@@ -125,6 +139,21 @@ export default function Page() {
       <Sources ids={["prosharesQld", "prosharesTqqq"]} />
 
       <p className="note">본 내용은 일반적인 정보 제공이며 투자 권유나 자문이 아닙니다.</p>
+    </>
+  );
+}
+
+const BODIES: Record<Locale, () => React.ReactElement> = { ko: KoBody, en: LEVERAGE_ETF_RISK_EN.Body, ja: LEVERAGE_ETF_RISK_JA.Body, de: LEVERAGE_ETF_RISK_DE.Body };
+
+export default async function Page({ params }: { params: Promise<{ lang: string }> }) {
+  const { lang } = await params;
+  const locale = (lang as Locale) in BODIES ? (lang as Locale) : "ko";
+  const d = LOCALES_DATA[locale];
+  const Body = BODIES[locale];
+  return (
+    <ContentShell title={d.head.title} desc={d.head.desc} crumb={d.head.crumb}>
+      <JsonLd data={guideLd({ path: "/guides/leverage-etf-risk", title: d.head.title, description: d.metaDescription, name: d.head.title })} />
+      <Body />
     </ContentShell>
   );
 }

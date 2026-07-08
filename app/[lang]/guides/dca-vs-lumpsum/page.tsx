@@ -3,17 +3,31 @@ import Link from "next/link";
 import { ContentShell } from "@/components/ContentShell";
 import { Sources } from "@/components/Sources";
 import { JsonLd, guideLd } from "@/components/JsonLd";
+import type { Locale } from "@/lib/i18n/locales";
+import { langAlternates } from "@/lib/i18n/seo";
+import { DCA_VS_LUMPSUM_EN } from "@/lib/content/pages/en";
+import { DCA_VS_LUMPSUM_JA } from "@/lib/content/pages/ja";
+import { DCA_VS_LUMPSUM_DE } from "@/lib/content/pages/de";
 
-export const metadata: Metadata = {
-  title: "적립식 vs 거치식 · 10-eok",
-  description: "목돈을 한 번에 넣을까, 나눠 넣을까 — 적립식과 거치식의 차이, 평균적으로 유리한 쪽과 상황별 선택 기준.",
-  alternates: { canonical: "/guides/dca-vs-lumpsum" },
+const KO = {
+  metaTitle: "적립식 vs 거치식",
+  metaDescription: "목돈을 한 번에 넣을까, 나눠 넣을까 — 적립식과 거치식의 차이, 평균적으로 유리한 쪽과 상황별 선택 기준.",
+  head: { title: "적립식 vs 거치식", desc: "한 번에 넣을까, 나눠 넣을까", crumb: "가이드 · 적립 vs 거치" },
+};
+const LOCALES_DATA: Record<Locale, { metaTitle: string; metaDescription: string; head: { title: string; desc: string; crumb: string } }> = {
+  ko: KO, en: DCA_VS_LUMPSUM_EN, ja: DCA_VS_LUMPSUM_JA, de: DCA_VS_LUMPSUM_DE,
 };
 
-export default function Page() {
+export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
+  const { lang } = await params;
+  const locale = (lang as Locale) in LOCALES_DATA ? (lang as Locale) : "ko";
+  const d = LOCALES_DATA[locale];
+  return { title: `${d.metaTitle} · 10-eok`, description: d.metaDescription, alternates: langAlternates(locale, "/guides/dca-vs-lumpsum") };
+}
+
+function KoBody() {
   return (
-    <ContentShell title="적립식 vs 거치식" desc="한 번에 넣을까, 나눠 넣을까" crumb="가이드 · 적립 vs 거치">
-      <JsonLd data={guideLd({ path: "/guides/dca-vs-lumpsum", title: "적립식 vs 거치식", description: "목돈을 한 번에 넣을까, 나눠 넣을까 — 적립식과 거치식의 차이, 평균적으로 유리한 쪽과 상황별 선택 기준.", name: "적립식 vs 거치식" })} />
+    <>
       <p>
         같은 돈을 같은 종목에 넣어도 <strong>언제 넣느냐</strong>에 따라 결과가 달라집니다. 크게 두 가지
         방법이 있어요. <strong>거치식(lump-sum)</strong>은 가진 목돈을 한 번에 전부 넣는 방식이고,
@@ -94,6 +108,21 @@ export default function Page() {
       <Sources ids={["yahoo", "fredFx"]} />
 
       <p className="note">본 내용은 일반적인 정보 제공이며 투자 권유나 자문이 아닙니다.</p>
+    </>
+  );
+}
+
+const BODIES: Record<Locale, () => React.ReactElement> = { ko: KoBody, en: DCA_VS_LUMPSUM_EN.Body, ja: DCA_VS_LUMPSUM_JA.Body, de: DCA_VS_LUMPSUM_DE.Body };
+
+export default async function Page({ params }: { params: Promise<{ lang: string }> }) {
+  const { lang } = await params;
+  const locale = (lang as Locale) in BODIES ? (lang as Locale) : "ko";
+  const d = LOCALES_DATA[locale];
+  const Body = BODIES[locale];
+  return (
+    <ContentShell title={d.head.title} desc={d.head.desc} crumb={d.head.crumb}>
+      <JsonLd data={guideLd({ path: "/guides/dca-vs-lumpsum", title: d.head.title, description: d.metaDescription, name: d.head.title })} />
+      <Body />
     </ContentShell>
   );
 }

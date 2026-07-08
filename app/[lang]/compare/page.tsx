@@ -2,35 +2,40 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ContentShell } from "@/components/ContentShell";
 import { JsonLd, articleLd, pageBreadcrumbLd } from "@/components/JsonLd";
-import { computeTickerResults, dataEndLabel, yearOf, COMPARE_MONTHLY as MONTHLY } from "@/lib/etfResults";
-import { TICKERS } from "@/lib/tickers";
-import { eok1, pct } from "@/lib/format";
+import { computeTickerResults } from "@/lib/etfResults";
+import { getMarket } from "@/lib/i18n/markets";
+import { getFormatter } from "@/lib/i18n/format";
+import { langAlternates } from "@/lib/i18n/seo";
+import type { Locale } from "@/lib/i18n/locales";
 
-const TITLE = `${TICKERS.length}개 ETF 비교 — 매달 100만원이면 10억까지 누가 빨랐나`;
-const DESC = "QLD·TQQQ·QQQ·SPY·VOO·SCHD·VT·KODEX 200을 매달 100만원씩 적립했다고 가정해, 10억 도달 기간·연평균 수익률을 실제 과거 데이터로 비교하고 각 종목의 성격과 위험을 정리합니다.";
+const TITLE_KO = (n: number) => `${n}개 ETF 비교 — 매달 100만원이면 10억까지 누가 빨랐나`;
+const DESC_KO = "QLD·TQQQ·QQQ·SPY·VOO·SCHD·VT·KODEX 200을 매달 100만원씩 적립했다고 가정해, 10억 도달 기간·연평균 수익률을 실제 과거 데이터로 비교하고 각 종목의 성격과 위험을 정리합니다.";
 
-export const metadata: Metadata = {
-  title: `${TITLE} · 10-eok`,
-  description: DESC,
-  alternates: { canonical: "/compare" },
-  openGraph: { title: TITLE, description: DESC, type: "article", images: [{ url: "/api/og", width: 1200, height: 630 }] },
-};
+export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
+  const { lang } = await params;
+  const locale = lang as Locale;
+  const market = getMarket(locale);
+  const n = market.tickers.length;
+  if (locale !== "ko") return { alternates: langAlternates(locale, "/compare") };
+  const title = TITLE_KO(n);
+  return {
+    title: `${title} · 10-eok`,
+    description: DESC_KO,
+    alternates: langAlternates(locale, "/compare"),
+    openGraph: { title, description: DESC_KO, type: "article", images: [{ url: "/api/og", width: 1200, height: 630 }] },
+  };
+}
 
-export default async function ComparePage() {
-  const { rows, dataEnd } = await computeTickerResults();
-
+function KoBody({ rows, dataEnd, n }: { rows: Awaited<ReturnType<typeof computeTickerResults>>["rows"]; dataEnd: string | null; n: number }) {
+  const fmt = getFormatter("ko");
   return (
-    <ContentShell
-      title={`${TICKERS.length}개 ETF, 10억까지 비교`}
-      desc={`매달 ${MONTHLY}만원씩 적립했다면 — 실제 과거 데이터로 본 종목별 결과와 성격`}
-      crumb="종목 비교"
-    >
-      <JsonLd data={articleLd({ path: "/compare", title: TITLE, description: DESC })} />
+    <>
+      <JsonLd data={articleLd({ path: "/compare", title: TITLE_KO(n), description: DESC_KO })} />
       <JsonLd data={pageBreadcrumbLd("종목 비교", "/compare")} />
 
       <p>
         같은 금액을 매달 똑같이 모았더라도 어떤 ETF에 넣었느냐에 따라 결과는 크게 달라집니다. 아래는
-        10-eok이 지원하는 {TICKERS.length}개 ETF를 <strong>매달 {MONTHLY}만원씩, 매달 1일</strong>에 적립했다고 가정하고,
+        10-eok이 지원하는 {n}개 ETF를 <strong>매달 100만원씩, 매달 1일</strong>에 적립했다고 가정하고,
         실제 과거의 일별 종가와 환율로 10억 원에 닿기까지 걸린 기간을 계산한 결과입니다. 기간은 <strong>오늘
         시점에서 거꾸로 계산</strong>한 값으로, "약 몇 년 전부터 모았더라면 지금 10억이 되는가"를 뜻합니다.
       </p>
@@ -56,18 +61,18 @@ export default async function ComparePage() {
                   {row.r.reached ? (
                     <strong>약 {row.r.years}년 {row.r.monthsRem}개월</strong>
                   ) : (
-                    <span className="cmp-miss">전 구간 미달 · 약 {eok1(row.r.value)}</span>
+                    <span className="cmp-miss">전 구간 미달 · 약 {fmt.rough(row.r.value)}</span>
                   )}
                 </td>
-                <td className="cmp-cagr">{pct(row.r.cagr)}</td>
-                <td className="cmp-sub" style={{ display: "table-cell" }}>{yearOf(row.r.series[0]?.date)}</td>
+                <td className="cmp-cagr">{fmt.pct(row.r.cagr)}</td>
+                <td className="cmp-sub" style={{ display: "table-cell" }}>{row.r.series[0] ? fmt.yearLabel(Number(row.r.series[0].date.slice(0, 4))) : ""}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
       <p className="cmp-note">
-        ※ {dataEnd ? `${dataEndLabel(dataEnd)} 기준. ` : ""}데이터 시작 시점이 종목마다 달라 기간을 1:1로
+        ※ {dataEnd ? `${fmt.ym(dataEnd)} 기준. ` : ""}데이터 시작 시점이 종목마다 달라 기간을 1:1로
         비교하긴 어렵습니다. 배당 재투자 ON, 세금·수수료 제외 기본 가정입니다.
       </p>
 
@@ -112,6 +117,29 @@ export default async function ComparePage() {
         투자 자문이 아닙니다. 과거 수익률은 미래를 보장하지 않으며, 레버리지 상품은 원금 손실 위험이 큽니다.
         투자 결정과 그 결과의 책임은 이용자 본인에게 있습니다.
       </p>
+    </>
+  );
+}
+
+// TODO(P3-b2): en/ja/de 번역 통합 전 임시 — LOCALES=["ko"]라 미노출.
+function StubBody({ locale }: { locale: Locale }) {
+  return <p>Content for {locale} is coming soon.</p>;
+}
+
+export default async function ComparePage({ params }: { params: Promise<{ lang: string }> }) {
+  const { lang } = await params;
+  const locale = lang as Locale;
+  const market = getMarket(locale);
+  const { rows, dataEnd } = await computeTickerResults(market);
+  const n = market.tickers.length;
+
+  return (
+    <ContentShell
+      title={locale === "ko" ? `${n}개 ETF, 10억까지 비교` : `${n} ETFs`}
+      desc={locale === "ko" ? `매달 100만원씩 적립했다면 — 실제 과거 데이터로 본 종목별 결과와 성격` : undefined}
+      crumb={locale === "ko" ? "종목 비교" : "Compare"}
+    >
+      {locale === "ko" ? <KoBody rows={rows} dataEnd={dataEnd} n={n} /> : <StubBody locale={locale} />}
     </ContentShell>
   );
 }

@@ -3,25 +3,31 @@ import Link from "next/link";
 import { ContentShell } from "@/components/ContentShell";
 import { Sources } from "@/components/Sources";
 import { JsonLd, guideLd } from "@/components/JsonLd";
+import type { Locale } from "@/lib/i18n/locales";
+import { langAlternates } from "@/lib/i18n/seo";
+import { NASDAQ100_VS_SP500_EN } from "@/lib/content/pages/en";
+import { NASDAQ100_VS_SP500_JA } from "@/lib/content/pages/ja";
+import { NASDAQ100_VS_SP500_DE } from "@/lib/content/pages/de";
 
-export const metadata: Metadata = {
-  title: "나스닥100 vs S&P 500 · 10-eok",
-  description: "QQQ와 SPY로 대표되는 나스닥100과 S&P 500의 구성·성격·변동성 차이를 비교합니다.",
-  alternates: { canonical: "/guides/nasdaq100-vs-sp500" },
+const KO = {
+  metaTitle: "나스닥100 vs S&P 500",
+  metaDescription: "QQQ와 SPY로 대표되는 나스닥100과 S&P 500의 구성·성격·변동성 차이를 비교합니다.",
+  head: { title: "나스닥100 vs S&P 500", desc: "미국 대표 두 지수, 무엇이 다른가", crumb: "가이드 · 지수 비교" },
+};
+const LOCALES_DATA: Record<Locale, { metaTitle: string; metaDescription: string; head: { title: string; desc: string; crumb: string } }> = {
+  ko: KO, en: NASDAQ100_VS_SP500_EN, ja: NASDAQ100_VS_SP500_JA, de: NASDAQ100_VS_SP500_DE,
 };
 
-export default function Page() {
-  return (
-    <ContentShell title="나스닥100 vs S&P 500" desc="미국 대표 두 지수, 무엇이 다른가" crumb="가이드 · 지수 비교">
-      <JsonLd
-        data={guideLd({
-          path: "/guides/nasdaq100-vs-sp500",
-          title: "나스닥100 vs S&P 500",
-          description: "QQQ와 SPY로 대표되는 나스닥100과 S&P 500의 구성·성격·변동성 차이를 비교합니다.",
-          name: "나스닥100 vs S&P 500",
-        })}
-      />
+export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
+  const { lang } = await params;
+  const locale = (lang as Locale) in LOCALES_DATA ? (lang as Locale) : "ko";
+  const d = LOCALES_DATA[locale];
+  return { title: `${d.metaTitle} · 10-eok`, description: d.metaDescription, alternates: langAlternates(locale, "/guides/nasdaq100-vs-sp500") };
+}
 
+function KoBody() {
+  return (
+    <>
       <p>
         미국 주식에 적립식으로 투자할 때 가장 자주 거론되는 두 지수가 <strong>나스닥100</strong>과{" "}
         <strong>S&amp;P 500</strong>입니다. 둘 다 미국 대형주를 담지만, 무엇을 얼마나 담는지가 달라
@@ -125,6 +131,21 @@ export default function Page() {
       <Sources ids={["yahoo", "fredFx"]} />
 
       <p className="note">본 내용은 일반적인 정보 제공이며 투자 권유나 자문이 아닙니다.</p>
+    </>
+  );
+}
+
+const BODIES: Record<Locale, () => React.ReactElement> = { ko: KoBody, en: NASDAQ100_VS_SP500_EN.Body, ja: NASDAQ100_VS_SP500_JA.Body, de: NASDAQ100_VS_SP500_DE.Body };
+
+export default async function Page({ params }: { params: Promise<{ lang: string }> }) {
+  const { lang } = await params;
+  const locale = (lang as Locale) in BODIES ? (lang as Locale) : "ko";
+  const d = LOCALES_DATA[locale];
+  const Body = BODIES[locale];
+  return (
+    <ContentShell title={d.head.title} desc={d.head.desc} crumb={d.head.crumb}>
+      <JsonLd data={guideLd({ path: "/guides/nasdaq100-vs-sp500", title: d.head.title, description: d.metaDescription, name: d.head.title })} />
+      <Body />
     </ContentShell>
   );
 }

@@ -54,7 +54,7 @@ export default async function Home({ params, searchParams }: { params: Promise<{
       <JsonLd data={webSiteLd()} />
       <JsonLd data={softwareAppLd()} />
       <BacktestApp initial={parseInitial(sp)} locale={lang as Locale} />
-      <HomeContent />
+      <HomeContent locale={lang as Locale} />
     </>
   );
 }

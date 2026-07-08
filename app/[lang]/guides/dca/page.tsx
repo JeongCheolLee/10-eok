@@ -3,17 +3,35 @@ import Link from "next/link";
 import { ContentShell } from "@/components/ContentShell";
 import { Sources } from "@/components/Sources";
 import { JsonLd, guideLd } from "@/components/JsonLd";
+import type { Locale } from "@/lib/i18n/locales";
+import { langAlternates } from "@/lib/i18n/seo";
+import { DCA_EN } from "@/lib/content/pages/en";
+import { DCA_JA } from "@/lib/content/pages/ja";
+import { DCA_DE } from "@/lib/content/pages/de";
 
-export const metadata: Metadata = {
-  title: "적립식 투자(DCA)의 원리 · 10-eok",
-  description: "매달 일정 금액을 꾸준히 사는 적립식 투자(DCA)가 왜 마음 편한 방법인지, 장점과 한계를 정리했어요.",
-  alternates: { canonical: "/guides/dca" },
+const KO = {
+  metaTitle: "적립식 투자(DCA)의 원리",
+  metaDescription: "매달 일정 금액을 꾸준히 사는 적립식 투자(DCA)가 왜 마음 편한 방법인지, 장점과 한계를 정리했어요.",
+  head: { title: "적립식 투자(DCA)의 원리", desc: "매달 같은 금액을 꾸준히", crumb: "가이드 · 적립식" },
+};
+const LOCALES_DATA: Record<Locale, { metaTitle: string; metaDescription: string; head: { title: string; desc: string; crumb: string } }> = {
+  ko: KO, en: DCA_EN, ja: DCA_JA, de: DCA_DE,
 };
 
-export default function Page() {
+export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
+  const { lang } = await params;
+  const locale = (lang as Locale) in LOCALES_DATA ? (lang as Locale) : "ko";
+  const d = LOCALES_DATA[locale];
+  return {
+    title: `${d.metaTitle} · 10-eok`,
+    description: d.metaDescription,
+    alternates: langAlternates(locale, "/guides/dca"),
+  };
+}
+
+function KoBody() {
   return (
-    <ContentShell title="적립식 투자(DCA)의 원리" desc="매달 같은 금액을 꾸준히" crumb="가이드 · 적립식">
-      <JsonLd data={guideLd({ path: "/guides/dca", title: "적립식 투자(DCA)의 원리", description: "매달 일정 금액을 꾸준히 사는 적립식 투자(DCA)가 왜 마음 편한 방법인지, 장점과 한계를 정리했어요.", name: "적립식 투자(DCA)의 원리" })} />
+    <>
       <p>
         적립식 투자는 영어로 Dollar-Cost Averaging, 줄여서 <strong>DCA</strong>라고 부릅니다. 핵심은
         간단합니다. <strong>가격이 오르든 내리든 매달 정해진 날, 정해진 금액만큼 같은 종목을 계속
@@ -93,6 +111,21 @@ export default function Page() {
       <Sources ids={["yahoo", "fredFx"]} />
 
       <p className="note">본 내용은 일반적인 정보 제공이며 투자 권유나 자문이 아닙니다.</p>
+    </>
+  );
+}
+
+const BODIES: Record<Locale, () => React.ReactElement> = { ko: KoBody, en: DCA_EN.Body, ja: DCA_JA.Body, de: DCA_DE.Body };
+
+export default async function Page({ params }: { params: Promise<{ lang: string }> }) {
+  const { lang } = await params;
+  const locale = (lang as Locale) in BODIES ? (lang as Locale) : "ko";
+  const d = LOCALES_DATA[locale];
+  const Body = BODIES[locale];
+  return (
+    <ContentShell title={d.head.title} desc={d.head.desc} crumb={d.head.crumb}>
+      <JsonLd data={guideLd({ path: "/guides/dca", title: d.head.title, description: d.metaDescription, name: d.head.title })} />
+      <Body />
     </ContentShell>
   );
 }

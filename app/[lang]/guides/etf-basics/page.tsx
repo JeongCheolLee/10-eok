@@ -3,31 +3,31 @@ import Link from "next/link";
 import { ContentShell } from "@/components/ContentShell";
 import { Sources } from "@/components/Sources";
 import { JsonLd, guideLd } from "@/components/JsonLd";
+import type { Locale } from "@/lib/i18n/locales";
+import { langAlternates } from "@/lib/i18n/seo";
+import { ETF_BASICS_EN } from "@/lib/content/pages/en";
+import { ETF_BASICS_JA } from "@/lib/content/pages/ja";
+import { ETF_BASICS_DE } from "@/lib/content/pages/de";
 
-export const metadata: Metadata = {
-  title: "ETF가 뭔가요? (초보자) · 10-eok",
-  description:
-    "상장지수펀드(ETF)의 개념과 개별주식·펀드와의 차이, 초보자가 알아야 할 비용과 위험까지 쉽게 정리합니다.",
-  alternates: { canonical: "/guides/etf-basics" },
+const KO = {
+  metaTitle: "ETF가 뭔가요? (초보자)",
+  metaDescription: "상장지수펀드(ETF)의 개념과 개별주식·펀드와의 차이, 초보자가 알아야 할 비용과 위험까지 쉽게 정리합니다.",
+  head: { title: "ETF가 뭔가요? (초보자)", desc: "주식처럼 사고파는 '여러 종목 한 바구니', ETF를 처음부터 이해하기", crumb: "가이드 · ETF 기초" },
+};
+const LOCALES_DATA: Record<Locale, { metaTitle: string; metaDescription: string; head: { title: string; desc: string; crumb: string } }> = {
+  ko: KO, en: ETF_BASICS_EN, ja: ETF_BASICS_JA, de: ETF_BASICS_DE,
 };
 
-export default function Page() {
-  return (
-    <ContentShell
-      title="ETF가 뭔가요? (초보자)"
-      desc="주식처럼 사고파는 '여러 종목 한 바구니', ETF를 처음부터 이해하기"
-      crumb="가이드 · ETF 기초"
-    >
-      <JsonLd
-        data={guideLd({
-          path: "/guides/etf-basics",
-          title: "ETF가 뭔가요? (초보자)",
-          description:
-            "상장지수펀드(ETF)의 개념과 개별주식·펀드와의 차이, 초보자가 알아야 할 비용과 위험까지 쉽게 정리합니다.",
-          name: "ETF가 뭔가요? (초보자)",
-        })}
-      />
+export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
+  const { lang } = await params;
+  const locale = (lang as Locale) in LOCALES_DATA ? (lang as Locale) : "ko";
+  const d = LOCALES_DATA[locale];
+  return { title: `${d.metaTitle} · 10-eok`, description: d.metaDescription, alternates: langAlternates(locale, "/guides/etf-basics") };
+}
 
+function KoBody() {
+  return (
+    <>
       <h2>ETF, 한 문장으로</h2>
       <p>
         ETF는 영어 <em>Exchange Traded Fund</em>의 약자로, 우리말로는 &lsquo;상장지수펀드&rsquo;라고
@@ -154,6 +154,21 @@ export default function Page() {
       <p className="note">
         본 내용은 일반적인 정보 제공이며 투자 권유나 자문이 아닙니다.
       </p>
+    </>
+  );
+}
+
+const BODIES: Record<Locale, () => React.ReactElement> = { ko: KoBody, en: ETF_BASICS_EN.Body, ja: ETF_BASICS_JA.Body, de: ETF_BASICS_DE.Body };
+
+export default async function Page({ params }: { params: Promise<{ lang: string }> }) {
+  const { lang } = await params;
+  const locale = (lang as Locale) in BODIES ? (lang as Locale) : "ko";
+  const d = LOCALES_DATA[locale];
+  const Body = BODIES[locale];
+  return (
+    <ContentShell title={d.head.title} desc={d.head.desc} crumb={d.head.crumb}>
+      <JsonLd data={guideLd({ path: "/guides/etf-basics", title: d.head.title, description: d.metaDescription, name: d.head.title })} />
+      <Body />
     </ContentShell>
   );
 }

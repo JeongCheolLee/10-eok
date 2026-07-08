@@ -239,5 +239,276 @@ export const ETF_DE: Record<string, { lead: string; sections: { h: string; paras
         ]
       }
     ]
+  },
+  "SOXX": {
+    "lead": "SOXX (iShares Semiconductor ETF) bündelt rund 30 in den USA notierte Halbleiterunternehmen. Der Anbieter iShares (BlackRock) hat ihn 2001 aufgelegt; er folgt dem ICE Semiconductor Index. Von Firmen, die Rechenzentrums- und KI-Chips bauen – Nvidia, Broadcom, Qualcomm, AMD – bis hin zu Herstellern von Fertigungsanlagen und Materialien deckt er die gesamte Halbleiter-Wertschöpfungskette ab und ist damit eine konzentrierte Wette auf die Branche.",
+    "sections": [
+      {
+        "h": "Eine konzentrierte Wette auf die gesamte Halbleiterbranche",
+        "paras": [
+          "SOXX beschränkt sich auf rund 30 US-notierte Halbleiterunternehmen. Im Vergleich zu QQQ (Nasdaq 100, 100 große Nicht-Finanzwerte) oder einem ETF, der die gesamte IT-Branche abdeckt, ist der Korb deutlich enger und stärker auf eine einzelne Industrie fokussiert. Läuft das Halbleitergeschäft gut, steigt SOXX entsprechend viel steiler als der Marktdurchschnitt – dreht der Wind, fällt er genauso kräftig.",
+          "Die enthaltenen Firmen reichen von Unternehmen, die Chips selbst entwerfen und produzieren (Nvidia, AMD, Qualcomm und andere), bis zu Zulieferern von Fertigungsanlagen und Materialien (etwa Applied Materials oder Lam Research), die für die Chipherstellung nötig sind. Man investiert also über mehrere Glieder der Kette, landet aber letztlich immer bei derselben großen Variable: der Verfassung der Halbleiterbranche."
+        ]
+      },
+      {
+        "h": "KI-Boom und extreme Konzentration",
+        "paras": [
+          "In den letzten Jahren hat der Boom bei KI-Servern und Rechenzentren die Kurse der beteiligten Halbleiterfirmen kräftig steigen lassen, wodurch das Gewicht der Top-Werte innerhalb von SOXX spürbar zugenommen hat. Weil der Index nach Marktkapitalisierung gewichtet, hängt die Gesamtperformance von SOXX inzwischen stark vom Kursverlauf einzelner Schwergewichte ab.",
+          "Diese Konzentration ist ein zweischneidiges Schwert. Läuft es bei diesen Unternehmen weiter gut, zieht das ganze SOXX mit nach oben; enttäuschen sie dagegen, kann der gesamte ETF kräftig ins Wanken geraten. Wer 'breit über die Halbleiterbranche streuen' will, sollte wissen, dass er faktisch stark auf wenige Namen konzentriert sein kann."
+        ]
+      },
+      {
+        "h": "Halbleiter sind eine zyklische Branche",
+        "paras": [
+          "Die Halbleiterindustrie gilt traditionell als 'zyklische Branche', in der sich Angebot und Nachfrage im Rhythmus mehrerer Jahre auf und ab bewegen. Ersatzbedarf bei Smartphones und PCs, Investitionen in Rechenzentren und die Nachfrage nach Automobil-Chips überlagern sich mal verstärkend, mal gegenläufig – Boom und Flaute wechseln sich ab, und mit ihnen schwankt auch der SOXX-Kurs kräftig.",
+          "Ob die aktuelle KI-Nachfrage diesen Zyklus besonders lange verlängert, kann niemand garantieren. Da frühere Halbleiterbooms ebenfalls nicht ewig anhielten, ist es realistischer, SOXX nicht als 'stetig steigendes Asset', sondern als 'Wette auf einen schwankungsstarken Branchenzyklus' zu betrachten."
+        ]
+      },
+      {
+        "h": "Sparplan, Steuern und der Wechselkurs",
+        "paras": [
+          "SOXX ist ein US-notierter ETF, du kaufst ihn also mit Euro, und der Euro/Dollar-Wechselkurs wirkt auf deine Rendite in Euro. Wie Kursgewinne konkret besteuert werden, hängt von deinem Wohnsitzland und deiner persönlichen Situation ab – frag dazu am besten eine Steuerberatung, dieser Text kann und will das nicht ersetzen.",
+          "Weil die Schwankung hoch ist, hängt das Ergebnis stark vom Startzeitpunkt ab. Ob du kurz vor dem Ende eines Booms oder nahe am Tiefpunkt einer Flaute eingestiegen bist, kann beim gleichen Sparzeitraum zu sehr unterschiedlichen Ergebnissen führen. Die Vergangenheit garantiert die Zukunft nicht – probiere im Rechner oben ruhig mehrere Startzeitpunkte durch. Dieser Text dient der Information und ist keine Anlageberatung."
+        ]
+      }
+    ]
+  },
+  "VGT": {
+    "lead": "VGT (Vanguard Information Technology ETF) bündelt mehrere Hundert Unternehmen aus dem US-Technologiesektor. Vanguard hat ihn 2004 aufgelegt; er folgt dem MSCI US IMI Information Technology Index. Von Techriesen wie Apple, Microsoft und Nvidia bis zu Software-, Halbleiter- und IT-Dienstleistungsfirmen deckt er breit ab – enger gefasst als QQQ, aber breiter als SOXX, ein reiner 'Tech-Sektor'-ETF.",
+    "sections": [
+      {
+        "h": "Der ganze IT-Sektor – de facto aber von wenigen Konzernen getrieben",
+        "paras": [
+          "VGT bündelt mehrere Hundert Unternehmen aus Halbleitern, Software, Hardware und IT-Dienstleistungen und wirkt allein vom Namen her breit gestreut. Weil die Gewichtung aber nach Marktkapitalisierung erfolgt, machen wenige Schwergewichte wie Apple, Microsoft und Nvidia einen erheblichen Teil des Gesamtvermögens aus. Trotz vieler Positionen hängt die tatsächliche Bewegung stark von den größten Werten ab.",
+          "Das bedeutet auch eine große Überschneidung mit QQQ (Nasdaq 100). Allerdings mischt QQQ neben Techwerten auch Telekom- und Konsumfirmen bei, während VGT ausschließlich auf den IT-Sektor beschränkt ist – dadurch ist er noch stärker auf Technologie konzentriert als QQQ."
+        ]
+      },
+      {
+        "h": "Was unterscheidet ihn von SOXX und QQQ?",
+        "paras": [
+          "Während SOXX sich auf die eine Branche Halbleiter konzentriert, deckt VGT inklusive Halbleiter auch Software, Cloud und IT-Dienstleistungen ab – also den gesamten IT-Sektor. Er streut damit innerhalb der Branche breiter als SOXX, bleibt aber dennoch im großen Themenfeld 'Technologie' gefangen.",
+          "Im Vergleich zu QQQ ist VGT ausschließlich auf Informationstechnologie begrenzt und enthält keine im Nasdaq 100 vertretenen Telekom- oder Konsum-Schwergewichte. Er kommt damit einem reinen 'Tech-Index' näher als QQQ – und ist entsprechend stärker exponiert, wenn die gesamte Technologiebranche ins Wanken gerät."
+        ]
+      },
+      {
+        "h": "Der Preis der Tech-Konzentration – kräftig rauf, kräftig runter",
+        "paras": [
+          "Der IT-Sektor hat die letzten gut zehn Jahre das Wachstum der US-Börsen angeführt, und VGT hat in dieser Zeit oft den Marktdurchschnitt übertroffen. Das ist aber der Lohn für die Konzentration auf einen einzelnen Sektor – keine Garantie, dass sich dieser Trend fortsetzt.",
+          "In Phasen steigender Zinsen oder wachsender Sorgen um Tech-Bewertungen ist VGT tendenziell tiefer gefallen als der Marktdurchschnitt. So breit gestreut er wirkt, bleibt er letztlich auf ein einziges Thema – 'Technologie' – konzentriert, ein klarer Unterschied zu breit gestreuten Produkten wie SPY oder VT."
+        ]
+      },
+      {
+        "h": "Wenn du per Sparplan einsteigst",
+        "paras": [
+          "VGT ist ein US-notierter ETF. Du kaufst ihn mit Euro, und der Euro/Dollar-Wechselkurs wirkt zusätzlich auf deine Rendite. Wie Kursgewinne besteuert werden, hängt von deinem Land und deiner Situation ab – das kann sich zudem ändern; frag im Zweifel eine Steuerberatung.",
+          "Je schwankungsstärker ein Asset ist, desto mehr kann der Sparplan-Effekt ('bei niedrigen Kursen automatisch mehr kaufen') zu deinen Gunsten wirken – bei einem ungünstigen Startzeitpunkt kannst du aber auch lange unter deinem Einsatz bleiben. Weil die Vergangenheit die Zukunft nicht garantiert, probier im Rechner ruhig verschiedene Startzeitpunkte aus."
+        ]
+      }
+    ]
+  },
+  "VNQ": {
+    "lead": "VNQ (Vanguard Real Estate ETF) bündelt rund 150 in den USA notierte Immobiliengesellschaften (REITs). Vanguard hat ihn 2004 aufgelegt; er folgt dem MSCI US REIT Index. Er verteilt dein Geld auf Firmen, die Lagerhallen, Rechenzentren, Gewerbeimmobilien und Wohnimmobilien besitzen und betreiben – eine der bekanntesten Arten, in Immobilien zu streuen, ohne selbst eine zu kaufen.",
+    "sections": [
+      {
+        "h": "Was ist ein REIT?",
+        "paras": [
+          "Ein REIT (Real Estate Investment Trust) sammelt Kapital von vielen Anlegern ein, kauft davon Gewerbeimmobilien und schüttet die daraus erzielten Mieteinnahmen als Dividende aus. Nach US-Steuerrecht muss ein REIT mindestens 90 % seines steuerpflichtigen Einkommens als Dividende ausschütten, um von Steuervorteilen zu profitieren – strukturell bedingt ist der Dividendenanteil deshalb hoch. VNQ bündelt dutzende bis Hunderte solcher REITs in einem Produkt.",
+          "Die enthaltenen Immobilienarten sind vielfältig: Logistikzentren, Mobilfunk-Infrastruktur, Rechenzentren, Einkaufszentren, Wohnungen sowie Kliniken und Pflegeeinrichtungen sind nach Segment aufgeteilt. Du bist also nicht in ein einzelnes Gebäude investiert, sondern breit über mehrere Immobilientypen gestreut."
+        ]
+      },
+      {
+        "h": "Ungewöhnlich zinsempfindlich",
+        "paras": [
+          "REITs finanzieren Immobilienkäufe oft stark über Kredite. Steigen die Zinsen, wachsen die Zinskosten und neue Investitionen werden unattraktiver, was den Kurs drückt. Sinken die Zinsen, wirkt sich das meist umgekehrt günstig aus. Deshalb reagiert VNQ sensibler auf Zinsnachrichten als andere US-Aktien-ETFs.",
+          "Dadurch trägt VNQ Züge einer 'Aktie, die sich wie eine Anleihe verhält'. Man hält es wegen des stetigen Cashflows aus Mieteinnahmen, muss aber wissen, dass der Kurs je nach Zinsumfeld selbst ziemlich stark schwanken kann."
+        ]
+      },
+      {
+        "h": "Ähnlich wie SCHD und doch anders – ein Dividendenwert",
+        "paras": [
+          "Während SCHD solide Unternehmen aus vielen Branchen bündelt, die ihre Dividende stetig erhöht haben, konzentriert sich VNQ ausschließlich auf die Immobilien-(REIT)-Branche. Auch die Art der Dividende unterscheidet sich: SCHDs Dividende stammt aus Unternehmensgewinnen, während REITs gesetzlich verpflichtet sind, den Großteil ihres Gewinns auszuschütten – deshalb liegt die Dividendenrendite oft höher.",
+          "Eine hohe Dividendenrendite heißt aber nicht automatisch eine bessere Gesamtrendite (Kursentwicklung plus Dividende). Es gab Phasen, in denen die Gesamtrendite von VNQ unter der von SPY oder SCHD lag. Am besten steigt ein, wer Verständnis für und Vertrauen in die spezielle Anlageklasse Immobilien hat."
+        ]
+      },
+      {
+        "h": "Steuern und der Sparplan-Ansatz",
+        "paras": [
+          "Wie Dividenden und Kursgewinne besteuert werden, hängt von deinem Land und deiner Situation ab und kann sich ändern – frag dazu am besten eine Steuerberatung. Die Zahlen auf dieser Seite sind ein Vorsteuerwert auf Basis des um Dividenden bereinigten Kurses, also unter der Annahme, dass Dividenden wieder angelegt werden.",
+          "Als US-Dollar-Anlagewert wirkt zusätzlich der Euro/Dollar-Wechselkurs auf deine Rendite in Euro. Weil VNQ stark am Immobilien- und Zinszyklus hängt, kann das Ergebnis je nach Startzeitpunkt stark schwanken. Die Vergangenheit garantiert die Zukunft nicht – vergleiche im Rechner am besten mehrere Startzeitpunkte, bevor du urteilst."
+        ]
+      }
+    ]
+  },
+  "GLD": {
+    "lead": "GLD (SPDR Gold Shares) bildet die Wertentwicklung von physischem Gold ab. State Street hat ihn 2004 aufgelegt; über einen Trust, der tatsächlich Goldbarren lagert, folgt er unmittelbar dem Goldpreis. Es handelt sich nicht um eine Aktie, sondern um ein Investment in einen Rohstoff (Gold) – vom Charakter her grundlegend anders als die übrigen Werte auf dieser Seite.",
+    "sections": [
+      {
+        "h": "GLD ist kein Unternehmen, sondern ein Anteil an einem 'Goldlager'",
+        "paras": [
+          "Kaufst du eine GLD-Aktie, erwirbst du einen anteiligen Eigentumsanspruch an Goldbarren, die tatsächlich in einem Tresor liegen. Anders als ein indexnachbildender Aktien-ETF steigt und fällt der Wert von GLD unabhängig von Unternehmensgewinnen oder Wachstum – ausschließlich nach dem internationalen Goldpreis. Deshalb gibt es weder Dividende noch Zinsen: Gold selbst erwirtschaftet keine laufenden Erträge.",
+          "Die Kosten für Lagerung und Verwaltung werden Jahr für Jahr in kleinen Anteilen vom Vermögen abgezogen (laufende Kosten). Der Hauptvorteil von GLD ist, dass du wie eine Aktie handeln kannst, ohne dich um den Kauf und die sichere Aufbewahrung von physischem Gold kümmern zu müssen."
+        ]
+      },
+      {
+        "h": "Warum überhaupt Gold ins Portfolio?",
+        "paras": [
+          "Gold gilt traditionell als Asset mit geringer Korrelation zu Aktien und Anleihen. Wenn die Börsen stark schwanken oder Sorgen um die Werthaltigkeit von Währungen zunehmen, fließt oft Kapital in Gold – daher der Ruf als 'krisenfest' und 'Inflationsschutz'.",
+          "Diese Korrelation ist aber nicht immer konstant. In Phasen starken Dollars, steigender Zinsen oder bestimmter Marktstimmung ist der Goldpreis mitunter zusammen mit Aktien gefallen, und es gab auch lange Phasen seitwärts gerichteter Bewegung. Statt der einfachen Formel 'fallen Aktien, steigt Gold' ist es realistischer, Gold als Beimischung zu betrachten, von der man sich einen gewissen Diversifikationseffekt erhofft."
+        ]
+      },
+      {
+        "h": "Kein wachsendes, sondern ein 'wertbewahrendes' Asset",
+        "paras": [
+          "Aktien-ETFs wie SPY oder QQQ setzen darauf, dass Unternehmen Gewinne erzielen, wachsen und dadurch langfristig an Wert gewinnen. Gold dagegen schafft keinen neuen Wert – sein Preis richtet sich nach Knappheit sowie Angebot und Nachfrage der Marktteilnehmer. Über sehr lange Zeiträume lag die Rendite deshalb oft unter der von Aktien.",
+          "Auch die Zahlen im Ergebnisfeld oben können diesen Charakter zeigen. Gold eignet sich eher dazu, die Schwankung des Gesamtportfolios zu dämpfen, als dazu, dein Vermögen kräftig zu vermehren – mit diesem Verständnis solltest du an GLD herangehen."
+        ]
+      },
+      {
+        "h": "Sparplan, Steuern und was du beachten solltest",
+        "paras": [
+          "GLD ist ein US-notierter ETF. Wie Kursgewinne besteuert werden, hängt von deinem Land und deiner Situation ab – frag dazu am besten eine Steuerberatung. Da es keine Dividende gibt, entfällt zumindest diese Frage; dafür fließt der gesamte Kursanstieg in den steuerpflichtigen Gewinn.",
+          "Der Goldpreis wird in Dollar notiert, sodass zusätzlich der Euro/Dollar-Wechselkurs auf deinen Ertrag in Euro wirkt. Willst du dein Vermögen wie mit dem Rechner oben angepeilt aktiv vermehren, ist es üblicher, Gold nur als kleinen Baustein neben Aktien-ETFs beizumischen, statt allein darauf zu sparen. Die Vergangenheit garantiert die Zukunft nicht; dieser Text dient der Information und ist keine Anlageberatung."
+        ]
+      }
+    ]
+  },
+  "TLT": {
+    "lead": "TLT (iShares 20+ Year Treasury Bond ETF) bündelt ausschließlich US-Staatsanleihen mit einer Restlaufzeit von über 20 Jahren. iShares (BlackRock) hat ihn 2002 aufgelegt; er investiert in extralange Anleihen, die die US-Regierung begibt. Es handelt sich um Anleihen statt Aktien, weshalb sich der Risikocharakter von den übrigen Werten auf dieser Seite unterscheidet.",
+    "sections": [
+      {
+        "h": "Ein Anleihen-ETF ist ein 'Verleihen-gegen-Zinsen'-Asset",
+        "paras": [
+          "Eine Staatsanleihe ist eine Urkunde, die ein Staat bei der Kreditaufnahme ausgibt: Er zahlt über eine festgelegte Laufzeit Zinsen und tilgt am Ende das Kapital. TLT bündelt ausschließlich US-Staatsanleihen mit einer Restlaufzeit von 20 Jahren oder mehr und schüttet die erhaltenen Zinsen monatlich als Ausschüttung aus.",
+          "US-Staatsanleihen gelten als eine der bonitätsstärksten Anleihen der Welt, das Ausfallrisiko ist also gering. Das heißt aber – wie unten erklärt – keineswegs, dass der Kurs nicht schwankt."
+        ]
+      },
+      {
+        "h": "Je länger die Laufzeit, desto zinsempfindlicher",
+        "paras": [
+          "Anleihekurse bewegen sich entgegengesetzt zum Marktzins. Steigen die Zinsen, verlieren bestehende, niedriger verzinste Anleihen an Attraktivität und ihr Kurs fällt; sinken die Zinsen, steigt der Kurs. Diese Reaktion fällt umso stärker aus, je länger die Restlaufzeit ist – und weil TLT ausschließlich Anleihen mit über 20 Jahren Laufzeit hält, ist diese Reaktion besonders ausgeprägt.",
+          "Deshalb schwankt der Kurs von TLT trotz seines Rufs als 'sicherer Hafen' erheblich. In Phasen, in denen Zentralbanken die Zinsen schnell angehoben haben, ist der TLT-Kurs zeitweise fast so stark gefallen wie Aktien. Wer nur mit der Gleichung 'Staatsanleihe = sicher' herangeht, kann von diesen Kursausschlägen überrascht werden."
+        ]
+      },
+      {
+        "h": "Die Formel 'Anleihen laufen entgegengesetzt zu Aktien' stimmt nicht immer",
+        "paras": [
+          "Traditionell gelten Anleihen als Asset, das sich gegenläufig zu Aktien bewegt und so ein Portfolio stabilisiert: Fällt die Konjunktur und mit ihr die Aktienkurse, senkt die Zentralbank die Zinsen, wodurch Anleihekurse steigen.",
+          "In Phasen, in denen die Zinsen wegen hoher Inflation angehoben werden müssen, kann diese Formel jedoch außer Kraft gesetzt sein. Tatsächlich sind Aktien und TLT in Zeiten stark steigender Inflation und schnell steigender Zinsen gemeinsam gefallen, sodass der erhoffte Diversifikationseffekt ausblieb. Solche Ausnahmesituationen solltest du im Hinterkopf behalten, wenn du TLT ins Portfolio nimmst."
+        ]
+      },
+      {
+        "h": "Sparplan, Steuern und die Asset-Allokations-Perspektive",
+        "paras": [
+          "TLT ist ein US-notierter ETF. Wie Kursgewinne und Ausschüttungen (Zinsen) besteuert werden, hängt von deinem Land und deiner Situation ab – frag dazu am besten eine Steuerberatung. Als Dollar-Anlagewert wirkt außerdem der Euro/Dollar-Wechselkurs auf deine Rendite in Euro. Die Zahlen auf dieser Seite sind ein Vorsteuerwert auf Basis des um Zinsen bereinigten Kurses (Wiederanlage der Zinsen).",
+          "TLT wird seltener wegen langfristigen Kurswachstums wie ein Aktien-ETF gehalten, sondern häufiger, um die Schwankung des Gesamtportfolios zu steuern oder um auf sinkende Zinsen zu setzen. Das Ergebnis, wenn du im Rechner oben nur TLT ansparst, ist immer nur eine Simulation für einen bestimmten historischen Zeitraum – auch bei Anleihen kann das Ergebnis je nach Startzeitpunkt stark variieren. Dieser Text dient der Information und ist keine Anlageberatung."
+        ]
+      }
+    ]
+  },
+  "AGG": {
+    "lead": "AGG (iShares Core U.S. Aggregate Bond ETF) streut breit über den gesamten US-Anleihemarkt. iShares (BlackRock) hat ihn 2003 aufgelegt; er bündelt Tausende Investment-Grade-Anleihen – US-Staatsanleihen, staatsnahe Anleihen, Unternehmensanleihen und hypothekenbesicherte Wertpapiere (MBS). Während sich TLT auf extralange Staatsanleihen konzentriert, mischt AGG Laufzeiten und Anleihearten breit und ist damit eher ein 'Indexfonds für Anleihen'.",
+    "sections": [
+      {
+        "h": "Ein 'Core'-Baustein für den gesamten Anleihemarkt",
+        "paras": [
+          "Der von AGG abgebildete Bloomberg U.S. Aggregate Bond Index umfasst breit gestreut Investment-Grade-Anleihen (mit einer Bonität über einem bestimmten Mindestniveau), die in den USA begeben wurden – von Staatsanleihen über Unternehmensanleihen und staatsnahe Anleihen bis zu hypothekenbesicherten Wertpapieren. Auch die Laufzeiten reichen breit gemischt von kurz bis lang, sodass keine einzelne Laufzeit oder Emittentengruppe übermäßig dominiert.",
+          "Wegen dieser breiten Zusammensetzung gilt AGG oft als 'Core'-Baustein für Anleihen im Portfolio. Statt einzelne Anleihen mühsam selbst auszuwählen, erreichst du mit AGG allein eine breite Streuung über den gesamten US-Anleihemarkt."
+        ]
+      },
+      {
+        "h": "Warum AGG weniger schwankt als TLT – kürzere durchschnittliche Laufzeit",
+        "paras": [
+          "Die durchschnittliche Laufzeit (genauer: Duration) der in AGG enthaltenen Anleihen liegt deutlich unter den über 20 Jahren von TLT. Wie zuvor erklärt, reagieren längere Laufzeiten sensibler auf Zinsänderungen – weil AGG auch kürzer laufende Anleihen mischt, fällt die Kursbewegung bei Zinsschwankungen tendenziell geringer aus als bei TLT.",
+          "Das heißt aber nicht, dass der Kurs überhaupt nicht schwankt. In Phasen schneller Zinsänderungen bewegt sich auch AGG mit; in Zeiten steil steigender Zinsen kam es sogar zu für Anleihen ungewöhnlich starken Rückgängen. Diese fielen aber milder aus als bei TLT."
+        ]
+      },
+      {
+        "h": "Die Rolle im Zusammenspiel mit Aktien",
+        "paras": [
+          "AGG wird häufig neben Aktien-Assets wie SPY oder QQQ gehalten, um die Schwankung des Gesamtportfolios zu senken. Die Hoffnung: Wenn Aktien stark schwanken, bewegt sich die Anleihenkomponente vergleichsweise ruhiger oder sogar gegenläufig und wirkt so als Puffer.",
+          "Wie bei TLT kann dieser Puffereffekt jedoch schwächer ausfallen, wenn Zinsen zur Inflationsbekämpfung schnell angehoben werden müssen – dann fallen Aktien und Anleihen mitunter gemeinsam. 'Anleihen bedeuten automatisch Sicherheit' greift also zu kurz; wie stark der Diversifikationseffekt ausfällt, hängt von der jeweiligen Marktlage ab."
+        ]
+      },
+      {
+        "h": "Steuern und was das für diesen Rechner bedeutet",
+        "paras": [
+          "AGG ist ein US-notierter ETF. Wie Kursgewinne und Ausschüttungen (Zinsen) besteuert werden, hängt von deinem Land und deiner Situation ab – frag dazu am besten eine Steuerberatung. Die Zahlen auf dieser Seite sind ein Vorsteuerwert auf Basis des um Zinsen bereinigten Kurses (Wiederanlage der Zinsen); der Euro/Dollar-Wechselkurs wirkt zusätzlich auf deine Rendite in Euro.",
+          "Anleihen-Assets haben tendenziell eine niedrigere langfristige erwartete Rendite als Aktien-Assets. Sparst du also allein mit AGG auf ein Ziel wie das dieses Rechners, kann das Ergebnis deutlich länger dauern als mit Aktien-Assets wie SPY oder QQQ. Vergleiche diesen Unterschied im Rechner oben direkt, indem du nur das Wertpapier wechselst."
+        ]
+      }
+    ]
+  },
+  "JEPI": {
+    "lead": "JEPI (JPMorgan Equity Premium Income ETF) ist ein aktiv gemanagter ETF, der in US-Standardwerte investiert und gleichzeitig Optionen verkauft, um monatlich zusätzliche Erträge zu erzielen ('Covered Call'-Strategie). JPMorgan Asset Management hat ihn im Mai 2020 aufgelegt; er kombiniert einen Korb schwankungsarmer Qualitätsaktien mit dem Verkauf von Optionen auf den S&P 500, um eine hohe monatliche Ausschüttung anzustreben. Wichtig: Der Zeitraum vor dem Börsenstart (vor Mai 2020) basiert auf dieser Seite nicht auf echten JEPI-Daten, sondern auf synthetischen Daten, die den CBOE S&P 500 BuyWrite Index (BXM) als Ersatzindikator anfügen – lies dazu unbedingt den Abschnitt weiter unten.",
+    "sections": [
+      {
+        "h": "Covered Call – Aufstiegschance verkaufen, dafür Cash kassieren",
+        "paras": [
+          "Bei einem Covered Call hältst du Aktien und verkaufst gleichzeitig einer anderen Partei eine 'Kaufoption', mit der du dich verpflichtest, die Aktien ab einem bestimmten Kurs zu verkaufen. Als Gegenleistung erhältst du sofort eine Optionsprämie – diese Prämie ist die zentrale Finanzierungsquelle für JEPIs hohe monatliche Ausschüttung.",
+          "Umsonst ist das aber nicht. Steigt der Kurs deutlich über den vereinbarten Preis, geht dieser Mehrwert an den Käufer der Option, und JEPI verpasst diesen Teil des Anstiegs. JEPI verzichtet also bewusst auf einen Teil des Kurspotenzials nach oben und erhält dafür einen stetigen Cashflow (die Prämie)."
+        ]
+      },
+      {
+        "h": "Was JEPI besonders macht – aktive Aktienauswahl plus ELN-Struktur",
+        "paras": [
+          "JEPI ist kein einfaches Produkt, das schlicht Optionen auf den S&P 500 verkauft. JPMorgan wählt zunächst nach eigenen Kriterien schwankungsarme, stabile US-Standardwerte aus (aktives Management) und ergänzt das Portfolio über ein Finanzinstrument namens ELN (Equity-Linked Note) um eine Verkaufsposition auf S&P-500-Optionen.",
+          "Diese Kombination aus aktiver Titelauswahl und Derivaten macht JEPI komplexer als 'einfach den S&P 500 mit Optionen überziehen'. Je nach Marktlage und Einschätzung des Managements kann sich die Portfoliozusammensetzung leicht verändern – ein Unterschied zu Index-ETFs wie SPY, die einem Index starr folgen."
+        ]
+      },
+      {
+        "h": "Der Zeitraum vor dem Börsenstart ist eine Annäherung – bitte unbedingt lesen",
+        "paras": [
+          "JEPI ist erst im Mai 2020 an die Börse gegangen; echte Handelsdaten gibt es also erst seit gut fünf Jahren. Um einen längeren Backtest-Zeitraum zeigen zu können, hat diese Seite den Zeitraum vor dem Börsenstart mit der Entwicklung des CBOE S&P 500 BuyWrite Index (BXM, der seit 1988 existiert) angefügt, skaliert auf den Kurs von JEPI zum Börsenstart.",
+          "BXM ist allerdings ein einfacher, mechanischer Index, der Kaufoptionen auf den gesamten S&P 500 verkauft, während JEPI – wie oben beschrieben – einen aktiv ausgewählten, schwankungsarmen Aktienkorb mit einer ELN-Struktur kombiniert. Beide Strategien folgen zwar demselben Grundprinzip 'Covered Call', unterscheiden sich aber im Detail. Das Ergebnis für den Zeitraum vor dem Börsenstart ist deshalb nur eine Annäherung an 'wie es gewesen wäre, hätte es JEPI schon gegeben' und kann von der tatsächlichen JEPI-Performance abweichen. Dieser Hinweis wird auch im Ergebnisfeld des Rechners angezeigt."
+        ]
+      },
+      {
+        "h": "Monatliche Ausschüttung – ein Vorteil in Märkten ohne klares Wachstum",
+        "paras": [
+          "Das wichtigste Merkmal von JEPI ist die monatliche Ausschüttung. Die Ausschüttungsrendite schwankt je nach Marktvolatilität, liegt aber meist deutlich über der eines gewöhnlichen S&P-500-ETFs. Das macht JEPI bei Menschen im Ruhestand oder bei allen, die einen regelmäßigen Cashflow wünschen, beliebt.",
+          "In Phasen, in denen der Kurs seitwärts läuft oder sich nur moderat auf und ab bewegt, kann die Optionsprämie als Puffer wirken und die Gesamtrendite besser ausfallen lassen als bei einem einfachen Indexprodukt wie SPY. Steigt der Markt dagegen kräftig, bleibt JEPI wegen der abgegebenen Kurschancen tendenziell hinter SPY zurück. Vergleiche die Zahlen im Ergebnisfeld oben am besten direkt mit SPY, um diesen Unterschied zu sehen."
+        ]
+      },
+      {
+        "h": "Steuern und der Sparplan-Ansatz",
+        "paras": [
+          "Wie Kursgewinne und die monatlichen Ausschüttungen besteuert werden, hängt von deinem Land und deiner Situation ab und kann sich ändern – frag dazu am besten eine Steuerberatung. Da der Ausschüttungsanteil hoch ist, solltest du dein Ergebnis nach Steuern im Blick behalten.",
+          "Berücksichtige zusätzlich die oben beschriebenen Grenzen der synthetischen Daten: Das langfristige Backtest-Ergebnis von JEPI solltest du vorsichtiger interpretieren als bei Werten mit durchgehend echten Kursdaten. Als Dollar-Anlagewert wirkt außerdem der Euro/Dollar-Wechselkurs auf deine Rendite in Euro. Dieser Text dient der Information und ist keine Anlageberatung; auch geschätzte historische Renditen garantieren keine Zukunft."
+        ]
+      }
+    ]
+  },
+  "JEPQ": {
+    "lead": "JEPQ (JPMorgan Nasdaq Equity Premium Income ETF) wendet dieselbe Covered-Call-Strategie wie JEPI an, allerdings bezogen auf den Nasdaq 100. JPMorgan Asset Management hat ihn im Mai 2022 aufgelegt; er kombiniert einen schwankungsarmen, technologielastigen Aktienkorb mit dem Verkauf von Optionen auf den Nasdaq 100 und zahlt monatlich eine Ausschüttung. Weil der Nasdaq 100 selbst stärker schwankt, gilt auch die Optionsprämie – und damit die Ausschüttung – als tendenziell höher als bei JEPI.",
+    "sections": [
+      {
+        "h": "Die Nasdaq-Version von JEPI",
+        "paras": [
+          "Die Grundstruktur von JEPQ entspricht der von JEPI: Ein aktiv ausgewählter Korb schwankungsarmer Titel wird um eine Optionsverkaufsposition ergänzt, aus der zusätzliche Prämieneinnahmen entstehen. Der Unterschied liegt im Referenzindex – JEPI orientiert sich am S&P 500, JEPQ am technologielastigen Nasdaq 100.",
+          "Der Nasdaq 100 ist, wie schon bei QQQ beschrieben, volatiler als der S&P 500. Je schwankungsstärker ein Basiswert ist, desto höher fällt tendenziell die Optionsprämie aus (die Gegenleistung für den Verkauf der Option) – deshalb liegt die Ausschüttungsrendite von JEPQ häufig über der von JEPI."
+        ]
+      },
+      {
+        "h": "Der Preis der hohen Ausschüttung – stärker gedeckeltes Aufwärtspotenzial",
+        "paras": [
+          "Eine hohe Prämie bedeutet auch, dass dem Optionskäufer günstigere Konditionen eingeräumt wurden (etwa ein niedrigerer Ausübungspreis). In Phasen, in denen der Nasdaq 100 kräftig steigt, verzichtet JEPQ deshalb auf einen deutlich größeren Teil des Anstiegs als QQQ. Wegen der Covered-Call-Struktur lassen sich 'hohe Ausschüttung' und 'großes Kurspotenzial nach oben' kaum gleichzeitig haben.",
+          "Läuft der Techsektor dagegen seitwärts oder korrigiert, kann die monatlich anfallende Prämie den Rückgang teilweise abfedern. JEPQ ist also weniger eine gerichtete Wette auf den Nasdaq 100 als eine Strategie, die dessen Schwankung in Cashflow verwandeln will."
+        ]
+      },
+      {
+        "h": "Kurze Börsenhistorie – warum es keine synthetischen Daten gibt",
+        "paras": [
+          "JEPQ ist erst im Mai 2022 gestartet, weshalb auf dieser Seite nur gut drei Jahre Daten vorliegen. Bei JEPI ließ sich der Zeitraum vor dem Börsenstart über den seit 1988 existierenden CBOE S&P 500 BuyWrite Index (BXM) annähern; für den Nasdaq 100 gibt es jedoch keinen vergleichbar verlässlichen, langfristigen Covered-Call-Index. Deshalb hat diese Seite für JEPQ – anders als bei JEPI – keine synthetischen Daten erzeugt.",
+          "Dadurch ist der Backtest-Zeitraum von JEPQ deutlich kürzer als bei den übrigen Werten auf dieser Seite. Aus einem Zeitraum von nur wenigen Jahren lässt sich noch kein verlässlicher Schluss über einen langfristigen Sparplan ziehen. Bedenke, dass sich der Einfluss einer einzelnen Aufwärts- oder Abwärtsphase in einem so kurzen Zeitraum besonders stark bemerkbar machen kann."
+        ]
+      },
+      {
+        "h": "Steuern und Punkte, die du bei der Beurteilung beachten solltest",
+        "paras": [
+          "Wie Kursgewinne und die monatlichen Ausschüttungen besteuert werden, hängt von deinem Land und deiner Situation ab – frag dazu am besten eine Steuerberatung. Da der Ausschüttungsanteil hoch ist, lohnt sich auch hier ein Blick auf das Ergebnis nach Steuern.",
+          "Weil sich die Schwankung des Nasdaq 100 mit der kurzen Börsenhistorie überlagert, solltest du das Backtest-Ergebnis von JEPQ noch vorsichtiger interpretieren als bei den übrigen Werten dieser Seite. Als Dollar-Anlagewert wirkt zudem der Euro/Dollar-Wechselkurs auf deine Rendite in Euro. Dieser Text dient der Information und ist keine Anlageberatung; auch eine – noch dazu kurze – historische Rendite garantiert keine Zukunft."
+        ]
+      }
+    ]
   }
 };

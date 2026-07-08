@@ -1,15 +1,35 @@
 import type { Metadata } from "next";
 import { ContentShell } from "@/components/ContentShell";
+import type { Locale } from "@/lib/i18n/locales";
+import { langAlternates } from "@/lib/i18n/seo";
+import { TERMS_EN } from "@/lib/content/pages/en";
+import { TERMS_JA } from "@/lib/content/pages/ja";
+import { TERMS_DE } from "@/lib/content/pages/de";
 
-export const metadata: Metadata = {
-  title: "이용약관 · 10-eok",
-  description: "10-eok 서비스 이용에 관한 약관과 면책 조항입니다.",
-  alternates: { canonical: "/terms" },
+const META: Record<Locale, { title: string; description: string }> = {
+  ko: { title: "이용약관 · 10-eok", description: "10-eok 서비스 이용에 관한 약관과 면책 조항입니다." },
+  en: { title: `${TERMS_EN.metaTitle} · 10-eok`, description: TERMS_EN.metaDescription },
+  ja: { title: `${TERMS_JA.metaTitle} · 10-eok`, description: TERMS_JA.metaDescription },
+  de: { title: `${TERMS_DE.metaTitle} · 10-eok`, description: TERMS_DE.metaDescription },
 };
 
-export default function Page() {
+const HEAD: Record<Locale, { title: string; desc: string; crumb: string }> = {
+  ko: { title: "이용약관", desc: "최종 업데이트: 2026-06-19", crumb: "이용약관" },
+  en: { title: TERMS_EN.head.title, desc: TERMS_EN.head.desc, crumb: TERMS_EN.head.crumb },
+  ja: { title: TERMS_JA.head.title, desc: TERMS_JA.head.desc, crumb: TERMS_JA.head.crumb },
+  de: { title: TERMS_DE.head.title, desc: TERMS_DE.head.desc, crumb: TERMS_DE.head.crumb },
+};
+
+export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
+  const { lang } = await params;
+  const locale = (lang as Locale) in META ? (lang as Locale) : "ko";
+  const m = META[locale];
+  return { title: m.title, description: m.description, alternates: langAlternates(locale, "/terms") };
+}
+
+function KoBody() {
   return (
-    <ContentShell title="이용약관" desc="최종 업데이트: 2026-06-19" crumb="이용약관">
+    <>
       <h2>1. 서비스의 성격</h2>
       <p>
         10-eok(이하 "서비스")은 실제 과거 시장 데이터를 이용한 백테스트 결과를 보여주는 <strong>정보
@@ -43,6 +63,20 @@ export default function Page() {
       <p className="note">
         문의: <a href="mailto:jclee7503@gmail.com">jclee7503@gmail.com</a>
       </p>
+    </>
+  );
+}
+
+const BODIES: Record<Locale, () => React.ReactElement> = { ko: KoBody, en: TERMS_EN.Body, ja: TERMS_JA.Body, de: TERMS_DE.Body };
+
+export default async function Page({ params }: { params: Promise<{ lang: string }> }) {
+  const { lang } = await params;
+  const locale = (lang as Locale) in BODIES ? (lang as Locale) : "ko";
+  const h = HEAD[locale];
+  const Body = BODIES[locale];
+  return (
+    <ContentShell title={h.title} desc={h.desc} crumb={h.crumb}>
+      <Body />
     </ContentShell>
   );
 }

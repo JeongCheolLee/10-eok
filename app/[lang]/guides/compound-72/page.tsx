@@ -2,17 +2,31 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ContentShell } from "@/components/ContentShell";
 import { JsonLd, guideLd } from "@/components/JsonLd";
+import type { Locale } from "@/lib/i18n/locales";
+import { langAlternates } from "@/lib/i18n/seo";
+import { COMPOUND_72_EN } from "@/lib/content/pages/en";
+import { COMPOUND_72_JA } from "@/lib/content/pages/ja";
+import { COMPOUND_72_DE } from "@/lib/content/pages/de";
 
-export const metadata: Metadata = {
-  title: "복리와 72의 법칙 · 10-eok",
-  description: "돈이 돈을 버는 복리의 원리와, 원금이 두 배 되는 기간을 암산하는 72의 법칙을 예시로 설명합니다.",
-  alternates: { canonical: "/guides/compound-72" },
+const KO = {
+  metaTitle: "복리와 72의 법칙",
+  metaDescription: "돈이 돈을 버는 복리의 원리와, 원금이 두 배 되는 기간을 암산하는 72의 법칙을 예시로 설명합니다.",
+  head: { title: "복리와 72의 법칙", desc: "돈이 돈을 버는 원리와 암산법", crumb: "가이드 · 복리" },
+};
+const LOCALES_DATA: Record<Locale, { metaTitle: string; metaDescription: string; head: { title: string; desc: string; crumb: string } }> = {
+  ko: KO, en: COMPOUND_72_EN, ja: COMPOUND_72_JA, de: COMPOUND_72_DE,
 };
 
-export default function Page() {
+export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
+  const { lang } = await params;
+  const locale = (lang as Locale) in LOCALES_DATA ? (lang as Locale) : "ko";
+  const d = LOCALES_DATA[locale];
+  return { title: `${d.metaTitle} · 10-eok`, description: d.metaDescription, alternates: langAlternates(locale, "/guides/compound-72") };
+}
+
+function KoBody() {
   return (
-    <ContentShell title="복리와 72의 법칙" desc="돈이 돈을 버는 원리와 암산법" crumb="가이드 · 복리">
-      <JsonLd data={guideLd({ path: "/guides/compound-72", title: "복리와 72의 법칙", description: "돈이 돈을 버는 복리의 원리와, 원금이 두 배 되는 기간을 암산하는 72의 법칙을 예시로 설명합니다.", name: "복리와 72의 법칙" })} />
+    <>
       <p>
         장기 투자에서 가장 강력한 힘은 의외로 단순합니다. 바로 <strong>복리(compound interest)</strong>,
         즉 번 돈이 다시 돈을 버는 구조입니다. 같은 수익률이라도 이 구조가 있느냐 없느냐에 따라
@@ -112,6 +126,21 @@ export default function Page() {
       </p>
 
       <p className="note">본 내용은 일반적인 정보 제공이며 투자 권유나 자문이 아닙니다.</p>
+    </>
+  );
+}
+
+const BODIES: Record<Locale, () => React.ReactElement> = { ko: KoBody, en: COMPOUND_72_EN.Body, ja: COMPOUND_72_JA.Body, de: COMPOUND_72_DE.Body };
+
+export default async function Page({ params }: { params: Promise<{ lang: string }> }) {
+  const { lang } = await params;
+  const locale = (lang as Locale) in BODIES ? (lang as Locale) : "ko";
+  const d = LOCALES_DATA[locale];
+  const Body = BODIES[locale];
+  return (
+    <ContentShell title={d.head.title} desc={d.head.desc} crumb={d.head.crumb}>
+      <JsonLd data={guideLd({ path: "/guides/compound-72", title: d.head.title, description: d.metaDescription, name: d.head.title })} />
+      <Body />
     </ContentShell>
   );
 }

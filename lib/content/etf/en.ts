@@ -239,5 +239,276 @@ export const ETF_EN: Record<string, { lead: string; sections: { h: string; paras
         ]
       }
     ]
+  },
+  "SOXX": {
+    "lead": "SOXX (iShares Semiconductor ETF) bundles around 30 U.S.-listed semiconductor companies. Manager iShares (BlackRock) launched it in 2001, and it tracks the ICE Semiconductor Index. It holds everything from chipmakers building data-center and AI chips — Nvidia, Broadcom, Qualcomm, AMD — to the equipment and materials companies that support them, making it a concentrated bet on the health of the semiconductor industry.",
+    "sections": [
+      {
+        "h": "A concentrated bet on the entire semiconductor industry",
+        "paras": [
+          "SOXX narrows the field down to roughly 30 U.S.-listed semiconductor companies. Compared with QQQ (the Nasdaq-100's 100 non-financial large caps) or a broader information-technology ETF, it's a much narrower basket concentrated in a single industry. That means it tends to climb far more steeply than the market average when the semiconductor cycle is strong — and fall just as hard when it turns.",
+          "Its holdings span the whole chip supply chain: companies that design and manufacture semiconductors directly (Nvidia, AMD, Qualcomm, and others), plus the companies that supply the equipment and materials needed to make those chips (Applied Materials, Lam Research, and others). You're spread across several links of the same chain, but the outcome still hinges on one big variable — the health of the semiconductor industry as a whole."
+        ]
+      },
+      {
+        "h": "The AI boom and extreme concentration",
+        "paras": [
+          "Over the past few years, the boom in AI server and data-center spending has driven up the share prices of related chip companies so much that a handful of names now make up a noticeably larger slice of SOXX. Because the index weights holdings by market cap, the price action of just a few companies now drives a bigger share of SOXX's overall performance.",
+          "That concentration cuts both ways. If those companies keep performing well, SOXX rises sharply right along with them — but if disappointing news hits even a few of them, the whole fund can swing hard. It's worth remembering that what feels like 'diversified exposure to semiconductors' can, in practice, be heavily concentrated in just a handful of names."
+        ]
+      },
+      {
+        "h": "Semiconductors are a cyclical industry",
+        "paras": [
+          "The semiconductor industry has traditionally been described as a 'cyclical industry,' where supply and demand swing on a multi-year rhythm. Smartphone and PC replacement cycles, data-center buildouts, and automotive chip demand overlap and diverge over time, producing repeated booms and busts — and SOXX's share price has swung sharply along with each one.",
+          "Nobody can guarantee how long the current AI-driven demand will stretch this cycle. Given that past semiconductor booms didn't last forever either, it's more realistic to approach SOXX as 'a bet on a highly volatile industry cycle' than as 'an asset that steadily grinds upward.'"
+        ]
+      },
+      {
+        "h": "Taxes and your start date",
+        "paras": [
+          "SOXX is a U.S.-listed ETF, so as a USD investor there's no currency conversion to think about the way there would be investing from abroad — your results are already in dollars. What does matter is cost and taxes: how capital gains and any distributions are taxed depends entirely on your country of residence and personal situation, so it's worth checking with a local tax professional rather than assuming one flat rate applies. This isn't tax advice.",
+          "Because SOXX is so volatile, the outcome can differ sharply depending on when you start. Beginning near the tail end of a boom versus near the bottom of a downturn can produce wildly different results even over the same accumulation period. Past performance doesn't guarantee the future, so it's worth comparing several different start dates yourself in the calculator above. This article is for information, not investment advice."
+        ]
+      }
+    ]
+  },
+  "VGT": {
+    "lead": "VGT (Vanguard Information Technology ETF) holds hundreds of companies in the U.S. information-technology sector. Vanguard launched it in 2004, and it tracks the MSCI US IMI Information Technology Index. It ranges from mega-cap tech names like Apple, Microsoft, and Nvidia to software, semiconductor, and IT-services companies — broader than SOXX but narrower in sector scope than QQQ, making it a 'tech-sector specialist' ETF.",
+    "sections": [
+      {
+        "h": "Hundreds of holdings, but a handful of names lead the way",
+        "paras": [
+          "VGT holds hundreds of information-technology companies spanning semiconductors, software, hardware, and IT services, so by name alone it sounds broadly diversified. But because it's weighted by market cap, a handful of mega-caps — Apple, Microsoft, Nvidia — make up a large share of total assets. Plenty of tickers, but the actual moves are driven largely by a few companies at the top.",
+          "That also means significant overlap with QQQ (the Nasdaq-100). The difference is that QQQ mixes in communications and consumer names alongside tech, while VGT is narrowed strictly to the information-technology sector — making it even more concentrated in tech than QQQ."
+        ]
+      },
+      {
+        "h": "How it differs from SOXX and QQQ",
+        "paras": [
+          "Where SOXX concentrates on a single industry — semiconductors — VGT spans the broader information-technology sector, including software, cloud, and IT services alongside chips. So it's more diversified within the sector than SOXX, but it shares the same limitation of sitting inside one big theme: 'tech stocks.'",
+          "Compared with QQQ, VGT is narrowed strictly to information technology, so it skips the communications and consumer mega-caps that sit inside the Nasdaq-100. The result is something closer to a 'pure' tech-sector index than QQQ — and correspondingly more exposed when the tech sector as a whole wobbles."
+        ]
+      },
+      {
+        "h": "The price of concentration — bigger gains, bigger drops",
+        "paras": [
+          "The information-technology sector has been a leading driver of U.S. market gains over roughly the past decade, and VGT has often outperformed the broader market riding that wave. But that's the payoff for concentrating in one sector — there's no guarantee the same trend continues going forward.",
+          "During rate-hike periods or whenever concerns about tech valuations flare up, VGT has tended to fall more deeply than the market average. Even though it looks diversified on paper, it's still concentrated in a single theme — tech — which sets it clearly apart from broadly diversified products like SPY or VT."
+        ]
+      },
+      {
+        "h": "If you're accumulating steadily",
+        "paras": [
+          "VGT is a U.S.-listed ETF, so as a USD investor you don't need to think about currency conversion — your gains and losses are already denominated in dollars. What you should weigh instead is cost, and how capital gains taxes apply to you: the rules depend entirely on your country of residence, so it's worth checking with a local tax professional rather than assuming a single rate applies to everyone.",
+          "The more volatile an asset, the more dollar-cost averaging's 'buy more when it's cheap' effect can work in your favor — but if your start date happens to be a bad one, you may have to sit through a long stretch below your cost basis. Past returns don't guarantee the future, so it's worth checking this yourself by varying the start date in the calculator."
+        ]
+      }
+    ]
+  },
+  "VNQ": {
+    "lead": "VNQ (Vanguard Real Estate ETF) bundles around 150 U.S.-listed real estate investment trusts (REITs). Vanguard launched it in 2004, and it tracks the MSCI US REIT Index. It spreads your money across companies that own and operate warehouses, data centers, commercial properties, and residential real estate, making it one of the most common ways to get diversified real estate exposure without buying property directly.",
+    "sections": [
+      {
+        "h": "What is a REIT?",
+        "paras": [
+          "A REIT pools money from many investors to buy commercial real estate, then distributes the rental income it collects as dividends. Under U.S. tax law, a REIT must distribute at least 90% of its taxable income as dividends to qualify for favorable tax treatment, so REITs structurally tend to pay out a large share of income. VNQ bundles dozens to hundreds of these REITs into one fund.",
+          "The types of real estate involved vary widely too — logistics centers, telecom infrastructure (cell towers), data centers, shopping malls, apartments, and even hospitals and care facilities are all represented, so you're spread across several categories of real estate business rather than betting on any single type of property."
+        ]
+      },
+      {
+        "h": "Unusually sensitive to interest rates",
+        "paras": [
+          "REITs rely heavily on borrowed money to buy property, so when interest rates rise, higher interest costs and less attractive new investments tend to weigh on share prices. When rates fall, the opposite tends to happen and it's often a tailwind for share prices. That's why VNQ tends to react more sharply to interest-rate news than most other U.S. equity ETFs.",
+          "Because of this, VNQ carries a bit of a dual personality — it's a stock, but it behaves somewhat like a bond. It's an asset you might hold for a steady cash flow from dividends (rental income), while also knowing that the share price itself can swing quite a bit depending on the rate environment."
+        ]
+      },
+      {
+        "h": "Similar to SCHD, but different — a dividend asset",
+        "paras": [
+          "SCHD holds quality companies across many sectors that have steadily raised dividends; VNQ concentrates purely on the real estate (REIT) sector. The nature of the dividend differs too. SCHD's dividends come out of corporate profits, while REITs are legally required to distribute most of their income, which is why REIT dividend yields often run higher.",
+          "A higher dividend yield doesn't always mean better total return (price change plus dividends), though. There have been stretches when VNQ's total return trailed SPY's or SCHD's. It's best suited to investors who understand and have conviction in real estate as a specific asset class."
+        ]
+      },
+      {
+        "h": "Taxes and accumulating steadily",
+        "paras": [
+          "How dividends and capital gains are taxed depends entirely on your country of residence and personal situation — the rules, rates, and any withholding differ from place to place. This isn't tax advice, so it's worth checking with a local tax professional rather than assuming one rate applies to everyone. One thing to note about the numbers here: this site's results are pre-tax, computed on a dividend-reinvested adjusted-close basis, so your actual after-tax outcome can differ if you take dividends as cash instead of reinvesting them.",
+          "Because VNQ swings with both the real-estate cycle and the interest-rate cycle, results can differ sharply depending on when you start accumulating. Past returns don't guarantee the future, so it's worth comparing different start dates yourself in the calculator. This article is for information, not investment advice."
+        ]
+      }
+    ]
+  },
+  "GLD": {
+    "lead": "GLD (SPDR Gold Shares) gives you the effect of investing in physical gold. State Street launched it in 2004, and it tracks the spot price of gold through a trust that actually holds gold bars in storage. It's not a stock — it's a commodity (gold) product — which makes it fundamentally different in character from the other tickers on this site.",
+    "sections": [
+      {
+        "h": "GLD is a claim on a gold vault, not a company",
+        "paras": [
+          "Buy one share of GLD and you effectively own a claim on a slice of the gold bars sitting in a vault. Unlike a stock ETF that tracks an index, GLD's value has nothing to do with any company's earnings or growth — it moves purely with the international price of gold. That also means no dividends and no interest, because gold itself is an asset that doesn't generate any yield.",
+          "Storage and management costs are reflected the way any expense ratio is — a small amount skimmed from assets each year. The core appeal of GLD is that you can buy and sell it just like a stock, without the hassle of buying and storing physical gold yourself."
+        ]
+      },
+      {
+        "h": "Why hold gold in a portfolio at all",
+        "paras": [
+          "Gold has traditionally been seen as an asset with low correlation to stocks and bonds. Money tends to flow into gold when equity markets get shaky or confidence in currencies wavers, which is why it's often described as 'resilient in a crisis' or 'a hedge against inflation.'",
+          "That correlation isn't constant, though. Depending on interest rates, dollar strength, and market sentiment, gold has fallen alongside stocks at times, and it's also had long stretches of going essentially nowhere. Rather than relying on a simple formula like 'gold always rises when stocks fall,' it's more realistic to treat it as a supporting asset you hold for diversification."
+        ]
+      },
+      {
+        "h": "Not a growth asset — a value-preservation asset",
+        "paras": [
+          "Stock ETFs like SPY and QQQ are built around the expectation that a company's assets grow in value over the long run as it earns profits and expands. Gold doesn't create new value the same way — its price is set by its scarcity and by shifting demand and sentiment. Over very long horizons, that's meant gold has often trailed stocks in return.",
+          "That character can show up in the numbers in the result box above too. It helps to understand gold less as 'an asset for growing your money significantly' and more as 'an asset for smoothing out the swings in your overall portfolio.'"
+        ]
+      },
+      {
+        "h": "Taxes, accumulating, and a few things to keep in mind",
+        "paras": [
+          "GLD is a U.S.-listed ETF, and how capital gains on it are taxed depends entirely on your country of residence and personal situation — this isn't tax advice, so it's worth checking with a local tax professional. Because GLD pays no dividends, there's no dividend tax to worry about, but keep in mind the entire price gain is treated as a capital gain when you sell.",
+          "Since GLD is priced in dollars, as a USD investor there's no currency conversion involved — the price of gold itself is what matters. And if your goal is to grow your wealth over time, it's far more common to hold a small slice of gold alongside stock-based assets for diversification than to accumulate in gold alone. Past returns don't guarantee the future; this article is for information, not investment advice."
+        ]
+      }
+    ]
+  },
+  "TLT": {
+    "lead": "TLT (iShares 20+ Year Treasury Bond ETF) holds only U.S. Treasury bonds with more than 20 years left to maturity. iShares (BlackRock) launched it in 2002, investing in ultra-long-term bonds issued by the U.S. government. It's a bond product, not a stock, so its risk profile is fundamentally different from the other tickers on this site.",
+    "sections": [
+      {
+        "h": "Bond ETFs are a 'lend money, collect interest' asset",
+        "paras": [
+          "A Treasury bond is a certificate the government issues when it borrows money — it pays interest over a set period and repays the principal at maturity. TLT holds only U.S. Treasuries with 20-plus years left until maturity, and it passes the interest it collects along to shareholders as a monthly distribution.",
+          "U.S. Treasuries are considered among the highest-credit-quality bonds in the world, so default risk is low. But as explained below, that absolutely does not mean the price doesn't move."
+        ]
+      },
+      {
+        "h": "The longer the maturity, the more sensitive to rates",
+        "paras": [
+          "Bond prices move opposite to prevailing interest rates. When rates rise, older bonds paying lower interest become less attractive and their prices fall; when rates fall, prices rise. This sensitivity grows with maturity, and since TLT holds only ultra-long-term bonds (20+ years), its price reacts especially strongly.",
+          "That's why, despite the 'safe asset' label, TLT's share price can actually be quite volatile. There have been periods when central banks raised rates quickly and TLT fell nearly as sharply as stocks. Approaching it with a simple 'Treasuries equal safe' mindset can leave you surprised by these swings."
+        ]
+      },
+      {
+        "h": "The 'moves opposite stocks' rule doesn't always hold",
+        "paras": [
+          "Bonds have traditionally been seen as moving opposite stocks, which helps stabilize a portfolio: when the economy weakens and stocks fall, central banks cut rates, and bond prices rise in response.",
+          "But that relationship can break down during periods when rates need to rise to fight inflation. There have been stretches when surging inflation pushed rates up sharply, and stocks and TLT fell together — the 'diversification effect' didn't work as expected. It's worth knowing that TLT can behave this way in certain environments."
+        ]
+      },
+      {
+        "h": "Taxes, allocation, and this calculator",
+        "paras": [
+          "How capital gains and interest distributions are taxed depends entirely on your country of residence and personal situation — this isn't tax advice, so check with a local tax professional rather than assuming a single rate applies. One note on the numbers here: this site's results are pre-tax, computed on an interest-reinvested adjusted-close basis, so your actual after-tax outcome can differ.",
+          "TLT is usually held less for long-term price appreciation the way stock ETFs are, and more to manage a portfolio's overall volatility or as a bet on falling rates. The result of accumulating in TLT alone in this calculator is just a simulation of one specific past period, and bonds too can produce very different outcomes depending on your start date. This article is for information, not investment advice."
+        ]
+      }
+    ]
+  },
+  "AGG": {
+    "lead": "AGG (iShares Core U.S. Aggregate Bond ETF) spreads your money broadly across the entire U.S. bond market. iShares (BlackRock) launched it in 2003, and it holds thousands of investment-grade bonds — U.S. Treasuries, government-agency bonds, corporate bonds, and mortgage-backed securities (MBS). Where TLT concentrates only in ultra-long-term Treasuries, AGG is closer to a 'bond-market index fund,' mixing maturities and bond types evenly.",
+    "sections": [
+      {
+        "h": "A 'core' asset that covers the whole bond market",
+        "paras": [
+          "The Bloomberg U.S. Aggregate Bond Index that AGG tracks spans a wide range of investment-grade bonds issued in the U.S. — Treasuries, corporate bonds, government-agency debt, and mortgage-backed securities. Maturities range from short to long, so it's not concentrated in any single maturity or type of issuer.",
+          "Because of that broad composition, AGG is often called a portfolio's 'core' bond holding. Instead of picking individual bonds one by one, a single position in AGG gives you diversified exposure across the entire U.S. bond market."
+        ]
+      },
+      {
+        "h": "Why it swings less than TLT — shorter average maturity",
+        "paras": [
+          "The average maturity (more precisely, duration) of the bonds in AGG is much shorter than TLT's 20-plus years. As explained earlier, longer maturities react more sharply to rate changes, so AGG — which mixes in shorter-maturity bonds too — tends to move less than TLT does when rates rise or fall.",
+          "That doesn't mean its price never moves, though. During periods of rapid rate change, AGG moves too, and it's had unusually large drawdowns for a bond fund during periods when rates rose sharply. Still, the magnitude has generally been milder than TLT's."
+        ]
+      },
+      {
+        "h": "Its role alongside stocks",
+        "paras": [
+          "AGG is commonly held alongside stock assets like SPY or QQQ to lower a portfolio's overall volatility — the idea being that when stocks swing hard, bonds move less, or in the opposite direction, and act as a cushion.",
+          "But just like TLT, that cushioning effect can weaken during periods when rates need to rise quickly to fight inflation, since stocks and bonds can fall together. Rather than assuming 'holding bonds means you're automatically safe,' it's worth remembering that the size of the diversification benefit can vary with conditions."
+        ]
+      },
+      {
+        "h": "Taxes and what this means for the calculator",
+        "paras": [
+          "AGG is also a U.S.-listed ETF, and how capital gains and interest distributions are taxed depends entirely on your country of residence — this isn't tax advice, so check with a local tax professional. This site's results are pre-tax, computed on an interest-reinvested adjusted-close basis.",
+          "Bond assets generally carry lower long-term expected returns than stocks, so accumulating in AGG alone toward a big long-term goal will typically take much longer than it would with stock assets like SPY or QQQ. You can see this difference directly by comparing tickers side by side in the calculator above. This article is for information, not investment advice."
+        ]
+      }
+    ]
+  },
+  "JEPI": {
+    "lead": "JEPI (JPMorgan Equity Premium Income ETF) is an actively managed 'covered call' ETF that invests in large U.S. stocks while also selling options for extra monthly income. J.P. Morgan Asset Management launched it in May 2020, combining a basket of lower-volatility, high-quality stocks with S&P 500-linked options selling to pursue a high monthly distribution. On this site, the pre-listing period for JEPI (before May 2020) isn't real JEPI data — it's synthetic data spliced together using the CBOE S&P 500 BuyWrite Index (BXM) as a proxy, so please read the notes below carefully.",
+    "sections": [
+      {
+        "h": "Covered calls — selling upside for cash",
+        "paras": [
+          "A covered call means selling a 'call option' on stock you already own — a promise to sell it at a set price or higher to another investor if it's exercised. In exchange, you collect an option premium (a fee) immediately, and that premium is the core source of JEPI's high monthly distribution.",
+          "It's not free, though. If the stock price rises well above the agreed price, that extra gain goes to whoever bought the option, and JEPI misses out on it. In other words, JEPI gives up some of the 'room to run big' in exchange for a steady stream of cash (the premium)."
+        ]
+      },
+      {
+        "h": "What sets JEPI apart — active stock-picking plus an ELN structure",
+        "paras": [
+          "JEPI isn't as simple as writing options against the S&P 500 itself. First, J.P. Morgan actively selects a basket of low-volatility, stable large-cap U.S. stocks using its own criteria, then layers on S&P 500-linked options-selling exposure through a financial instrument called an ELN (equity-linked note).",
+          "Combining active stock selection with derivatives makes it more complex than a simple 'options wrapper on the S&P 500.' The portfolio's composition can also shift somewhat based on market conditions and the managers' judgment, which sets it apart from an index-tracking ETF like SPY."
+        ]
+      },
+      {
+        "h": "The pre-listing period is an approximation — please read this",
+        "paras": [
+          "JEPI listed in May 2020, so it has just over five years of real trading data. To show a longer backtest, this site scales the CBOE S&P 500 BuyWrite Index (BXM, which dates back to 1988) to JEPI's listing-day price and splices it in for the period before that.",
+          "But BXM is a simple index that mechanically sells call options against the entire S&P 500, while JEPI, as explained above, uses an actively chosen low-volatility basket and an ELN structure. Both strategies fall under the broad umbrella of 'covered calls,' but the details differ, so results for the pre-listing period are only a rough approximation of 'what JEPI might have looked like had it existed' — actual JEPI performance can differ. This caveat is also shown alongside the calculator's results."
+        ]
+      },
+      {
+        "h": "Monthly income, and its edge in a flat market",
+        "paras": [
+          "JEPI's biggest feature is its monthly distribution. The yield varies with market volatility, but it's generally been known to run well above a typical S&P 500 ETF's — which is why it's popular with retirees and investors who want regular cash flow.",
+          "In periods when prices move sideways or drift gently, the option premium acts as a cushion, and total return can beat a plain index product like SPY. In periods when the market rallies hard, though, giving up part of the upside tends to make JEPI lag SPY. You can see this difference by comparing the numbers in the result box above side by side with SPY."
+        ]
+      },
+      {
+        "h": "Taxes and accumulating steadily",
+        "paras": [
+          "How capital gains and monthly distributions are taxed depends entirely on your country of residence and personal situation — this isn't tax advice, so it's worth checking with a local tax professional. Since distributions make up a large share of JEPI's return, it's worth factoring in your after-tax take, not just the headline yield.",
+          "Given the limits of the synthetic data described above, JEPI's long-run backtest results should be read more cautiously than tickers with a full history of real data. This article is for information, not investment advice, and past returns — including the estimated portion — don't guarantee the future."
+        ]
+      }
+    ]
+  },
+  "JEPQ": {
+    "lead": "JEPQ (JPMorgan Nasdaq Equity Premium Income ETF) applies the same covered-call strategy as JEPI, but benchmarked to the Nasdaq-100 instead of the S&P 500. J.P. Morgan Asset Management launched it in May 2022, combining a basket of lower-volatility tech-heavy stocks with Nasdaq-100-linked options selling to pay a monthly distribution. Because the Nasdaq-100 itself is more volatile, JEPQ's option premiums — and its distribution yield — tend to run higher than JEPI's.",
+    "sections": [
+      {
+        "h": "JEPI's Nasdaq counterpart",
+        "paras": [
+          "JEPQ's basic structure mirrors JEPI's: it actively selects lower-volatility stocks, then layers on an options-selling position to add premium income. The difference is the benchmark — JEPI uses the S&P 500, while JEPQ uses the tech-heavy Nasdaq-100.",
+          "As covered earlier with QQQ, the Nasdaq-100 is more volatile than the S&P 500. The more volatile the underlying, the bigger the option premium tends to be, which is why JEPQ's distribution yield often runs higher than JEPI's."
+        ]
+      },
+      {
+        "h": "The price of a higher yield — a tighter cap on gains",
+        "paras": [
+          "A bigger premium also means offering more favorable terms to the option buyer (like a lower strike price). So in stretches when the Nasdaq-100 rallies hard, JEPQ gives up considerably more upside than QQQ does. With a covered-call strategy, 'high income' and 'big upside potential' are hard to have at the same time.",
+          "On the flip side, when tech stocks move sideways or pull back, the premium collected each month can help offset some of the decline. In that sense, JEPQ is less a directional bet on the Nasdaq-100 and more a strategy for converting its volatility into cash flow."
+        ]
+      },
+      {
+        "h": "A short listing history — and why it wasn't synthesized",
+        "paras": [
+          "JEPQ listed in May 2022, so the data available on this site spans just a bit over three years. For JEPI, the CBOE S&P 500 BuyWrite Index (BXM) goes back to 1988, which made it possible to splice in an approximated pre-listing period. But a reliable long-term Nasdaq-100 covered-call index doesn't exist, so this site didn't create synthetic data for JEPQ.",
+          "As a result, JEPQ's backtest window is much shorter than the other tickers on this site. It's too early to draw conclusions about 'what a long-term accumulation would look like' from just a few years of results. Keep in mind that a short window can be disproportionately shaped by a single bull or bear stretch."
+        ]
+      },
+      {
+        "h": "Taxes and what to weigh when judging this one",
+        "paras": [
+          "JEPQ is also a U.S.-listed ETF, and how capital gains and monthly distributions are taxed depends entirely on your country of residence and personal situation — this isn't tax advice, so check with a local tax professional. Since distributions make up a large share of the return here too, it's worth looking at your after-tax take alongside the headline yield.",
+          "Between the Nasdaq-100's volatility and JEPQ's short listing history, its backtest results deserve even more caution than the other tickers on this site. This article is for information, not investment advice, and past returns — over a short window at that — don't guarantee the future."
+        ]
+      }
+    ]
   }
 };

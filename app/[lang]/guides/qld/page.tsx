@@ -3,17 +3,31 @@ import Link from "next/link";
 import { ContentShell } from "@/components/ContentShell";
 import { Sources } from "@/components/Sources";
 import { JsonLd, guideLd } from "@/components/JsonLd";
+import type { Locale } from "@/lib/i18n/locales";
+import { langAlternates } from "@/lib/i18n/seo";
+import { QLD_GUIDE_EN } from "@/lib/content/pages/en";
+import { QLD_GUIDE_JA } from "@/lib/content/pages/ja";
+import { QLD_GUIDE_DE } from "@/lib/content/pages/de";
 
-export const metadata: Metadata = {
-  title: "QLD란 무엇인가 · 10-eok",
-  description: "나스닥100을 하루 2배로 추종하는 레버리지 ETF, QLD의 구조와 적립식 궁합, 위험을 기초부터 설명합니다.",
-  alternates: { canonical: "/guides/qld" },
+const KO = {
+  metaTitle: "QLD란 무엇인가",
+  metaDescription: "나스닥100을 하루 2배로 추종하는 레버리지 ETF, QLD의 구조와 적립식 궁합, 위험을 기초부터 설명합니다.",
+  head: { title: "QLD란 무엇인가", desc: "나스닥100을 하루 2배로 추종하는 레버리지 ETF", crumb: "가이드 · QLD" },
+};
+const LOCALES_DATA: Record<Locale, { metaTitle: string; metaDescription: string; head: { title: string; desc: string; crumb: string } }> = {
+  ko: KO, en: QLD_GUIDE_EN, ja: QLD_GUIDE_JA, de: QLD_GUIDE_DE,
 };
 
-export default function Page() {
+export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
+  const { lang } = await params;
+  const locale = (lang as Locale) in LOCALES_DATA ? (lang as Locale) : "ko";
+  const d = LOCALES_DATA[locale];
+  return { title: `${d.metaTitle} · 10-eok`, description: d.metaDescription, alternates: langAlternates(locale, "/guides/qld") };
+}
+
+function KoBody() {
   return (
-    <ContentShell title="QLD란 무엇인가" desc="나스닥100을 하루 2배로 추종하는 레버리지 ETF" crumb="가이드 · QLD">
-      <JsonLd data={guideLd({ path: "/guides/qld", title: "QLD란 무엇인가", description: "나스닥100을 하루 2배로 추종하는 레버리지 ETF, QLD의 구조와 적립식 궁합, 위험을 기초부터 설명합니다.", name: "QLD란 무엇인가" })} />
+    <>
       <p>
         QLD는 미국 운용사 ProShares가 만든 상장지수펀드(ETF)로, 정식 이름은 ProShares Ultra QQQ입니다.
         미국 기술주가 많이 담긴 <strong>나스닥100 지수</strong>의 <strong>하루 수익률을 2배</strong>로
@@ -101,6 +115,21 @@ export default function Page() {
       <Sources ids={["prosharesQld", "yahoo", "fredFx"]} />
 
       <p className="note">본 내용은 일반적인 정보 제공이며 투자 권유나 자문이 아닙니다.</p>
+    </>
+  );
+}
+
+const BODIES: Record<Locale, () => React.ReactElement> = { ko: KoBody, en: QLD_GUIDE_EN.Body, ja: QLD_GUIDE_JA.Body, de: QLD_GUIDE_DE.Body };
+
+export default async function Page({ params }: { params: Promise<{ lang: string }> }) {
+  const { lang } = await params;
+  const locale = (lang as Locale) in BODIES ? (lang as Locale) : "ko";
+  const d = LOCALES_DATA[locale];
+  const Body = BODIES[locale];
+  return (
+    <ContentShell title={d.head.title} desc={d.head.desc} crumb={d.head.crumb}>
+      <JsonLd data={guideLd({ path: "/guides/qld", title: d.head.title, description: d.metaDescription, name: d.head.title })} />
+      <Body />
     </ContentShell>
   );
 }

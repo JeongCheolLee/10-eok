@@ -1,15 +1,35 @@
 import type { Metadata } from "next";
 import { ContentShell } from "@/components/ContentShell";
+import type { Locale } from "@/lib/i18n/locales";
+import { langAlternates } from "@/lib/i18n/seo";
+import { PRIVACY_EN } from "@/lib/content/pages/en";
+import { PRIVACY_JA } from "@/lib/content/pages/ja";
+import { PRIVACY_DE } from "@/lib/content/pages/de";
 
-export const metadata: Metadata = {
-  title: "개인정보처리방침 · 10-eok",
-  description: "10-eok의 개인정보 수집·이용, 쿠키, 광고(Google AdSense) 관련 처리방침입니다.",
-  alternates: { canonical: "/privacy" },
+const META: Record<Locale, { title: string; description: string }> = {
+  ko: { title: "개인정보처리방침 · 10-eok", description: "10-eok의 개인정보 수집·이용, 쿠키, 광고(Google AdSense) 관련 처리방침입니다." },
+  en: { title: `${PRIVACY_EN.metaTitle} · 10-eok`, description: PRIVACY_EN.metaDescription },
+  ja: { title: `${PRIVACY_JA.metaTitle} · 10-eok`, description: PRIVACY_JA.metaDescription },
+  de: { title: `${PRIVACY_DE.metaTitle} · 10-eok`, description: PRIVACY_DE.metaDescription },
 };
 
-export default function Page() {
+const HEAD: Record<Locale, { title: string; desc: string; crumb: string }> = {
+  ko: { title: "개인정보처리방침", desc: "최종 업데이트: 2026-06-19", crumb: "개인정보처리방침" },
+  en: { title: PRIVACY_EN.head.title, desc: PRIVACY_EN.head.desc, crumb: PRIVACY_EN.head.crumb },
+  ja: { title: PRIVACY_JA.head.title, desc: PRIVACY_JA.head.desc, crumb: PRIVACY_JA.head.crumb },
+  de: { title: PRIVACY_DE.head.title, desc: PRIVACY_DE.head.desc, crumb: PRIVACY_DE.head.crumb },
+};
+
+export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
+  const { lang } = await params;
+  const locale = (lang as Locale) in META ? (lang as Locale) : "ko";
+  const m = META[locale];
+  return { title: m.title, description: m.description, alternates: langAlternates(locale, "/privacy") };
+}
+
+function KoBody() {
   return (
-    <ContentShell title="개인정보처리방침" desc="최종 업데이트: 2026-06-19" crumb="개인정보처리방침">
+    <>
       <p>
         10-eok(이하 "서비스")은 이용자의 개인정보를 중요하게 생각합니다. 본 방침은 서비스가 어떤 정보를
         어떻게 다루는지 설명합니다.
@@ -54,6 +74,20 @@ export default function Page() {
         개인정보 관련 문의는 <a href="mailto:jclee7503@gmail.com">jclee7503@gmail.com</a>으로
         보내주세요.
       </p>
+    </>
+  );
+}
+
+const BODIES: Record<Locale, () => React.ReactElement> = { ko: KoBody, en: PRIVACY_EN.Body, ja: PRIVACY_JA.Body, de: PRIVACY_DE.Body };
+
+export default async function Page({ params }: { params: Promise<{ lang: string }> }) {
+  const { lang } = await params;
+  const locale = (lang as Locale) in BODIES ? (lang as Locale) : "ko";
+  const h = HEAD[locale];
+  const Body = BODIES[locale];
+  return (
+    <ContentShell title={h.title} desc={h.desc} crumb={h.crumb}>
+      <Body />
     </ContentShell>
   );
 }
