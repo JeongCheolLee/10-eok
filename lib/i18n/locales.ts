@@ -5,8 +5,8 @@
 export const ALL_LOCALES = ["ko", "en", "ja", "de"] as const;
 export type Locale = (typeof ALL_LOCALES)[number];
 
-// P3에서 "en", P4 "ja", P5 "de" 추가. 현재는 ko만 공개(URL·출력 불변).
-export const LOCALES: readonly Locale[] = ["ko"];
+// P3-c 완료: en·ja·de 동시 공개(2026-07-09). ko는 루트 URL·콘텐츠 불변 + hreflang 상호참조만 추가.
+export const LOCALES: readonly Locale[] = ["ko", "en", "ja", "de"];
 export const DEFAULT_LOCALE: Locale = "ko";
 
 export function isAllLocale(v: string): v is Locale {
