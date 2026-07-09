@@ -320,6 +320,18 @@ details.yr[open] .caret { transform: rotate(90deg); }
 .site-header nav a { color: var(--muted); font-size: 14px; text-decoration: none; white-space: nowrap; }
 .site-header nav a:hover { color: #fff; }
 
+/* 언어 스위처 (헤더 우상단 드롭다운) */
+.lang { position: relative; flex: 0 0 auto; }
+.lang-btn { display: inline-flex; align-items: center; gap: 5px; background: none; border: 0; color: var(--muted); font-size: 14px; cursor: pointer; padding: 4px 2px; white-space: nowrap; }
+.lang-btn:hover { color: #fff; }
+.lang-cur { font-weight: 700; }
+.lang-caret { font-size: 10px; opacity: 0.7; }
+.lang-menu { position: absolute; top: calc(100% + 6px); right: 0; z-index: 20; min-width: 132px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 4px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35); }
+.lang-item { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 10px; border-radius: 7px; color: var(--muted); font-size: 14px; text-decoration: none; white-space: nowrap; }
+.lang-item:hover { background: rgba(255, 255, 255, 0.06); color: #fff; }
+.lang-item.on { color: var(--accent); font-weight: 700; }
+.lang-item.on::after { content: "✓"; font-size: 12px; }
+
 /* 작성자/수정일 바이라인 (E-E-A-T 신뢰 신호) */
 .prose .byline { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: -2px 0 22px; font-size: 13px; line-height: 1.4; color: var(--muted); }
 .prose .byline-author { color: var(--ink); font-weight: 700; text-decoration: none; }

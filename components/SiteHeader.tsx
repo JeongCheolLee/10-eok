@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AppLogo } from "@/components/AppLogo";
+import { LocaleSwitcher } from "@/components/LocaleSwitcher";
 import type { Locale } from "@/lib/i18n/locales";
 import { getDict } from "@/lib/i18n/dict";
 import { localeHref } from "@/lib/i18n/seo";
@@ -27,6 +28,7 @@ export function SiteHeader({ locale }: { locale: Locale }) {
             <Link key={l.href} href={localeHref(locale, l.href)}>{l.label}</Link>
           ))}
         </nav>
+        <LocaleSwitcher locale={locale} label={d.a11y.language} />
       </div>
     </header>
   );

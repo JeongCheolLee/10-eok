@@ -20,7 +20,7 @@ export type Dict = {
     privacy: string;
     terms: string;
   };
-  a11y: { brandHome: string; siteMenu: string };
+  a11y: { brandHome: string; siteMenu: string; language: string };
   footerDisclaimer: string;
 
   /** BacktestApp(계산기) UI 카피 */
@@ -173,7 +173,7 @@ const ko: Dict = {
     privacy: "개인정보처리방침",
     terms: "이용약관",
   },
-  a11y: { brandHome: "10-eok 홈", siteMenu: "사이트 메뉴" },
+  a11y: { brandHome: "10-eok 홈", siteMenu: "사이트 메뉴", language: "언어" },
   footerDisclaimer:
     "10-eok은 실제 과거 데이터를 이용한 백테스트 결과를 보여주는 정보 제공 서비스입니다. " +
     "과거 수익률은 미래 수익을 보장하지 않으며, 본 서비스의 어떤 내용도 투자 권유나 투자 " +
@@ -351,7 +351,7 @@ const en: Dict = {
     privacy: "Privacy Policy",
     terms: "Terms",
   },
-  a11y: { brandHome: "10-eok home", siteMenu: "Site menu" },
+  a11y: { brandHome: "10-eok home", siteMenu: "Site menu", language: "Language" },
   footerDisclaimer:
     "10-eok is an informational service that shows backtest results from real historical data. " +
     "Past returns do not guarantee future results, and nothing here is investment advice or a " +
@@ -529,7 +529,7 @@ const ja: Dict = {
     privacy: "プライバシーポリシー",
     terms: "利用規約",
   },
-  a11y: { brandHome: "10-eok ホーム", siteMenu: "サイトメニュー" },
+  a11y: { brandHome: "10-eok ホーム", siteMenu: "サイトメニュー", language: "言語" },
   footerDisclaimer:
     "10-eok は、実際の過去データを使ったバックテスト結果をお見せする情報提供サービスです。" +
     "過去のリターンは将来の収益を保証するものではなく、本サービスのいかなる内容も投資勧誘や投資" +
@@ -707,7 +707,7 @@ const de: Dict = {
     privacy: "Datenschutz",
     terms: "AGB",
   },
-  a11y: { brandHome: "10-eok Startseite", siteMenu: "Menü" },
+  a11y: { brandHome: "10-eok Startseite", siteMenu: "Menü", language: "Sprache" },
   footerDisclaimer:
     "10-eok ist ein Informationsdienst, der Backtest-Ergebnisse auf Basis echter historischer Daten zeigt. " +
     "Vergangene Renditen sind keine Garantie für zukünftige Ergebnisse, und nichts hier ist eine Anlageberatung " +
