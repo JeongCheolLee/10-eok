@@ -117,7 +117,9 @@ button { font-family: inherit; cursor: pointer; }
 .stat .v { font-size: 15px; font-weight: 700; margin-top: 3px; font-variant-numeric: tabular-nums; }
 .stat .v.up { color: var(--accent); }
 .share { margin-top: 16px; margin-bottom: 24px; }
-#tip { margin-top: 10px; background: #202020; border-radius: 10px; padding: 10px 12px; color: var(--muted); font-size: 12px; line-height: 1.45; }
+#tip, .opt-tip { margin-top: 10px; background: #202020; border-radius: 10px; padding: 10px 12px; color: var(--muted); font-size: 12px; line-height: 1.45; }
+.opt-tip { margin-top: 0; }
+.opt-info { background: none; border: 0; padding: 0 0 0 5px; color: var(--muted); font-size: 12px; line-height: 1; cursor: help; vertical-align: baseline; }
 
 /* states */
 .overlay { position: fixed; inset: 0; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 0 var(--gutter); text-align: center; z-index: 20; }

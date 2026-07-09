@@ -95,7 +95,7 @@ export type Dict = {
       monthlyLogLead: string;
     };
     stat: { principal: string; finalValue: string; cagr: string };
-    tip: { cagr: (pct: string) => string };
+    tip: { cagr: (pct: string) => string; reinvest: string };
     opt: { inflationLabel: string; inflationDesc: string; reinvestLabel: string; reinvestDesc: string };
     stepper: { decrease: string; increase: string };
     intro: {
@@ -265,6 +265,7 @@ const ko: Dict = {
     stat: { principal: "원금", finalValue: "최종 금액", cagr: "연평균" },
     tip: {
       cagr: (pct) => `연평균 ${pct}는 1년에 평균 이만큼씩 늘었다는 뜻이에요. (과거 수익률 기준)`,
+      reinvest: "받은 배당으로 같은 종목을 다시 사 모으는 방식이에요. 끄면 배당을 뺀 주가만의 수익(가격수익)으로 계산합니다.",
     },
     opt: { inflationLabel: "물가만큼 매년 인상", inflationDesc: "적립액을 물가지수만큼 올림", reinvestLabel: "배당 재투자", reinvestDesc: "끄면 주가만(가격수익), 배당 제외" },
     stepper: { decrease: "줄이기", increase: "늘리기" },
@@ -442,6 +443,7 @@ const en: Dict = {
     stat: { principal: "Invested", finalValue: "Final value", cagr: "Annualized" },
     tip: {
       cagr: (pct) => `Annualized ${pct} means it grew about this much per year on average. (Based on past returns.)`,
+      reinvest: "Reinvesting means buying more of the same fund with the dividends you receive. Turn it off to calculate price-only returns, without dividends.",
     },
     opt: { inflationLabel: "Raise yearly with inflation", inflationDesc: "Increase contributions by the CPI", reinvestLabel: "Reinvest dividends", reinvestDesc: "Off = price return only, dividends excluded" },
     stepper: { decrease: "Decrease", increase: "Increase" },
@@ -619,6 +621,7 @@ const ja: Dict = {
     stat: { principal: "元本", finalValue: "最終評価額", cagr: "年平均" },
     tip: {
       cagr: (pct) => `年平均${pct}は、1年で平均このくらい増えたという意味です。(過去のリターン基準)`,
+      reinvest: "受け取った配当で同じ銘柄を買い増すことです。オフにすると配当を除いた株価だけのリターン(価格リターン)で計算します。",
     },
     opt: { inflationLabel: "物価に合わせて毎年増額", inflationDesc: "積立額を物価指数(CPI)の分だけ引き上げ", reinvestLabel: "配当を再投資", reinvestDesc: "オフにすると株価のみ(価格リターン)、配当を除外" },
     stepper: { decrease: "減らす", increase: "増やす" },
@@ -798,6 +801,7 @@ const de: Dict = {
     stat: { principal: "Eingezahlt", finalValue: "Endwert", cagr: "Jährlich" },
     tip: {
       cagr: (pct) => `Jährlich ${pct} heißt, es ist im Schnitt etwa so viel pro Jahr gewachsen. (Auf Basis vergangener Renditen.)`,
+      reinvest: "Mit den erhaltenen Dividenden werden weitere Anteile desselben Fonds gekauft. Aus: Berechnung nur mit dem Kurs (Kursrendite), ohne Dividenden.",
     },
     opt: { inflationLabel: "Jährlich mit der Inflation erhöhen", inflationDesc: "Sparrate um den Verbraucherpreisindex erhöhen", reinvestLabel: "Dividenden reinvestieren", reinvestDesc: "Aus = nur Kursrendite, ohne Dividenden" },
     stepper: { decrease: "Verringern", increase: "Erhöhen" },
