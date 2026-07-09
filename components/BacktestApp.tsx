@@ -49,6 +49,7 @@ export function BacktestApp({ initial, locale }: { initial: Initial; locale: Loc
   const [screen, setScreen] = useState<Screen>(initial ? "result" : "intro");
   const [editMode, setEditMode] = useState<null | "amount" | "years" | "lump" | "day" | "ticker" | "target">(null);
   const [tipOpen, setTipOpen] = useState(false);
+  const [divTipOpen, setDivTipOpen] = useState(false);
   const [toast, setToast] = useState("");
   const [revealKey, setRevealKey] = useState(0);
   const chipsRef = useRef<HTMLDivElement>(null);
@@ -396,9 +397,14 @@ export function BacktestApp({ initial, locale }: { initial: Initial; locale: Loc
               </label>
             )}
             <label className="opt">
-              <span>{d.calc.opt.reinvestLabel} <i>{d.calc.opt.reinvestDesc}</i></span>
+              <span>
+                {d.calc.opt.reinvestLabel}
+                <button type="button" className="opt-info" aria-label={d.calc.opt.reinvestLabel} aria-expanded={divTipOpen} onClick={(e) => { e.preventDefault(); setDivTipOpen((v) => !v); }}>ⓘ</button>
+                <i>{d.calc.opt.reinvestDesc}</i>
+              </span>
               <input type="checkbox" checked={reinvest} onChange={(e) => setReinvest(e.target.checked)} />
             </label>
+            {divTipOpen && <div className="opt-tip">{d.calc.tip.reinvest}</div>}
             {/* 양도세 토글은 일단 숨김 (기능 보류)
             <label className="opt">
               <span>양도세 반영 <i>해외주식 22%(250만 공제) · 국내주식 비과세</i></span>
