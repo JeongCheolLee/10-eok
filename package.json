@@ -13,6 +13,7 @@
     "gen": "tsx generator/build-bundle.ts"
   },
   "dependencies": {
+    "@next/third-parties": "^15.5.20",
     "motion": "^11.11.17",
     "next": "^15.1.6",
     "react": "^18.3.1",

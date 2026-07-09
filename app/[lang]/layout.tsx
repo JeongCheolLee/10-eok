@@ -4,11 +4,28 @@ import "../globals.css";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { LocaleBanner } from "@/components/LocaleBanner";
+import { ConsentBanner } from "@/components/ConsentBanner";
 import { SITE_URL } from "@/lib/site";
 import { LOCALES, isLocale, type Locale } from "@/lib/i18n/locales";
 import { getMarket } from "@/lib/i18n/markets";
+import { GoogleAnalytics } from "@next/third-parties/google";
 
 const ADSENSE_CLIENT = "ca-pub-4501300749862789";
+// Google Analytics 4 측정 ID(공개값, 비밀 아님). AdSense와 동일하게 프로덕션에서만 로드.
+const GA_MEASUREMENT_ID = "G-JC9GV7BZJB";
+
+// Google Consent Mode v2 기본값 — 모든 Google 태그(AdSense·GA)보다 먼저 실행되어야 한다.
+// 기본은 전부 'denied'; 이전에 '동의'한 방문자는 localStorage 기록을 즉시 반영해 update.
+// ⚠️ 아래 '10eok-consent-v1' 키는 components/ConsentBanner.tsx 의 CONSENT_KEY 와 반드시 동일.
+const CONSENT_DEFAULT_SCRIPT = `
+(function(){
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){ dataLayer.push(arguments); }
+  window.gtag = gtag;
+  gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'denied',wait_for_update:500});
+  try{ if(localStorage.getItem('10eok-consent-v1')==='granted'){ gtag('consent','update',{ad_storage:'granted',ad_user_data:'granted',ad_personalization:'granted',analytics_storage:'granted'}); } }catch(e){}
+})();
+`;
 
 // 사이트 전역 기본 title·description(로케일별). 페이지가 자체 metadata를 안 주면 이 값이 폴백.
 const META: Record<Locale, { title: string; desc: string }> = {
@@ -70,6 +87,8 @@ export default async function RootLayout({
   return (
     <html lang={lang}>
       <head>
+        {/* Consent Mode v2 기본값(거부) — 반드시 Google 태그보다 먼저 로드 */}
+        <script dangerouslySetInnerHTML={{ __html: CONSENT_DEFAULT_SCRIPT }} />
         {process.env.NODE_ENV === "production" && (
           <script
             async
@@ -83,7 +102,9 @@ export default async function RootLayout({
         <SiteHeader locale={lang} />
         {children}
         <SiteFooter locale={lang} />
+        <ConsentBanner locale={lang} />
       </body>
+      {process.env.NODE_ENV === "production" && <GoogleAnalytics gaId={GA_MEASUREMENT_ID} />}
     </html>
   );
 }
