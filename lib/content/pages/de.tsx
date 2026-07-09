@@ -1215,8 +1215,8 @@ export const HOME_DE = {
         <li>
           <strong>Annahmen:</strong> Dividendenreinvestition ON, monatlicher Kauf am festgelegten
           Tag, Bewertung als unrealisierter Depotwert. Standardmäßig werden Steuern und Gebühren
-          nicht abgezogen; im Rechner kannst du zusätzlich eine jährliche Anpassung der Sparrate an
-          die Inflation im Euroraum (Eurostat HICP) einschalten.
+          nicht abgezogen; im Rechner kannst du die Dividendenreinvestition ausschalten und eine
+          jährliche Anpassung der Sparrate an die Inflation im Euroraum (Eurostat HICP) einschalten.
         </li>
         <li><strong>Aktualisierung:</strong> Die Marktdaten werden einmal täglich automatisch neu geladen.</li>
       </ul>

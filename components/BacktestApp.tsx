@@ -395,11 +395,11 @@ export function BacktestApp({ initial, locale }: { initial: Initial; locale: Loc
                 <input type="checkbox" checked={infl} onChange={(e) => setInfl(e.target.checked)} />
               </label>
             )}
-            {/* 배당 재투자·양도세 토글은 일단 숨김 (기능 보류)
             <label className="opt">
-              <span>배당 재투자 <i>끄면 주가만(가격수익), 배당 제외</i></span>
+              <span>{d.calc.opt.reinvestLabel} <i>{d.calc.opt.reinvestDesc}</i></span>
               <input type="checkbox" checked={reinvest} onChange={(e) => setReinvest(e.target.checked)} />
             </label>
+            {/* 양도세 토글은 일단 숨김 (기능 보류)
             <label className="opt">
               <span>양도세 반영 <i>해외주식 22%(250만 공제) · 국내주식 비과세</i></span>
               <input type="checkbox" checked={tax} onChange={(e) => setTax(e.target.checked)} />

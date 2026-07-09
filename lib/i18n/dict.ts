@@ -96,7 +96,7 @@ export type Dict = {
     };
     stat: { principal: string; finalValue: string; cagr: string };
     tip: { cagr: (pct: string) => string };
-    opt: { inflationLabel: string; inflationDesc: string };
+    opt: { inflationLabel: string; inflationDesc: string; reinvestLabel: string; reinvestDesc: string };
     stepper: { decrease: string; increase: string };
     intro: {
       titleBold: string;
@@ -266,7 +266,7 @@ const ko: Dict = {
     tip: {
       cagr: (pct) => `연평균 ${pct}는 1년에 평균 이만큼씩 늘었다는 뜻이에요. (과거 수익률 기준)`,
     },
-    opt: { inflationLabel: "물가만큼 매년 인상", inflationDesc: "적립액을 물가지수만큼 올림" },
+    opt: { inflationLabel: "물가만큼 매년 인상", inflationDesc: "적립액을 물가지수만큼 올림", reinvestLabel: "배당 재투자", reinvestDesc: "끄면 주가만(가격수익), 배당 제외" },
     stepper: { decrease: "줄이기", increase: "늘리기" },
     intro: {
       titleBold: "10억 모으기",
@@ -443,7 +443,7 @@ const en: Dict = {
     tip: {
       cagr: (pct) => `Annualized ${pct} means it grew about this much per year on average. (Based on past returns.)`,
     },
-    opt: { inflationLabel: "Raise yearly with inflation", inflationDesc: "Increase contributions by the CPI" },
+    opt: { inflationLabel: "Raise yearly with inflation", inflationDesc: "Increase contributions by the CPI", reinvestLabel: "Reinvest dividends", reinvestDesc: "Off = price return only, dividends excluded" },
     stepper: { decrease: "Decrease", increase: "Increase" },
     intro: {
       titleBold: "Reaching $1M",
@@ -620,7 +620,7 @@ const ja: Dict = {
     tip: {
       cagr: (pct) => `年平均${pct}は、1年で平均このくらい増えたという意味です。(過去のリターン基準)`,
     },
-    opt: { inflationLabel: "物価に合わせて毎年増額", inflationDesc: "積立額を物価指数(CPI)の分だけ引き上げ" },
+    opt: { inflationLabel: "物価に合わせて毎年増額", inflationDesc: "積立額を物価指数(CPI)の分だけ引き上げ", reinvestLabel: "配当を再投資", reinvestDesc: "オフにすると株価のみ(価格リターン)、配当を除外" },
     stepper: { decrease: "減らす", increase: "増やす" },
     intro: {
       titleBold: "1億円を貯めるのに",
@@ -799,7 +799,7 @@ const de: Dict = {
     tip: {
       cagr: (pct) => `Jährlich ${pct} heißt, es ist im Schnitt etwa so viel pro Jahr gewachsen. (Auf Basis vergangener Renditen.)`,
     },
-    opt: { inflationLabel: "Jährlich mit der Inflation erhöhen", inflationDesc: "Sparrate um den Verbraucherpreisindex erhöhen" },
+    opt: { inflationLabel: "Jährlich mit der Inflation erhöhen", inflationDesc: "Sparrate um den Verbraucherpreisindex erhöhen", reinvestLabel: "Dividenden reinvestieren", reinvestDesc: "Aus = nur Kursrendite, ohne Dividenden" },
     stepper: { decrease: "Verringern", increase: "Erhöhen" },
     intro: {
       titleBold: "1 Mio. € ansparen —",

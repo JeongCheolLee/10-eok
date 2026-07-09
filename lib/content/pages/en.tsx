@@ -1159,7 +1159,8 @@ export const HOME_EN = {
         <li>
           <strong>Assumptions:</strong> Dividends reinvested (ON), contributions on a fixed day each
           month, balance shown at market value (unrealized). Taxes and fees are not subtracted by
-          default; the calculator lets you turn on inflation-adjusted contributions.
+          default; the calculator lets you toggle dividend reinvestment on or off and turn on
+          inflation-adjusted contributions.
         </li>
         <li>
           <strong>Updates:</strong> Market data refreshes automatically once a day.

@@ -95,7 +95,7 @@ function KoBody({ rows, dataEnd }: { rows: Awaited<ReturnType<typeof computeTick
       <ul>
         <li><strong>가격:</strong> Yahoo Finance의 일별 수정주가(adjusted close). 배당 재투자·액면분할·운용보수가 반영된 값입니다.</li>
         <li><strong>환율:</strong> 미국 세인트루이스 연방준비은행(FRED)의 일별 원/달러(DEXKOUS) 시계열. 한국 상장 ETF(KODEX 200)는 원화 자산이라 환율을 적용하지 않습니다.</li>
-        <li><strong>가정:</strong> 배당 재투자 ON, 매달 지정일 적립, 평가액 기준(미실현). 기본값에서는 세금·수수료를 빼지 않으며, 계산기에서 양도세·물가연동 적립을 켜 볼 수 있습니다.</li>
+        <li><strong>가정:</strong> 배당 재투자 ON, 매달 지정일 적립, 평가액 기준(미실현). 기본값에서는 세금·수수료를 빼지 않으며, 계산기에서 배당 재투자·물가연동 적립을 켜고 끌 수 있습니다.</li>
         <li><strong>갱신:</strong> 시장 데이터는 매일 한 번 자동으로 새로 받아 반영합니다.</li>
       </ul>
       <p>
