@@ -1,6 +1,6 @@
-# pnpm 11+는 네이티브 빌드 스크립트 승인을 여기서 읽는다.
-# (package.json 의 pnpm.onlyBuiltDependencies 는 pnpm 11에서 무시됨 — 구버전 호환용으로 그대로 둠)
+# pnpm 10+ 는 네이티브 빌드 스크립트 승인을 여기서 읽는다.
+# (pnpm 9 의 package.json > pnpm.onlyBuiltDependencies 는 pnpm 10+ 에서 무시됨)
 # sharp: next/image·OG 이미지 최적화 / esbuild: 번들러 네이티브 바이너리
-allowBuilds:
-  esbuild: true
-  sharp: true
+onlyBuiltDependencies:
+  - esbuild
+  - sharp
