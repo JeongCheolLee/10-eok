@@ -28,7 +28,7 @@ export function middleware(req: NextRequest) {
 export const config = {
   matcher: [
     // 확장자 범용 제외(.*\..*)는 금지 — /etf/069500.ks 같은 점 포함 페이지가 404 된다.
-    // /debates(410 핸들러)·정적 자산·메타데이터 라우트는 명시적으로 제외.
-    "/((?!api|_next/static|_next/image|data/|fonts/|debates|favicon.ico|sitemap.xml|robots.txt|ads.txt|icon.svg|.well-known).*)",
+    // /debates·/leaderboard(410 핸들러)·정적 자산·메타데이터 라우트는 명시적으로 제외.
+    "/((?!api|_next/static|_next/image|data/|fonts/|debates|leaderboard|favicon.ico|sitemap.xml|robots.txt|ads.txt|icon.svg|.well-known).*)",
   ],
 };
