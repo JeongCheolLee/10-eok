@@ -1,9 +1,13 @@
-# 10-eok
+# 10-eok — 10억 모으기 ETF 적립 백테스트 계산기
+
+**🌐 라이브: [jeongcheol.cloud](https://jeongcheol.cloud)** · [English](https://jeongcheol.cloud/en) · [日本語](https://jeongcheol.cloud/ja) · [Deutsch](https://jeongcheol.cloud/de)
 
 "과거에 매달 모았다면, 10억까지 얼마나 걸렸을까?"
 
-QLD를 매달 일정 금액씩 샀다고 가정하고, **실제 과거 가격 + 그날 USD/KRW 환율**로
-원화 기준 10억 도달까지 걸린 시간을 백테스트해 보여주는 웹앱.
+QLD·TQQQ·SCHD·KODEX 200 등 16개 ETF를 매달 일정 금액씩 샀다고 가정하고,
+**실제 과거 가격 + 그날 USD/KRW 환율**로 원화 기준 10억 도달까지 걸린 시간을
+백테스트해 보여주는 웹앱. [종목별 분석](https://jeongcheol.cloud/compare)과
+[투자 가이드](https://jeongcheol.cloud/guides)를 함께 제공한다.
 
 ## 구조
 - `lib/backtest/` — 순수 시뮬레이션 엔진 (`simulate.ts`) + 거래일 정렬·환율 forward-fill·검증 (`align.ts`). UI/프레임워크 비의존.
@@ -24,6 +28,7 @@ pnpm dev     # 개발 서버
 pnpm build   # 프로덕션 빌드
 ```
 
-## 범위 (v1)
-QLD 단일 종목, 배당 재투자 ON 고정(수정주가), 세금 제외(평가액 기준 미실현).
-종목 비교 · 공유 카드 · 물가연동 적립은 post-v1.
+## 범위 (현재)
+16개 종목(미국 ETF 15 + KODEX 200) · ko/en/ja/de 4개 언어 · 종목 비교(`/compare`) ·
+투자 가이드 9편 · 배당 재투자 토글 · 세금 반영 모드.
+공유 카드 · 물가연동 적립은 백로그.
