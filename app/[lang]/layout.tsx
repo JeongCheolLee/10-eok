@@ -12,6 +12,9 @@ import { GoogleAnalytics } from "@next/third-parties/google";
 const ADSENSE_CLIENT = "ca-pub-4501300749862789";
 // Google Analytics 4 측정 ID(공개값, 비밀 아님). AdSense와 동일하게 프로덕션에서만 로드.
 const GA_MEASUREMENT_ID = "G-JC9GV7BZJB";
+// 네이버 서치어드바이저 사이트 소유확인(공개값, 비밀 아님). 메타태그 방식.
+// 루트 "/"는 middleware가 rewrite(리다이렉트 아님)라 홈에서 이 태그가 그대로 노출됨.
+const NAVER_SITE_VERIFICATION = "70ece1984df880c86eee0d397c3bb1a7f37cf8b9";
 
 // Google Consent Mode v2 기본값 — 모든 Google 태그(AdSense·GA)보다 먼저 실행되어야 한다.
 // 기본은 전부 'denied'; 이전에 '동의'한 방문자는 localStorage 기록을 즉시 반영해 update.
@@ -65,7 +68,10 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
       images: [{ url: `/api/og?l=${lang}`, width: 1200, height: 630 }],
     },
     twitter: { card: "summary_large_image", title: "10-eok", description: m.desc, images: [`/api/og?l=${lang}`] },
-    other: { "google-adsense-account": ADSENSE_CLIENT },
+    other: {
+      "google-adsense-account": ADSENSE_CLIENT,
+      "naver-site-verification": NAVER_SITE_VERIFICATION,
+    },
   };
 }
 
