@@ -23,12 +23,23 @@ const MIN_CPI_ROWS = 100; // CPI 최소 개월 수
 const MIN_FX_ROWS = 1000; // DEXKOUS 일별은 수천 개 — 그 미만이면 잘린 응답
 const FX_STALE_DAYS = 14; // 환율 마지막일이 가격 최신일보다 이만큼 뒤처지면 이상(잘림/중단)
 const MAX_ROW_DROP = 0.02; // 기존 대비 행 수 2% 초과 감소면 거부
-// Yahoo가 드물게 HTTP 200으로 최신 바를 빠뜨린 응답을 준다(캐시 글리치, 대개 수십 초 내 해소).
-// 가드가 이를 잡아 전체 빌드를 죽이므로, 종목 단위로 잠시 뒤 다시 받아본다.
-const TICKER_RETRIES = 3; // 종목당 총 시도 횟수
-const RETRY_DELAY_MS = 15_000;
+// Yahoo가 HTTP 200으로 최신 바를 빠뜨린 응답을 주는 일이 있다. 호출자 위치에 따라 붙는
+// 엣지 캐시가 달라 특정 종목만 며칠 뒤처진 채로 계속 서빙되기도 한다(2026-07-25 QLD,
+// GitHub 러너에서 재현). 짧은 재시도로 걸러지는 건 걸러내고, 그래도 안 오면 그 종목만
+// 이번 회차 갱신을 건너뛴다 — 기존 파일이 남으니 데이터 손실은 없고 다음 회차에 따라잡는다.
+const TICKER_RETRIES = 2; // 종목당 총 시도 횟수 (엣지 캐시 지연이면 재시도해도 같은 응답)
+const RETRY_DELAY_MS = 8_000;
+const MAX_STALE_DAYS = 7; // 이보다 더 뒤처지면 건너뛰지 않고 실패 — 장기 방치 방지
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+const dayDiff = (a: string, b: string) => Math.round((Date.parse(a) - Date.parse(b)) / 86_400_000);
+
+/** 소스가 최신 바를 아직 안 준 상태(복구 가능) — 다른 가드 위반과 달리 종목 건너뛰기로 처리. */
+class StaleTailError extends Error {
+  constructor(readonly ticker: string, readonly prevEnd: string, readonly nextEnd: string) {
+    super(`${ticker}: 마지막일 후퇴 ${prevEnd}→${nextEnd} (${dayDiff(prevEnd, nextEnd)}일)`);
+  }
+}
 
 async function fetchPrices(ticker: string): Promise<PricePoint[]> {
   const url = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?period1=0&period2=9999999999&interval=1d&events=div%2Csplit`;
@@ -152,7 +163,11 @@ function guardBundle(file: string, next: Bundle): void {
   const prevEnd = prev.rows[p - 1]?.[0];
   const nextEnd = next.rows[n - 1]?.[0];
   if (prevEnd && nextEnd && nextEnd < prevEnd) {
-    throw new Error(`${next.ticker}: 마지막일 후퇴 ${prevEnd}→${nextEnd} — 최신분 유실 의심`);
+    // 며칠 이내면 소스 지연으로 보고 건너뛰기(StaleTailError), 그 이상이면 진짜 유실로 보고 실패.
+    if (dayDiff(prevEnd, nextEnd) > MAX_STALE_DAYS) {
+      throw new Error(`${next.ticker}: 마지막일 후퇴 ${prevEnd}→${nextEnd} (${dayDiff(prevEnd, nextEnd)}일 뒤처짐, 허용 ${MAX_STALE_DAYS}일) — 최신분 유실 의심`);
+    }
+    throw new StaleTailError(next.ticker, prevEnd, nextEnd);
   }
 }
 
@@ -250,6 +265,7 @@ async function main() {
   // 신규 분리 포맷: px(원통화 가격)는 종목별, fx는 통화별 1파일 — 프론트가 compose.ts로 합성.
   // 레거시 {ticker}.json은 전환기 동안 병행 생성(외부 참조 대비), 이후 제거 예정.
   const pendingPx: { file: string; px: PxBundle }[] = [];
+  const skipped: string[] = [];
   for (const ticker of symbols) {
     let built: Awaited<ReturnType<typeof buildTicker>> | undefined;
     for (let attempt = 1; attempt <= TICKER_RETRIES; attempt++) {
@@ -257,14 +273,24 @@ async function main() {
         built = await buildTicker(ticker, fx, dir);
         break;
       } catch (e: any) {
-        if (attempt === TICKER_RETRIES) throw e; // 계속 실패 = 진짜 이상 → 커밋 차단
+        const last = attempt === TICKER_RETRIES;
+        if (last && e instanceof StaleTailError) {
+          // 이 종목만 기존 파일 유지 — pending에 안 넣으면 그대로 안 써진다.
+          console.warn(`  ${e.message} — 소스 지연으로 판단, 이번 회차 갱신 건너뜀(기존 파일 유지)`);
+          skipped.push(ticker);
+          break;
+        }
+        if (last) throw e; // 계속 실패 = 진짜 이상 → 커밋 차단
         console.warn(`  ${ticker}: 시도 ${attempt}/${TICKER_RETRIES} 실패 (${e.message}) — ${RETRY_DELAY_MS / 1000}초 후 재시도`);
         await sleep(RETRY_DELAY_MS);
       }
     }
-    pending.push({ file: built!.file, bundle: built!.bundle });
-    pendingPx.push({ file: built!.pxFile, px: built!.px });
+    if (!built) continue;
+    pending.push({ file: built.file, bundle: built.bundle });
+    pendingPx.push({ file: built.pxFile, px: built.px });
   }
+  // 전부 건너뛰었다면 개별 종목 문제가 아니라 파이프라인/소스 전체 이상 → 조용히 넘기지 않는다.
+  if (pending.length === 0) throw new Error(`갱신된 종목 0개 (${skipped.length}개 전부 소스 지연) — 파이프라인 이상 의심`);
 
   // 환율 신선도 가드: 잘린 DEXKOUS는 행 수(forward-fill로 유지)로는 안 잡혀 최근 날짜에
   // 오래된 환율이 조용히 적용된다 → 미국 종목 가격 최신일과 환율 마지막일 격차로 검출.
@@ -314,6 +340,7 @@ async function main() {
   console.log(`  fx/krw: ${fxBundle.rows.length}행 (${FX_FILE_START}~)`);
   console.log(`  cpi-kr: ${cpi.length}개월, ${cpi[0]?.ym} ~ ${cpi[cpi.length - 1]?.ym}`);
   console.log(`[build-bundle] 완료: ${pending.length}개 종목(레거시+px) + fx + cpi 기록`);
+  if (skipped.length > 0) console.warn(`[build-bundle] 소스 지연으로 건너뜀 ${skipped.length}개: ${skipped.join(", ")} (기존 데이터 유지, 다음 회차 재시도)`);
 }
 
 main().catch((e) => {
