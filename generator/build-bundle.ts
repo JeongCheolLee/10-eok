@@ -23,6 +23,12 @@ const MIN_CPI_ROWS = 100; // CPI 최소 개월 수
 const MIN_FX_ROWS = 1000; // DEXKOUS 일별은 수천 개 — 그 미만이면 잘린 응답
 const FX_STALE_DAYS = 14; // 환율 마지막일이 가격 최신일보다 이만큼 뒤처지면 이상(잘림/중단)
 const MAX_ROW_DROP = 0.02; // 기존 대비 행 수 2% 초과 감소면 거부
+// Yahoo가 드물게 HTTP 200으로 최신 바를 빠뜨린 응답을 준다(캐시 글리치, 대개 수십 초 내 해소).
+// 가드가 이를 잡아 전체 빌드를 죽이므로, 종목 단위로 잠시 뒤 다시 받아본다.
+const TICKER_RETRIES = 3; // 종목당 총 시도 횟수
+const RETRY_DELAY_MS = 15_000;
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 async function fetchPrices(ticker: string): Promise<PricePoint[]> {
   const url = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?period1=0&period2=9999999999&interval=1d&events=div%2Csplit`;
@@ -184,6 +190,46 @@ function round(n: number, d: number): number {
   return Math.round(n * f) / f;
 }
 
+/** 종목 하나를 받아 정렬·가드까지 마친 번들 쌍을 만든다. 이상 시 throw(호출부가 재시도). */
+async function buildTicker(ticker: string, fx: FxPoint[], dir: string): Promise<{ file: string; bundle: Bundle; pxFile: string; px: PxBundle }> {
+  let prices = await fetchPrices(ticker);
+  // 합성 접합: 상장 이전 구간을 유사 전략 지수로 스케일해 앞에 붙인다(레지스트리 splice 설정).
+  const splice = tickerInfo(ticker).splice;
+  if (splice) {
+    const realStart = prices[0]?.date;
+    prices = await spliceProxy(prices, splice.proxy);
+    console.log(`  ${ticker}: ${splice.proxy} 접합 — 합성 ${prices[0]?.date} ~ (실제 상장 ${realStart})`);
+  }
+  // 한국 종목은 원화 자산 → 환율=1 (1900년 더미 1점을 forward-fill). 미국은 실제 환율.
+  const rows =
+    tickerCurrency(ticker) === "KRW"
+      ? alignSeries(prices, [{ date: "1900-01-01", rate: 1 }])
+      : alignSeries(prices, fx); // 정렬+forward-fill+검증 (이상 시 throw → 빌드 실패)
+  const bundle: Bundle = {
+    ticker,
+    currencyTarget: "KRW",
+    start: rows[0].date,
+    generatedAt: new Date().toISOString(),
+    rows: rows.map((r) => [r.date, r.price, r.fx, r.raw ?? r.price] as [string, number, number, number]),
+  };
+  const file = join(dir, `${ticker.toLowerCase()}.json`);
+  guardBundle(file, bundle); // 잘린/부분 응답이 정상 번들을 덮어쓰지 못하게 (이상 시 throw)
+  console.log(`  ${ticker}: ${rows.length}행, ${bundle.start} ~ ${rows[rows.length - 1].date} (가드 통과)`);
+  return {
+    file,
+    bundle,
+    // px는 정렬된 가격만 담는다(합성 시 다시 align하므로 결과는 레거시와 동일).
+    pxFile: join(dir, "px", `${ticker.toLowerCase()}.json`),
+    px: {
+      ticker,
+      currency: tickerCurrency(ticker),
+      start: rows[0].date,
+      generatedAt: bundle.generatedAt,
+      rows: rows.map((r) => [r.date, r.price, r.raw ?? r.price] as [string, number, number]),
+    },
+  };
+}
+
 async function main() {
   const symbols = ONLY ? [ONLY] : TICKERS.map((t) => t.symbol);
   console.log(`[build-bundle] 환율(FRED) 수집…`);
@@ -205,41 +251,19 @@ async function main() {
   // 레거시 {ticker}.json은 전환기 동안 병행 생성(외부 참조 대비), 이후 제거 예정.
   const pendingPx: { file: string; px: PxBundle }[] = [];
   for (const ticker of symbols) {
-    let prices = await fetchPrices(ticker);
-    // 합성 접합: 상장 이전 구간을 유사 전략 지수로 스케일해 앞에 붙인다(레지스트리 splice 설정).
-    const splice = tickerInfo(ticker).splice;
-    if (splice) {
-      const realStart = prices[0]?.date;
-      prices = await spliceProxy(prices, splice.proxy);
-      console.log(`  ${ticker}: ${splice.proxy} 접합 — 합성 ${prices[0]?.date} ~ (실제 상장 ${realStart})`);
+    let built: Awaited<ReturnType<typeof buildTicker>> | undefined;
+    for (let attempt = 1; attempt <= TICKER_RETRIES; attempt++) {
+      try {
+        built = await buildTicker(ticker, fx, dir);
+        break;
+      } catch (e: any) {
+        if (attempt === TICKER_RETRIES) throw e; // 계속 실패 = 진짜 이상 → 커밋 차단
+        console.warn(`  ${ticker}: 시도 ${attempt}/${TICKER_RETRIES} 실패 (${e.message}) — ${RETRY_DELAY_MS / 1000}초 후 재시도`);
+        await sleep(RETRY_DELAY_MS);
+      }
     }
-    // 한국 종목은 원화 자산 → 환율=1 (1900년 더미 1점을 forward-fill). 미국은 실제 환율.
-    const rows =
-      tickerCurrency(ticker) === "KRW"
-        ? alignSeries(prices, [{ date: "1900-01-01", rate: 1 }])
-        : alignSeries(prices, fx); // 정렬+forward-fill+검증 (이상 시 throw → 빌드 실패)
-    const bundle: Bundle = {
-      ticker,
-      currencyTarget: "KRW",
-      start: rows[0].date,
-      generatedAt: new Date().toISOString(),
-      rows: rows.map((r) => [r.date, r.price, r.fx, r.raw ?? r.price] as [string, number, number, number]),
-    };
-    const file = join(dir, `${ticker.toLowerCase()}.json`);
-    guardBundle(file, bundle); // 잘린/부분 응답이 정상 번들을 덮어쓰지 못하게 (이상 시 throw)
-    pending.push({ file, bundle });
-    // px는 정렬된 가격만 담는다(합성 시 다시 align하므로 결과는 레거시와 동일).
-    pendingPx.push({
-      file: join(dir, "px", `${ticker.toLowerCase()}.json`),
-      px: {
-        ticker,
-        currency: tickerCurrency(ticker),
-        start: rows[0].date,
-        generatedAt: bundle.generatedAt,
-        rows: rows.map((r) => [r.date, r.price, r.raw ?? r.price] as [string, number, number]),
-      },
-    });
-    console.log(`  ${ticker}: ${rows.length}행, ${bundle.start} ~ ${rows[rows.length - 1].date} (가드 통과)`);
+    pending.push({ file: built!.file, bundle: built!.bundle });
+    pendingPx.push({ file: built!.pxFile, px: built!.px });
   }
 
   // 환율 신선도 가드: 잘린 DEXKOUS는 행 수(forward-fill로 유지)로는 안 잡혀 최근 날짜에
