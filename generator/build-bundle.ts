@@ -1,4 +1,4 @@
-// EC2 cron이 하루 한 번 실행하는 데이터 파이프라인 (서버 아님, 배치 스크립트).
+// GitHub Actions(.github/workflows/refresh-data.yml)가 하루 한 번 실행하는 데이터 파이프라인 (서버 아님, 배치 스크립트).
 // 1) Yahoo 차트에서 종목 일별 수정주가  2) FRED DEXKOUS 일별 USD/KRW
 // 3) align.ts(공유)로 거래일 정렬+forward-fill+검증  4) public/data/<ticker>.json 파생 번들 생성
 // 가격 소스는 PRICE_SOURCE로 추상화 — 추후 교체 용이(Stooq가 봇 차단되어 Yahoo 채택).
@@ -30,9 +30,29 @@ const MAX_ROW_DROP = 0.02; // 기존 대비 행 수 2% 초과 감소면 거부
 const TICKER_RETRIES = 2; // 종목당 총 시도 횟수 (엣지 캐시 지연이면 재시도해도 같은 응답)
 const RETRY_DELAY_MS = 8_000;
 const MAX_STALE_DAYS = 7; // 이보다 더 뒤처지면 건너뛰지 않고 실패 — 장기 방치 방지
+// 종목별 실패 격리. 한 종목의 가드 실패가 나머지 전부의 갱신까지 막던 구조(2026-09-16~10-19,
+// Yahoo ^BXM 이력 소실 → JEPI 접합 실패 → 전체 exit 1 → 한 달 정체)를 반복하지 않기 위해,
+// 재시도로도 안 되는 종목은 기존 파일을 유지한 채 건너뛴다. 단 아래 두 한도를 넘으면 실패로 승격.
+const MAX_SKIP_RATIO = 0.25; // 건너뛴 종목이 전체의 이 비율을 넘으면 개별 문제가 아니라 소스 전체 이상
+const MAX_KEEP_DAYS = 14; // 건너뛴 종목의 기존 파일이 이보다 오래됐으면 더는 못 버팀(장기 부패 방지)
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const dayDiff = (a: string, b: string) => Math.round((Date.parse(a) - Date.parse(b)) / 86_400_000);
+
+/** 기존 번들의 generatedAt 기준 경과 일수. 파일이 없거나 깨졌으면 null. */
+function bundleAgeDays(file: string): number | null {
+  if (!existsSync(file)) return null;
+  try {
+    const t = Date.parse((JSON.parse(readFileSync(file, "utf8")) as Bundle).generatedAt);
+    return Number.isFinite(t) ? Math.floor((Date.now() - t) / 86_400_000) : null;
+  } catch {
+    return null;
+  }
+}
+/** GitHub Actions 런 요약에 보이는 주석(::warning::). 로컬에선 무시. 건너뜀이 성공 런에 묻히지 않게. */
+function annotate(kind: "warning" | "error", msg: string): void {
+  if (process.env.GITHUB_ACTIONS) console.log(`::${kind}::${msg}`);
+}
 
 /** 소스가 최신 바를 아직 안 준 상태(복구 가능) — 다른 가드 위반과 달리 종목 건너뛰기로 처리. */
 class StaleTailError extends Error {
@@ -175,26 +195,69 @@ function guardBundle(file: string, next: Bundle): void {
  * 상장 이전 구간을 유사 전략 지수(proxy)로 스케일 접합해 합성 이력을 만든다.
  * 접합 배율 = 실제 첫날 가격 ÷ 그 날짜(이하 최근접) 프록시 가격. 프록시 앞부분에 이 배율을
  * 곱해 실제 데이터 앞에 이어 붙이면, 접합점에서 값이 연속이 된다. (근사치 — UI가 안내)
- * 프록시가 실제 상장 이후에만 존재하면 접합 불가 → 실제 데이터만 반환.
+ * 프록시가 접합점을 못 주면(2026-09-16부터 Yahoo ^BXM이 당일 1행만 반환) 직전 px 번들의
+ * 합성 구간을 재사용한다. 프록시 수집 자체가 실패해도 같은 경로로 폴백.
  */
-async function spliceProxy(real: PricePoint[], proxySymbol: string): Promise<PricePoint[]> {
-  const proxy = await fetchPrices(proxySymbol);
-  if (real.length === 0 || proxy.length === 0) return real;
+async function spliceProxy(real: PricePoint[], proxySymbol: string, prevPxFile: string): Promise<PricePoint[]> {
+  if (real.length === 0) return real;
   const realStart = real[0].date;
+  let proxy: PricePoint[] = [];
+  try {
+    proxy = await fetchPrices(proxySymbol);
+  } catch (e: any) {
+    console.warn(`  ${proxySymbol}: 프록시 수집 실패 (${e.message}) — 직전 번들 합성 구간으로 폴백 시도`);
+  }
   let anchor: PricePoint | undefined;
   for (const p of proxy) {
     if (p.date <= realStart) anchor = p;
     else break;
   }
-  if (!anchor || anchor.price <= 0) {
-    console.warn(`  ${proxySymbol}: 접합점(${realStart} 이하) 없음 — 합성 생략, 실제 데이터만 사용`);
+  if (anchor && anchor.price > 0) {
+    const factor = real[0].price / anchor.price;
+    const pre = proxy
+      .filter((p) => p.date < realStart)
+      .map((p) => ({ date: p.date, price: round(p.price * factor, 4), raw: round((p.raw ?? p.price) * factor, 4) }));
+    return [...pre, ...real];
+  }
+  const prev = readPrevPx(prevPxFile);
+  const fallback = prev ? spliceFromPrev(real, prev) : null;
+  if (!fallback) {
+    console.warn(`  ${proxySymbol}: 접합점(${realStart} 이하) 없음, 직전 번들 합성 구간도 없음 — 실제 데이터만 사용`);
     return real;
   }
-  const factor = real[0].price / anchor.price;
-  const pre = proxy
-    .filter((p) => p.date < realStart)
-    .map((p) => ({ date: p.date, price: round(p.price * factor, 4), raw: round((p.raw ?? p.price) * factor, 4) }));
-  return [...pre, ...real];
+  console.warn(`  ${proxySymbol}: 접합점 없음 — 직전 번들 합성 구간 ${fallback.length - real.length}행 재사용 (${fallback[0].date}~)`);
+  return fallback;
+}
+
+/**
+ * 직전 px 번들의 상장 전(합성) 구간을 새 실제 데이터 앞에 다시 붙인다(순수 함수, 테스트 대상).
+ * adjclose는 배당이 나올 때마다 과거 전체가 재조정되므로 옛 합성값을 그대로 쓰면 접합점이 끊긴다
+ * → 접합일(실제 첫날)의 신규÷기존 가격 비율로 합성 구간을 다시 스케일한다. raw(미수정 종가)도 같은 방식.
+ * 기존 번들에 접합일 행이 없거나 합성 구간이 없으면 null.
+ */
+export function spliceFromPrev(real: PricePoint[], prev: PxBundle): PricePoint[] | null {
+  if (real.length === 0) return null;
+  const realStart = real[0].date;
+  const at = prev.rows.find(([d]) => d === realStart);
+  if (!at || !(at[1] > 0) || !(at[2] > 0)) return null;
+  const pre = prev.rows.filter(([d]) => d < realStart);
+  if (pre.length === 0) return null;
+  const pf = real[0].price / at[1];
+  const rf = (real[0].raw ?? real[0].price) / at[2];
+  return [
+    ...pre.map(([date, price, raw]) => ({ date, price: round(price * pf, 4), raw: round(raw * rf, 4) })),
+    ...real,
+  ];
+}
+
+function readPrevPx(file: string): PxBundle | null {
+  if (!existsSync(file)) return null;
+  try {
+    const b = JSON.parse(readFileSync(file, "utf8")) as PxBundle;
+    return Array.isArray(b.rows) ? b : null;
+  } catch {
+    return null;
+  }
 }
 
 function isoUTC(epochSec: number): string {
@@ -207,12 +270,14 @@ function round(n: number, d: number): number {
 
 /** 종목 하나를 받아 정렬·가드까지 마친 번들 쌍을 만든다. 이상 시 throw(호출부가 재시도). */
 async function buildTicker(ticker: string, fx: FxPoint[], dir: string): Promise<{ file: string; bundle: Bundle; pxFile: string; px: PxBundle }> {
+  const file = join(dir, `${ticker.toLowerCase()}.json`);
+  const pxFile = join(dir, "px", `${ticker.toLowerCase()}.json`);
   let prices = await fetchPrices(ticker);
   // 합성 접합: 상장 이전 구간을 유사 전략 지수로 스케일해 앞에 붙인다(레지스트리 splice 설정).
   const splice = tickerInfo(ticker).splice;
   if (splice) {
     const realStart = prices[0]?.date;
-    prices = await spliceProxy(prices, splice.proxy);
+    prices = await spliceProxy(prices, splice.proxy, pxFile);
     console.log(`  ${ticker}: ${splice.proxy} 접합 — 합성 ${prices[0]?.date} ~ (실제 상장 ${realStart})`);
   }
   // 한국 종목은 원화 자산 → 환율=1 (1900년 더미 1점을 forward-fill). 미국은 실제 환율.
@@ -227,14 +292,13 @@ async function buildTicker(ticker: string, fx: FxPoint[], dir: string): Promise<
     generatedAt: new Date().toISOString(),
     rows: rows.map((r) => [r.date, r.price, r.fx, r.raw ?? r.price] as [string, number, number, number]),
   };
-  const file = join(dir, `${ticker.toLowerCase()}.json`);
   guardBundle(file, bundle); // 잘린/부분 응답이 정상 번들을 덮어쓰지 못하게 (이상 시 throw)
   console.log(`  ${ticker}: ${rows.length}행, ${bundle.start} ~ ${rows[rows.length - 1].date} (가드 통과)`);
   return {
     file,
     bundle,
     // px는 정렬된 가격만 담는다(합성 시 다시 align하므로 결과는 레거시와 동일).
-    pxFile: join(dir, "px", `${ticker.toLowerCase()}.json`),
+    pxFile,
     px: {
       ticker,
       currency: tickerCurrency(ticker),
@@ -260,12 +324,14 @@ async function main() {
   mkdirSync(join(dir, "cpi"), { recursive: true });
 
   // 모든 종목을 먼저 만들고 가드까지 통과시킨 뒤에만 디스크에 쓴다.
-  // (중간에 한 종목이라도 실패하면 어떤 파일도 안 써 부분 갱신을 원천 차단)
+  // 종목 단위로는 격리한다: 재시도로도 안 되는 종목은 기존 파일 유지(skipped/failed), 나머지는 정상 기록.
+  // 전체 이상(건너뜀 비율·기존 파일 나이 한도 초과)일 때만 아무것도 안 쓰고 실패.
   const pending: { file: string; bundle: Bundle }[] = [];
   // 신규 분리 포맷: px(원통화 가격)는 종목별, fx는 통화별 1파일 — 프론트가 compose.ts로 합성.
   // 레거시 {ticker}.json은 전환기 동안 병행 생성(외부 참조 대비), 이후 제거 예정.
   const pendingPx: { file: string; px: PxBundle }[] = [];
-  const skipped: string[] = [];
+  const skipped: string[] = []; // 소스 지연(StaleTailError) — 다음 회차에 자연 복구
+  const failed: string[] = []; // 가드 위반·수집 실패 — 기존 파일 유지, 런 요약에 경고
   for (const ticker of symbols) {
     let built: Awaited<ReturnType<typeof buildTicker>> | undefined;
     for (let attempt = 1; attempt <= TICKER_RETRIES; attempt++) {
@@ -280,7 +346,17 @@ async function main() {
           skipped.push(ticker);
           break;
         }
-        if (last) throw e; // 계속 실패 = 진짜 이상 → 커밋 차단
+        if (last) {
+          // 계속 실패 = 이 종목만 격리. 기존 파일이 없거나 MAX_KEEP_DAYS 넘게 묵었으면 더는 못 버팀 → 실패.
+          const age = bundleAgeDays(join(dir, `${ticker.toLowerCase()}.json`));
+          if (age == null || age > MAX_KEEP_DAYS) {
+            throw new Error(`${e.message} (기존 파일 ${age == null ? "없음" : `${age}일 경과`}, 유지 한도 ${MAX_KEEP_DAYS}일)`);
+          }
+          console.warn(`  ${e.message} — 이번 회차 건너뜀(기존 파일 유지, ${age}일 경과)`);
+          annotate("warning", `${ticker} 갱신 실패로 건너뜀(기존 파일 ${age}일 경과): ${e.message}`);
+          failed.push(ticker);
+          break;
+        }
         console.warn(`  ${ticker}: 시도 ${attempt}/${TICKER_RETRIES} 실패 (${e.message}) — ${RETRY_DELAY_MS / 1000}초 후 재시도`);
         await sleep(RETRY_DELAY_MS);
       }
@@ -289,8 +365,12 @@ async function main() {
     pending.push({ file: built.file, bundle: built.bundle });
     pendingPx.push({ file: built.pxFile, px: built.px });
   }
-  // 전부 건너뛰었다면 개별 종목 문제가 아니라 파이프라인/소스 전체 이상 → 조용히 넘기지 않는다.
-  if (pending.length === 0) throw new Error(`갱신된 종목 0개 (${skipped.length}개 전부 소스 지연) — 파이프라인 이상 의심`);
+  // 건너뜀이 많으면 개별 종목 문제가 아니라 파이프라인/소스 전체 이상 → 조용히 넘기지 않는다.
+  const nSkip = skipped.length + failed.length;
+  if (pending.length === 0) throw new Error(`갱신된 종목 0개 (건너뜀 ${nSkip}개) — 파이프라인 이상 의심`);
+  if (nSkip > symbols.length * MAX_SKIP_RATIO) {
+    throw new Error(`건너뜀 ${nSkip}/${symbols.length}개 > 한도 ${MAX_SKIP_RATIO * 100}% — 소스 전체 이상 의심: ${[...skipped, ...failed].join(", ")}`);
+  }
 
   // 환율 신선도 가드: 잘린 DEXKOUS는 행 수(forward-fill로 유지)로는 안 잡혀 최근 날짜에
   // 오래된 환율이 조용히 적용된다 → 미국 종목 가격 최신일과 환율 마지막일 격차로 검출.
@@ -341,9 +421,13 @@ async function main() {
   console.log(`  cpi-kr: ${cpi.length}개월, ${cpi[0]?.ym} ~ ${cpi[cpi.length - 1]?.ym}`);
   console.log(`[build-bundle] 완료: ${pending.length}개 종목(레거시+px) + fx + cpi 기록`);
   if (skipped.length > 0) console.warn(`[build-bundle] 소스 지연으로 건너뜀 ${skipped.length}개: ${skipped.join(", ")} (기존 데이터 유지, 다음 회차 재시도)`);
+  if (failed.length > 0) console.warn(`[build-bundle] 갱신 실패로 건너뜀 ${failed.length}개: ${failed.join(", ")} (기존 데이터 유지, ${MAX_KEEP_DAYS}일 넘으면 실패로 승격)`);
 }
 
-main().catch((e) => {
-  console.error("[build-bundle] 실패:", e.message);
-  process.exit(1); // 나쁜 번들 push 차단
-});
+// vitest가 spliceFromPrev를 import할 때는 실행하지 않는다 (직접 실행: pnpm gen = tsx generator/build-bundle.ts).
+if (!process.env.VITEST) {
+  main().catch((e) => {
+    console.error("[build-bundle] 실패:", e.message);
+    process.exit(1); // 나쁜 번들 push 차단
+  });
+}
