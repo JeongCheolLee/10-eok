@@ -8,6 +8,8 @@ import { alignSeries, type PricePoint, type FxPoint } from "../lib/backtest/alig
 import type { Bundle } from "../lib/backtest/types";
 import type { PxBundle, FxBundle } from "../lib/backtest/compose";
 import { TICKERS, tickerCurrency, tickerInfo } from "../lib/tickers";
+import { MARKETS } from "../lib/i18n/markets";
+import { buildSummary } from "./summary";
 
 // TICKER env 지정 시 그 종목만, 없으면 레지스트리 전체.
 const ONLY = process.env.TICKER;
@@ -416,6 +418,25 @@ async function main() {
     if (series.length < MIN_CPI_ROWS) throw new Error(`FRED ${c.id}: ${series.length}개월 < 최소 ${MIN_CPI_ROWS}개월 — 잘린 응답 의심`);
     writeFileSync(join(dir, "cpi", c.file), JSON.stringify({ base: series[0]?.ym, series: series.map((s) => [s.ym, s.idx]) }));
     console.log(`  cpi/${c.file}: ${series.length}개월 (${c.id})`);
+  }
+  // 비교 요약(ko 기본 시나리오) — additive. 실패해도 경고만 남기고 나머지 결과는 유지(exit 0).
+  // 이번 회차 갱신분(pendingPx) + 건너뛴 종목은 디스크의 기존 px 파일로 채운다.
+  try {
+    const market = MARKETS.ko;
+    const pxBySymbol: Record<string, PxBundle> = {};
+    for (const { px } of pendingPx) pxBySymbol[px.ticker] = px;
+    for (const symbol of market.tickers) {
+      if (pxBySymbol[symbol]) continue;
+      const prev = readPrevPx(join(dir, "px", `${symbol.toLowerCase()}.json`));
+      if (prev) pxBySymbol[symbol] = prev;
+    }
+    const summary = buildSummary({ pxBySymbol, fx: fxBundle, market });
+    mkdirSync(join(dir, "summary"), { recursive: true });
+    writeFileSync(join(dir, "summary", "ko.json"), JSON.stringify(summary));
+    console.log(`  summary/ko.json: ${summary.rows.length}종목`);
+  } catch (e: any) {
+    console.warn(`  summary/ko.json 생성 실패 (${e.message}) — 건너뜀(기존 파일 유지)`);
+    annotate("warning", `summary/ko.json 생성 실패: ${e.message}`);
   }
   console.log(`  fx/krw: ${fxBundle.rows.length}행 (${FX_FILE_START}~)`);
   console.log(`  cpi-kr: ${cpi.length}개월, ${cpi[0]?.ym} ~ ${cpi[cpi.length - 1]?.ym}`);
