@@ -1,5 +1,5 @@
 // 적립식 백테스트 엔진 (순수 함수). 독립 오라클이 없으므로 단위/golden 테스트가 유일한 안전망.
-import type { Row, BacktestInput, BacktestResult } from "./types";
+import type { Row, BacktestInput, BacktestResult, BuySchedule } from "./types";
 
 const DEFAULT_TARGET = 1_000_000_000; // 10억
 
@@ -12,22 +12,40 @@ export function runBacktest(rows: Row[], input: BacktestInput): BacktestResult {
   const dataEnd = rows[rows.length - 1].date;
   const endDate = input.endDate && input.endDate < dataEnd ? input.endDate : dataEnd;
 
-  // 매수 실행일 → 그날 투입 KRW (같은 거래일에 겹치면 합산)
+  // 매수 실행일 → 그날 투입 KRW (같은 거래일에 겹치면 합산). 주기(monthly/weekly/daily)별 생성.
+  const schedule: BuySchedule = input.schedule ?? { kind: "monthly", day: buyDay };
+  const effStart = maxDate(startDate, rows[0].date);
+  const [y0, m0] = ymOf(effStart);
+  const baseIdx = input.cpi ? cpiIndexAt(input.cpi, `${y0}-${pad(m0)}`) : 1; // 물가연동 base = 시작월
+  const amountAt = (ym: string) => (input.cpi ? input.monthly * (cpiIndexAt(input.cpi, ym) / baseIdx) : input.monthly);
   const buyKRWByIndex = new Map<number, number>();
-  let [y, m] = ymOf(maxDate(startDate, rows[0].date));
-  const baseIdx = input.cpi ? cpiIndexAt(input.cpi, `${y}-${pad(m)}`) : 1; // 물가연동 base = 시작월
-  while (true) {
-    if (calDate(y, m, 1) > endDate) break; // 이 달 시작이 이미 창(끝)을 벗어나면 종료
-    // 이 달의 매수 실행 거래일: 말일 모드=그 달 마지막 거래일, 아니면 지정일 이상의 첫 거래일(다음 거래일 롤)
-    const idx = monthEnd
-      ? lastIdxOnOrBefore(rows, calDate(y, m, daysInMonth(y, m)))
-      : lowerBound(rows, calDate(y, m, buyDay));
+  const addBuy = (idx: number, ym: string) => {
     if (idx !== -1 && rows[idx].date >= startDate && rows[idx].date <= endDate) {
-      const amt = input.cpi ? input.monthly * (cpiIndexAt(input.cpi, `${y}-${pad(m)}`) / baseIdx) : input.monthly;
-      buyKRWByIndex.set(idx, (buyKRWByIndex.get(idx) ?? 0) + amt);
+      buyKRWByIndex.set(idx, (buyKRWByIndex.get(idx) ?? 0) + amountAt(ym));
     }
-    m++;
-    if (m > 12) { m = 1; y++; }
+  };
+  if (schedule.kind === "daily") {
+    // 거래일마다. 물가연동은 그 달 CPI.
+    for (let i = lowerBound(rows, effStart); i !== -1 && i < rows.length && rows[i].date <= endDate; i++) addBuy(i, rows[i].date.slice(0, 7));
+  } else if (schedule.kind === "weekly") {
+    // 시작일 이후 첫 해당 요일부터 7일 간격. 휴장이면 다음 거래일로 롤(같은 날 겹치면 합산).
+    let d = nextWeekday(effStart, schedule.weekday);
+    while (d <= endDate) {
+      addBuy(lowerBound(rows, d), d.slice(0, 7));
+      d = addDays(d, 7);
+    }
+  } else {
+    let [y, m] = [y0, m0];
+    while (true) {
+      if (calDate(y, m, 1) > endDate) break; // 이 달 시작이 이미 창(끝)을 벗어나면 종료
+      // 이 달의 매수 실행 거래일: 말일 모드=그 달 마지막 거래일, 아니면 지정일 이상의 첫 거래일(다음 거래일 롤)
+      const idx = monthEnd
+        ? lastIdxOnOrBefore(rows, calDate(y, m, daysInMonth(y, m)))
+        : lowerBound(rows, calDate(y, m, buyDay));
+      addBuy(idx, `${y}-${pad(m)}`);
+      m++;
+      if (m > 12) { m = 1; y++; }
+    }
   }
 
   const series: { date: string; value: number; principal: number }[] = [];
@@ -229,6 +247,18 @@ export function cpiIndexAt(cpi: { ym: string; idx: number }[], ym: string): numb
 }
 
 // ---- helpers ----
+/** iso 날짜에 days일을 더한 iso (UTC 기준 달력 연산). */
+export function addDays(iso: string, days: number): string {
+  const t = Date.UTC(Number(iso.slice(0, 4)), Number(iso.slice(5, 7)) - 1, Number(iso.slice(8, 10)));
+  return new Date(t + days * 86_400_000).toISOString().slice(0, 10);
+}
+/** iso 이상에서 처음 오는 해당 요일(1=월 … 5=금, 0=일 6=토)의 달력 날짜. */
+export function nextWeekday(iso: string, weekday: number): string {
+  const t = Date.UTC(Number(iso.slice(0, 4)), Number(iso.slice(5, 7)) - 1, Number(iso.slice(8, 10)));
+  const cur = new Date(t).getUTCDay();
+  const diff = (weekday - cur + 7) % 7;
+  return addDays(iso, diff);
+}
 export function clampBuyDay(d: number): number {
   if (!Number.isFinite(d)) return 1;
   return Math.min(31, Math.max(1, Math.round(d))); // 29~31은 '말일' 모드로 해석 (runBacktest)

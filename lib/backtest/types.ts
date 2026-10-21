@@ -22,9 +22,17 @@ export type Bundle = {
   rows: [string, number, number, number?][];
 };
 
+/** 매수 주기. monthly(기본): 매달 buyDay · weekly: 매주 weekday(1=월 … 5=금) · daily: 거래일마다. 휴장이면 다음 거래일로 롤. */
+export type BuySchedule =
+  | { kind: "monthly"; day: number }
+  | { kind: "weekly"; weekday: 1 | 2 | 3 | 4 | 5 }
+  | { kind: "daily" };
+
 export type BacktestInput = {
-  /** 매달 적립액 (KRW) */
+  /** 1회 적립액 (KRW). 주기가 monthly면 월 적립액, weekly면 주 적립액, daily면 일 적립액. */
   monthly: number;
+  /** 매수 주기. 생략 시 { kind: "monthly", day: buyDay }. */
+  schedule?: BuySchedule;
   /** 최초 납입금(목돈, KRW). 시작 시 1회 투입. 기본 0. */
   initial?: number;
   /** 매수일 (매달 며칠, 1~28). 휴장/주말이면 다음 거래일로 롤. */
