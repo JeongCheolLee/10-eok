@@ -73,13 +73,20 @@ export function App() {
     })();
     return () => { on = false; };
   }, []);
+  // 화면 전환 애니메이션: 앞으로 가기(go)만 짧게 밀어 넣고, 뒤로 가기(백버튼·스와이프·history.back)는 즉시.
+  const forward = useRef(false);
+  const [nav, setNav] = useState<{ n: number; fwd: boolean }>({ n: 0, fwd: false });
   useEffect(() => {
-    const on = () => setScreen(readHash() ?? "home");
+    const on = () => { setNav((v) => ({ n: v.n + 1, fwd: forward.current })); forward.current = false; setScreen(readHash() ?? "home"); };
     window.addEventListener("hashchange", on);
     return () => window.removeEventListener("hashchange", on);
   }, []);
 
-  const go = useCallback((s: Screen) => { if (readHash() === s) setScreen(s); else location.hash = s; window.scrollTo(0, 0); }, []);
+  const go = useCallback((s: Screen) => {
+    if (readHash() === s) { setNav((v) => ({ n: v.n + 1, fwd: true })); setScreen(s); }
+    else { forward.current = true; location.hash = s; }
+    window.scrollTo(0, 0);
+  }, []);
   const back = useCallback(() => { if (history.length > 1) history.back(); else go("home"); }, [go]);
   const showToast = useCallback((m: string) => { setToast(m); window.setTimeout(() => setToast(""), 2200); }, []);
   const refreshSaved = useCallback(async () => setSaved(await loadSavedClock()), []);
@@ -115,7 +122,7 @@ export function App() {
 
   return (
     <div className={"app" + (inToss ? " in-toss" : "")}>
-      {body}
+      <div key={nav.n} className={"screen-host" + (nav.fwd ? " enter-fwd" : "")}>{body}</div>
       {menu && (
         <Menu
           onClose={() => setMenu(false)}
