@@ -1,22 +1,15 @@
 import { useEffect, useState } from "react";
 import { ListRow, TextButton, Top } from "@toss/tds-mobile";
-import { TOSS_TICKERS, tickerInfo, tickerTitle } from "@/lib/tickers";
+import { TOSS_TICKERS, tickerTitle } from "@/lib/tickers";
 import { tossSubtitle } from "../lib/groups";
 import { NavBar, Avatar } from "../components/ui";
 import { loadRows } from "../lib/data";
-import { analytics, DATA_BASE } from "../lib/platform";
-import { calcPlan, singlePlan, totalAmount, DEFAULT_PLAN, type Plan } from "../lib/plan";
+import { analytics } from "../lib/platform";
+import { calcPlan, singlePlan, totalAmount, type Plan } from "../lib/plan";
 import { fmt, mdKo, durKo, freqAdverb, freqWord, manLabel } from "../lib/fmt";
 
 type RowOut = { symbol: string; reached: boolean; years: number; monthsRem: number; months: number; value: number; cagr: number; dataEnd?: string };
-type Summary = { dataEnd: string | null; rows: RowOut[] };
-
-/** 기본 시나리오(매달 100만원·1일·배당 재투자·세금 제외)면 매일 생성되는 요약 파일 한 번만 받는다.
- *  미니앱 전체 종목 요약(toss.json)을 먼저, 없으면 웹 16종 요약(ko.json), 그것도 없으면 직접 계산. */
-/** 상장 전 구간을 유사 지수로 이어 붙인 종목(레지스트리 splice 필드) — 하단 안내용 */
-const SPLICED = TOSS_TICKERS.filter((t) => tickerInfo(t).splice).map(tickerTitle).join("·");
-// 처음 10억 도달 기준(10/22)으로 만든 toss.json만 쓴다. 행에 reachDate 키가 없으면 옛 기준(오늘도 10억 이상)이라 직접 계산.
-const SUMMARY_FILES = ["summary/toss.json"];
+// 웹용 요약에는 상장 전 추정치가 섞여 있다. 비교도 실제 거래 이력으로 직접 계산한다.
 /** 도달 종목은 빠른 순, 미달 종목은 평가액 큰 순(generator/summary.ts와 같은 규칙). */
 function sortRows(rows: RowOut[]): RowOut[] {
   return [...rows].sort((a, b) => (a.reached !== b.reached ? (a.reached ? -1 : 1) : a.reached ? a.months - b.months : b.value - a.value));
@@ -32,10 +25,6 @@ function endRange(rows: RowOut[]): { min: string; max: string } | null {
   const ends = rows.map((r) => r.dataEnd).filter((d): d is string => !!d).sort();
   return ends.length ? { min: ends[0], max: ends[ends.length - 1] } : null;
 }
-function isDefaultScenario(p: Plan): boolean {
-  return p.mode === "time" && p.freq === "monthly" && p.amount === DEFAULT_PLAN.amount && p.buyDay === 1 && p.lump === 0 && p.reinvest && !p.tax;
-}
-
 export function CompareScreen({ plan, back, onMenu, onClose }: { plan: Plan; back: () => void; onMenu: () => void; onClose: () => void }) {
   const [out, setOut] = useState<RowOut[]>([]);
   const [done, setDone] = useState(false);
@@ -52,32 +41,14 @@ export function CompareScreen({ plan, back, onMenu, onClose }: { plan: Plan; bac
     setOut([]); setDone(false); setFailed([]);
     const p = scenario();
     (async () => {
-      let todo = TOSS_TICKERS;
       const acc: RowOut[] = [];
-      if (isDefaultScenario(p)) {
-        for (const file of SUMMARY_FILES) {
-          try {
-            const res = await fetch(`${DATA_BASE}/${file}`);
-            if (!res.ok) continue;
-            const s = (await res.json()) as Summary;
-            if (!on) return;
-            if (Array.isArray(s.rows) && s.rows.length > 0 && "reachDate" in s.rows[0]) {
-              const have = new Set(s.rows.map((r) => r.symbol));
-              acc.push(...s.rows.filter((r) => TOSS_TICKERS.includes(r.symbol)));
-              todo = TOSS_TICKERS.filter((t) => !have.has(t)); // 요약에 없는 종목은 아래에서 직접 계산
-              setOut(sortRows(acc));
-              break;
-            }
-          } catch { /* 이 요약 파일이 없으면 다음 후보 → 직접 계산 */ }
-        }
-      }
       const miss: string[] = [];
-      for (const symbol of todo) {
+      await Promise.all(TOSS_TICKERS.map(async (symbol) => {
         try {
           acc.push(await calcRow(symbol, p, monthlyMan));
-          if (on) setOut([...acc]);
+          if (on) setOut(sortRows(acc));
         } catch { miss.push(symbol); }
-      }
+      }));
       if (on) { setOut(sortRows(acc)); setFailed(miss); setDone(true); }
     })();
     return () => { on = false; };
@@ -132,7 +103,7 @@ export function CompareScreen({ plan, back, onMenu, onClose }: { plan: Plan; bac
         )}
         {!done && <ListRow contents={<ListRow.Texts type="1RowTypeA" top={`${out.length}/${TOSS_TICKERS.length} 계산 중…`} />} />}
       </ul>
-      <p className="disc">'10억까지'는 가장 최근에 시작해서 10억을 넘은 경우, 처음 넘기까지 걸린 기간이에요. 그 뒤 10억 아래로 내려온 종목은 마지막 종가일 금액을 같이 적었어요. 10억을 넘지 않은 종목은 데이터가 있는 전체 기간을 모았을 때 금액이에요. {SPLICED} 상장 전 구간은 비슷한 지수로 추정했어요.</p>
+      <p className="disc">'10억까지'는 가장 최근에 시작해서 10억을 넘은 경우, 처음 넘기까지 걸린 기간이에요. 그 뒤 10억 아래로 내려온 종목은 마지막 종가일 금액을 같이 적었어요. 10억을 넘지 않은 종목은 데이터가 있는 전체 기간을 모았을 때 금액이에요. 상장 전 추정 가격은 넣지 않고, 종목별 실제 거래 이력이 있는 기간만 계산했어요.</p>
       <p className="disc">과거 성과가 미래 수익을 보장하지 않아요. 특정 종목을 추천하지 않고, 투자 판단과 책임은 본인에게 있어요.</p>
     </div>
   );

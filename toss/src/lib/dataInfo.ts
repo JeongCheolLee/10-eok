@@ -17,8 +17,29 @@ export const DATA_START: Record<string, string> = {
 
 /** 추정치가 끝나고 실제 가격이 시작되는 날. 접합 종목이 아니거나 표에 없으면 null. */
 export function realStartOf(ticker: string): string | null {
-  return tickerInfo(ticker).splice ? REAL_START[ticker] ?? null : null;
+  const key = ticker.toUpperCase();
+  return tickerInfo(key).splice ? REAL_START[key] ?? null : null;
 }
+
+/** 미니앱 계산은 실제 거래 이력만 쓴다. 새 접합 종목의 경계가 빠지면 추정치를 쓰는 대신 실패한다. */
+export function actualHistoryRows<T extends { date: string }>(ticker: string, rows: T[]): T[] {
+  const key = ticker.toUpperCase();
+  const start = realStartOf(key);
+  if (tickerInfo(key).splice && !start) throw new Error(`Missing actual history boundary: ${key}`);
+  const actual = start ? rows.filter((row) => row.date >= start) : rows;
+  if (!actual.length) throw new Error(`No actual trading history: ${key}`);
+  return actual;
+}
+
+export type LoadedDataInfo = {
+  ticker: string;
+  /** 추정치를 제외하고 계산에 쓸 수 있는 실제 가격 첫날. */
+  actualStart: string;
+  /** 마지막 가격 거래일. 생성 시각이 아니다. */
+  priceAsOf: string;
+  /** 마지막 가격일에 적용한 환율의 관측일. 원화 종목은 null. */
+  fxAsOf: string | null;
+};
 
 /** 추정 구간: from(계산 시작일)부터 until(실제 가격 첫날) 전날까지. */
 export type EstSpan = { ticker: string; until: string };
