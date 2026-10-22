@@ -123,7 +123,7 @@ export function ResultScreen({ plan, setPlan, watchAd, back, goClock, showToast,
 
   // 공유 문구는 앞뒤 설명 없이 전달되므로 문장 안에 과거 조건(시작 시점·기간·기준일)을 담는다.
   const shareTextOf = (): string => {
-    const tail = " — 10억 모으기";
+    const tail = " — 주식으로 10억 부자되기";
     if (calc.tracking) {
       const state = r.value >= TARGET ? "10억을 넘었어요" : `10억까지 ${progressPct}%예요`;
       return `${ymKo(start)}부터 ${buyStr} 샀다면 ${ymdKo(end)} 기준 ${fmt.money(r.value)}, ${state}${tail}`;

@@ -34,7 +34,7 @@ export function LogoMark({ size = 24 }: { size?: number }) {
   );
 }
 
-export function NavBar({ back, onMenu, onClose, title = "10억 모으기" }: { back?: () => void; onMenu: () => void; onClose: () => void; title?: string }) {
+export function NavBar({ back, onMenu, onClose, title = "주식으로 10억 부자되기" }: { back?: () => void; onMenu: () => void; onClose: () => void; title?: string }) {
   if (inToss) return null; // 토스 앱이 네비게이션 바를 그린다 (apps-in-toss.config navigationBar)
   return (
     <header className="nav">

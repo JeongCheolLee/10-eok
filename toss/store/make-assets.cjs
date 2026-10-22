@@ -66,7 +66,7 @@ const settled = (page) => page.waitForFunction(() => !document.body.innerText.in
     ${phone(n, 480, 78, 300)}</body></html>`;
   const wide = `<!doctype html><html lang="ko"><body style="margin:0;width:1504px;height:741px;overflow:hidden;position:relative;background:${TINT};font-family:${FONT};color:${INK}">
     <div style="position:absolute;left:80px;top:140px;width:500px">
-      <div style="display:inline-block;background:${GREEN};color:#fff;font-weight:800;font-size:22px;padding:8px 16px;border-radius:12px">10억 모으기</div>
+      <div style="display:inline-block;background:${GREEN};color:#fff;font-weight:800;font-size:22px;padding:8px 16px;border-radius:12px">주식으로 10억 부자되기</div>
       <h1 style="margin:28px 0 0;font-size:52px;line-height:1.22;font-weight:800;letter-spacing:-0.02em">10억까지,<br>얼마나 걸렸을까요</h1>
       <p style="margin:22px 0 0;font-size:22px;line-height:1.5;color:${SUB}">ETF를 매달·매주·매일 샀다면 어땠을지<br>과거 가격과 환율로 계산해요.<br>시계에 저장하면 새 가격으로 다시 계산해요.</p>
       <p style="margin:26px 0 0;font-size:16px;line-height:1.5;color:${SUB}">과거 데이터로 계산한 참고용 결과예요.<br>특정 종목을 추천하지 않고, 미래 수익을 보장하지 않아요.</p></div>
