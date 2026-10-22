@@ -173,6 +173,9 @@ input[type="date"].select { font-size: 18px; min-height: 29px; }
 .search { height: 44px; border: 0; border-radius: 12px; background: var(--grey100); padding: 0 14px; font-size: 15px; width: 100%; }
 .sheet-list { overflow-y: auto; flex: 1; }
 .list-btn[aria-pressed="true"] { background: var(--brand-weak); }
+.sheet-group-head { position: sticky; top: 0; z-index: 1; background: #fff; padding: 14px 24px 6px; display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.sheet-group-title { font-size: 13px; font-weight: 600; color: var(--grey600); }
+.sheet-group-desc { font-size: 13px; color: var(--grey500); }
 .empty { padding: 24px; text-align: center; color: var(--grey500); }
 .sheet-foot { padding: 10px 20px 14px; }
 

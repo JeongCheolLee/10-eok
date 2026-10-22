@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Button, ListRow } from "@toss/tds-mobile";
-import { tickerTitle, tickerSubtitle } from "@/lib/tickers";
+import { tickerTitle } from "@/lib/tickers";
+import { tossSubtitle } from "../lib/groups";
 import { NavBar, Ring, Check, Avatar, ChevronRight } from "../components/ui";
 import { loadRows, loadRowsBy } from "../lib/data";
 import { analytics } from "../lib/platform";
@@ -130,7 +131,7 @@ export function ClockScreen({ saved, goHome, goResult, goCompare, onEdit, onMenu
           <ListRow
             key={o.symbol}
             left={<Avatar symbol={o.symbol} />}
-            contents={<ListRow.Texts type="2RowTypeA" top={tickerTitle(o.symbol)} bottom={tickerSubtitle(o.symbol)} />}
+            contents={<ListRow.Texts type="2RowTypeA" top={tickerTitle(o.symbol)} bottom={tossSubtitle(o.symbol)} />}
             right={<span className="right"><span className="row-title">{o.reached ? durKo(o.years, o.monthsRem) : `다 모아도 ${fmt.money(o.value)}`}</span><span className="row-desc">연평균 {fmt.pct(o.cagr)}</span></span>}
           />
         ))}

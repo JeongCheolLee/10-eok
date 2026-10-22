@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Button, ListRow, Switch, Top } from "@toss/tds-mobile";
-import { tickerCurrency, tickerTitle } from "@/lib/tickers";
+import { tickerTitle } from "@/lib/tickers";
+import { taxInfo } from "../lib/groups";
 import { NavBar, Chart, AdSlot, Avatar } from "../components/ui";
 import { loadRowsBy } from "../lib/data";
 import { analytics, shareResult } from "../lib/platform";
@@ -61,7 +62,7 @@ export function ResultScreen({ plan, setPlan, watchAd, back, goClock, showToast,
 
   const r = calc.result;
   const port = calc.portfolio;
-  const isUSD = plan.holdings.some((h) => tickerCurrency(h.ticker) === "USD");
+  const tax = taxInfo(tickers); // us·kr-foreign이 하나라도 있으면 세금 스위치를 켤 수 있다
   const names = holdingsTitle(plan);
   const adverb = freqAdverb(plan);
   const lumpStr = plan.lump > 0 ? `${manLabel(plan.lump)}으로 시작해 ` : "";
@@ -135,7 +136,7 @@ export function ResultScreen({ plan, setPlan, watchAd, back, goClock, showToast,
           </div>
         </div>
         {tip && <div className="tip">연평균 {fmt.pct(r.cagr)}는 1년에 평균 이만큼씩 늘었다는 뜻이에요. ({names} 과거 수익률 기준)</div>}
-        {port && plan.tax && port.taxWon > 0 && <div className="tip">평가액은 양도세 {fmt.money(port.taxWon)}을 뺀 금액이에요.</div>}
+        {port && plan.tax && port.taxWon > 0 && <div className="tip">평가액은 {tax.label} {fmt.money(port.taxWon)}을 뺀 금액이에요.</div>}
       </div>
 
       {port && (
@@ -157,7 +158,7 @@ export function ResultScreen({ plan, setPlan, watchAd, back, goClock, showToast,
 
       <ul className="tds-list">
         <ListRow
-          contents={<ListRow.Texts type="2RowTypeA" top="계산 옵션" bottom={`배당 ${plan.reinvest ? "재투자" : "미반영"} · 세금 ${plan.tax && isUSD ? "반영" : "제외"}`} />}
+          contents={<ListRow.Texts type="2RowTypeA" top="계산 옵션" bottom={`배당 ${plan.reinvest ? "재투자" : "미반영"} · 세금 ${plan.tax && tax.taxable ? "반영" : "제외"}`} />}
           withArrow
           onClick={() => setOptsOpen((v) => !v)}
           aria-expanded={optsOpen}
@@ -169,8 +170,8 @@ export function ResultScreen({ plan, setPlan, watchAd, back, goClock, showToast,
               right={<Switch checked={plan.reinvest} onChange={(_, c) => setPlan({ ...plan, reinvest: c })} aria-label="배당 재투자" />}
             />
             <ListRow
-              contents={<ListRow.Texts type="2RowTypeA" top="세금 반영" bottom={isUSD ? "해외주식 양도세 22%, 250만원까지는 안 내요" : "국내 ETF는 해당 없어요"} />}
-              right={<Switch checked={plan.tax && isUSD} disabled={!isUSD} onChange={(_, c) => setPlan({ ...plan, tax: c })} aria-label="세금 반영" />}
+              contents={<ListRow.Texts type="2RowTypeA" top="세금 반영" bottom={tax.desc} />}
+              right={<Switch checked={plan.tax && tax.taxable} disabled={!tax.taxable} onChange={(_, c) => setPlan({ ...plan, tax: c })} aria-label="세금 반영" />}
             />
           </>
         )}

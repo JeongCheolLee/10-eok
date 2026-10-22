@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { TICKERS, tickerInfo, tickerMonogram, tickerTitle, tickerSubtitle } from "@/lib/tickers";
+import { TICKERS, tickerInfo, tickerMonogram, tickerTitle } from "@/lib/tickers";
+import { GROUPS, tickerGroup, tossSubtitle } from "../lib/groups";
 import { attachBanner, inToss } from "../lib/platform";
 
 /* ── 아이콘 (모노톤 스트로크) ── */
@@ -206,7 +207,9 @@ export function TickerSheet({ current, taken = [], onPick, onClose }: { current:
   const [q, setQ] = useState("");
   const ref = useRef<HTMLInputElement>(null);
   useEffect(() => { ref.current?.focus(); }, []);
-  const list = TICKERS.filter((t) => !q || t.symbol.toLowerCase().includes(q.toLowerCase()) || t.name.includes(q));
+  const ql = q.trim().toLowerCase();
+  const list = TICKERS.filter((t) => !ql || t.symbol.toLowerCase().includes(ql) || t.name.toLowerCase().includes(ql) || tossSubtitle(t.symbol).includes(ql));
+  const groups = GROUPS.map((g) => ({ ...g, items: list.filter((t) => tickerGroup(t.symbol) === g.id) })).filter((g) => g.items.length > 0);
   return (
     <div className="sheet-backdrop" onClick={onClose}>
       <div className="sheet" role="dialog" aria-modal="true" aria-label="종목 선택" onClick={(e) => e.stopPropagation()}>
@@ -216,16 +219,27 @@ export function TickerSheet({ current, taken = [], onPick, onClose }: { current:
           <input ref={ref} className="search" placeholder="종목 검색" value={q} onChange={(e) => setQ(e.target.value)} aria-label="종목 검색" />
         </div>
         <div className="sheet-list">
-          {list.map((t) => {
-            const isTaken = t.symbol !== current && taken.includes(t.symbol);
-            return (
-            <button key={t.symbol} type="button" className="list-row list-btn" aria-pressed={t.symbol === current} disabled={isTaken} onClick={() => onPick(t.symbol)}>
-              <span className="avatar" style={{ background: t.color }}>{tickerMonogram(t.symbol)}</span>
-              <span className="field"><span className="row-title">{tickerTitle(t.symbol)}</span><span className="row-desc">{isTaken ? "이미 담았어요" : <>{tickerSubtitle(t.symbol)}{t.splice ? " · 상장 전은 추정치" : ""}{t.shortHistory ? " · 데이터가 짧아요" : ""}</>}</span></span>
-              {t.symbol === current && <span className="brand-text" aria-hidden="true"><Check /></span>}
-            </button>
-            );
-          })}
+          {groups.map((g) => (
+            <section key={g.id} className="sheet-group" aria-labelledby={`sg-${g.id}`}>
+              <div className="sheet-group-head">
+                <span id={`sg-${g.id}`} className="sheet-group-title">{g.label}</span>
+                {g.desc && <span className="sheet-group-desc">{g.desc}</span>}
+              </div>
+              {g.items.map((t) => {
+                const isTaken = t.symbol !== current && taken.includes(t.symbol);
+                // 국내 상장 묶음 안에서는 부제 "국내 상장"이 겹치므로 이름(무엇을 담는지)만 둔다
+                const sub = g.id === "kr-listed" ? "" : tossSubtitle(t.symbol);
+                const extra = [sub, t.splice ? "상장 전은 추정치" : "", t.shortHistory ? "데이터가 짧아요" : ""].filter(Boolean).join(" · ");
+                return (
+                <button key={t.symbol} type="button" className="list-row list-btn" aria-pressed={t.symbol === current} disabled={isTaken} onClick={() => onPick(t.symbol)}>
+                  <span className="avatar" style={{ background: t.color }}>{tickerMonogram(t.symbol)}</span>
+                  <span className="field"><span className="row-title">{tickerTitle(t.symbol)}</span>{(isTaken || extra) && <span className="row-desc">{isTaken ? "이미 담았어요" : extra}</span>}</span>
+                  {t.symbol === current && <span className="brand-text" aria-hidden="true"><Check /></span>}
+                </button>
+                );
+              })}
+            </section>
+          ))}
           {list.length === 0 && <div className="empty">검색 결과가 없어요</div>}
         </div>
         <div className="sheet-foot"><button type="button" className="btn dark-weak md" onClick={onClose}>닫기</button></div>

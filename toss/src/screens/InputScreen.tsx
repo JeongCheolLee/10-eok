@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Button, ListRow, SegmentedControl, Switch, Top } from "@toss/tds-mobile";
-import { tickerTitle, tickerSubtitle } from "@/lib/tickers";
+import { tickerTitle } from "@/lib/tickers";
+import { tossSubtitle } from "../lib/groups";
 import { NavBar, Stepper, TickerSheet, Avatar, HoldingRow } from "../components/ui";
 import { analytics } from "../lib/platform";
 import { manLabel, freqWord } from "../lib/fmt";
@@ -75,7 +76,7 @@ export function InputScreen({ plan, setPlan, onSubmit, adNeeded = false, hasCloc
         <ul className="tds-list">
           <ListRow
             left={<Avatar symbol={plan.ticker} size={40} />}
-            contents={<ListRow.Texts type="2RowTypeA" top={`${tickerTitle(plan.ticker)} · ${tickerSubtitle(plan.ticker)}`} bottom="종목" />}
+            contents={<ListRow.Texts type="2RowTypeA" top={`${tickerTitle(plan.ticker)} · ${tossSubtitle(plan.ticker)}`} bottom="종목" />}
             withArrow
             onClick={() => setSheet(0)}
             aria-haspopup="dialog"
