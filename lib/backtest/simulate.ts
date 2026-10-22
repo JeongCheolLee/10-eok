@@ -329,3 +329,61 @@ export function monthsBetween(a: string, b: string): number {
   if (bd < ad) months -= 1;
   return Math.max(0, months);
 }
+
+/** runFirstReach 결과: BacktestResult에 처음 도달 시점 금액을 더한다. */
+export type FirstReachResult = BacktestResult & {
+  /** 처음 target을 넘은 날의 평가액·누적 납입원금 (미달이면 오늘 값) */
+  reachValue: number;
+  reachPrincipal: number;
+};
+
+/**
+ * 오늘(최신 데이터일)까지 경로에서 **한 번이라도** target을 넘은 가장 늦은 시작월(=가장 짧은 도달 기간)을 찾는다.
+ * runToToday(오늘도 target 이상)와 달리, 고점에 잠깐 찍고 내려온 경우도 '도달'로 친다(미니앱 2026-10-22 결정).
+ * 반환 의미: reached·reachedDate·months/years/monthsRem = 시작~처음 도달, series = 오늘까지 전체,
+ * value·principal·cagr = **오늘** 기준(화면이 "오늘은 N억"을 같이 보여준다), reachValue·reachPrincipal = 도달일 기준.
+ * 목돈이 없으면 시작이 늦을수록 모든 날짜의 평가액이 줄어(앞선 시작이 같은 매수에 더해 추가 매수를 보유) 경로 최고점도 단조 → 이분 탐색.
+ * 목돈이 있으면 단조가 깨질 수 있어 늦은 쪽부터 전수 스캔(runToToday와 같은 규칙).
+ */
+export function runFirstReach(rows: Row[], input: BacktestInput): FirstReachResult {
+  if (rows.length === 0) throw new Error("rows가 비어있음");
+  const target = input.target ?? DEFAULT_TARGET;
+  const buyDay = clampBuyDay(input.buyDay);
+  const endDate = rows[rows.length - 1].date;
+  const [y0, m0] = ymOf(rows[0].date);
+  const [yT, mT] = ymOf(endDate);
+  const starts: string[] = [];
+  for (let y = y0, m = m0; y < yT || (y === yT && m <= mT); ) {
+    starts.push(calDate(y, m, 1));
+    m++;
+    if (m > 12) { m = 1; y++; }
+  }
+  const sim = (startDate: string) => runBacktest(rows, { ...input, buyDay, startDate, target });
+  let ans = -1;
+  if (input.initial && input.initial > 0) {
+    for (let i = starts.length - 1; i >= 0; i--) if (sim(starts[i]).reached) { ans = i; break; }
+  } else {
+    let lo = 0, hi = starts.length - 1;
+    while (lo <= hi) {
+      const mid = (lo + hi) >> 1;
+      if (sim(starts[mid]).reached) { ans = mid; lo = mid + 1; } else hi = mid - 1;
+    }
+  }
+  const chosen = ans >= 0 ? starts[ans] : starts[0];
+  const atReach = sim(chosen); // 도달일·기간·도달 시 평가액
+  const today = runBacktest(rows, { ...input, buyDay, startDate: chosen, target: Number.MAX_SAFE_INTEGER }); // 오늘 평가액·원금·연복리
+  const reachPt = atReach.reachedDate ? atReach.series.find((p) => p.date === atReach.reachedDate) : undefined;
+  return {
+    reached: atReach.reached,
+    reachedDate: atReach.reachedDate,
+    months: atReach.months,
+    years: atReach.years,
+    monthsRem: atReach.monthsRem,
+    series: today.series,
+    principal: today.principal,
+    value: today.value,
+    cagr: today.cagr,
+    reachValue: atReach.reached ? atReach.value : today.value,
+    reachPrincipal: reachPt ? reachPt.principal : today.principal,
+  };
+}
