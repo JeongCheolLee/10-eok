@@ -30,7 +30,7 @@ function planFromQuery(q: URLSearchParams): Plan | null {
   const tracking = /^\d{4}-\d{2}-\d{2}$/.test(s);
   // 금액 모드는 종목 1개일 때만 연다
   const mode: Plan["mode"] = q.get("mode") === "amt" && !tracking && holdings.length === 1 ? "amount" : "time";
-  return withHoldings({ ...DEFAULT_PLAN, mode, years: Math.max(1, num("y", 10)), lump: Math.max(0, num("i", 0)), buyDay: Math.min(29, Math.max(1, num("d", 1))), freq, weekday, tracking, startDate: tracking ? s : "", reinvest: q.get("div") !== "0", tax: q.get("tax") === "1" }, holdings);
+  return withHoldings({ ...DEFAULT_PLAN, mode, years: Math.max(1, num("y", 10)), lump: Math.max(0, num("i", 0)), buyDay: Math.min(29, Math.max(1, num("d", 1))), freq, weekday, tracking, startDate: tracking ? s : "", reinvest: q.get("div") !== "0", tax: false /* 세금 반영 UI 제거(10/22): tax=1 링크도 무시 */ }, holdings);
 }
 
 /** 보상형 광고로 여는 동작. 광고를 끝까지 보면 run, 광고를 못 불러오면 막지 않고 run(토스 정책). */

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { TICKERS, tickerInfo, tickerMonogram, tickerTitle } from "@/lib/tickers";
 import { GROUPS, tickerGroup, tossSubtitle } from "../lib/groups";
 import { attachBanner, inToss } from "../lib/platform";
+import { fmt, ymKo } from "../lib/fmt";
 
 /* ── 아이콘 (모노톤 스트로크) ── */
 const I = ({ d, fill }: { d: string; fill?: boolean }) => (
@@ -81,8 +82,15 @@ function niceStep(maxV: number): number {
 }
 export function Chart({ series, target }: { series: Pt[]; target: number }) {
   const pts = useMemo(() => downsample(series, 120), [series]);
+  const [hi, setHi] = useState<number | null>(null); // 손가락·마우스가 가리키는 점
   const W = 360, H = 170, L = 38, R = 10, T = 14, B = 24;
   if (pts.length < 2) return null;
+  const pick = (e: React.PointerEvent<SVGSVGElement>) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    const vx = ((e.clientX - r.left) / r.width) * W;
+    const i = Math.round(((vx - L) / (W - L - R)) * (pts.length - 1));
+    setHi(Math.max(0, Math.min(pts.length - 1, i)));
+  };
   const maxRaw = Math.max(target, ...pts.map((p) => p.value)) * 1.05;
   const step = niceStep(maxRaw);
   const maxV = Math.ceil(maxRaw / step) * step;
@@ -104,8 +112,13 @@ export function Chart({ series, target }: { series: Pt[]; target: number }) {
     xTicks.push({ yr, x: px, anchor: px < L + 14 ? "start" : px > W - R - 14 ? "end" : "middle" });
   }
   const last = pts[pts.length - 1];
+  const h = hi != null ? pts[hi] : null;
+  const hx = hi != null ? x(hi) : 0;
+  const tipOnLeft = hx > W / 2; // 가리키는 점 반대편 위쪽에 말풍선을 띄워 겹치지 않게
   return (
-    <svg className="chart" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`${pts[0].date.slice(0, 4)}년부터 ${ly}년까지 평가액과 넣은 돈의 변화`}>
+    <div className="chart-wrap">
+    <svg className="chart" viewBox={`0 0 ${W} ${H}`} role="img"
+      onPointerDown={pick} onPointerMove={pick} onPointerLeave={() => setHi(null)} onPointerUp={(e) => { if (e.pointerType !== "mouse") setHi(null); }} onPointerCancel={() => setHi(null)} aria-label={`${pts[0].date.slice(0, 4)}년부터 ${ly}년까지 평가액과 넣은 돈의 변화`}>
       {yTicks.map((v) => (
         <g key={v}>
           <line x1={L} x2={W - R} y1={y(v)} y2={y(v)} stroke="var(--grey200)" strokeWidth="1" />
@@ -117,11 +130,25 @@ export function Chart({ series, target }: { series: Pt[]; target: number }) {
       <path d={area} fill="var(--brand)" fillOpacity="0.13" />
       <path d={dp} fill="none" stroke="var(--grey500)" strokeWidth="1.5" />
       <path d={d} fill="none" stroke="var(--brand)" strokeWidth="2.2" strokeLinejoin="round" />
-      <circle cx={x(pts.length - 1)} cy={y(last.value)} r="4.5" fill="var(--brand)" stroke="#fff" strokeWidth="2" />
+      {h ? (
+        <g pointerEvents="none">
+          <line x1={hx} x2={hx} y1={T} y2={H - B} stroke="var(--grey400)" strokeWidth="1" />
+          <circle cx={hx} cy={y(h.principal)} r="3.5" fill="var(--grey500)" stroke="#fff" strokeWidth="1.5" />
+          <circle cx={hx} cy={y(h.value)} r="4.5" fill="var(--brand)" stroke="#fff" strokeWidth="2" />
+        </g>
+      ) : <circle cx={x(pts.length - 1)} cy={y(last.value)} r="4.5" fill="var(--brand)" stroke="#fff" strokeWidth="2" />}
       {xTicks.map((t) => (
         <text key={t.yr} x={t.x} y={H - 7} textAnchor={t.anchor} fontSize="10" fill="var(--grey500)">{t.yr}</text>
       ))}
     </svg>
+    {h && (
+      <div className="chart-tip" style={tipOnLeft ? { left: `${(L / W) * 100 + 2}%` } : { right: `${(R / W) * 100 + 1}%` }} aria-live="polite">
+        <span className="chart-tip-d">{ymKo(h.date)}</span>
+        <span>평가액 <b>{fmt.money(h.value)}</b></span>
+        <span>넣은 돈 {fmt.money(h.principal)}</span>
+      </div>
+    )}
+    </div>
   );
 }
 

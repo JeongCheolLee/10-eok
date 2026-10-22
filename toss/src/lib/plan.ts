@@ -73,7 +73,7 @@ export function cleanHoldings(hs: { ticker?: unknown; amount?: unknown }[]): Hol
 }
 /** 저장본·옛 형식(holdings 없음, v1)을 현재 Plan으로. holdings가 없거나 비면 ticker·amount로 만든다. */
 export function normalizePlan(raw: Partial<Plan>): Plan {
-  const base = { ...DEFAULT_PLAN, ...raw };
+  const base = { ...DEFAULT_PLAN, ...raw, tax: false }; // 세금 반영 UI 제거(10/22): 옛 저장본 tax:true도 끈다
   let hs = Array.isArray(raw.holdings) ? cleanHoldings(raw.holdings) : [];
   if (hs.length === 0) hs = cleanHoldings([{ ticker: base.ticker, amount: base.amount }]);
   if (hs.length === 0) hs = DEFAULT_PLAN.holdings;
