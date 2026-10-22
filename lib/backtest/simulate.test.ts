@@ -141,6 +141,18 @@ describe("양도세 (taxMode)", () => {
     const g = runBacktest(rows, { monthly: 1_000_000, buyDay: 1, target: 9_999_999_999 });
     expect(g.value).toBeCloseTo(11_000_000, 2);
   });
+  it("taxRule {0.22, 250만} = taxMode:true", () => {
+    const r = runBacktest(rows, { monthly: 1_000_000, buyDay: 1, target: 9_999_999_999, taxRule: { rate: 0.22, deduction: 2_500_000 } });
+    expect(r.value).toBeCloseTo(9_790_000, 2);
+  });
+  it("taxRule {0.154, 0}: 국내 상장 해외형 — 차익 800만 전체에 15.4%", () => {
+    const r = runBacktest(rows, { monthly: 1_000_000, buyDay: 1, target: 9_999_999_999, taxRule: { rate: 0.154, deduction: 0 } });
+    expect(r.value).toBeCloseTo(11_000_000 - 0.154 * 8_000_000, 2);
+  });
+  it("taxRule이 taxMode보다 우선", () => {
+    const r = runBacktest(rows, { monthly: 1_000_000, buyDay: 1, target: 9_999_999_999, taxMode: true, taxRule: { rate: 0, deduction: 0 } });
+    expect(r.value).toBeCloseTo(11_000_000, 2);
+  });
 });
 
 describe("최초 납입금 (initial)", () => {

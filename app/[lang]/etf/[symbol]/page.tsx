@@ -118,7 +118,8 @@ export function generateStaticParams({ params }: { params: { lang: string } }) {
 }
 
 function resolve(symbolParam: string) {
-  return TICKERS.find((t) => t.symbol.toLowerCase() === symbolParam.toLowerCase()) ?? null;
+  // 미니앱 전용(webHidden) 종목은 웹 상세 페이지가 없다.
+  return TICKERS.find((t) => !t.webHidden && t.symbol.toLowerCase() === symbolParam.toLowerCase()) ?? null;
 }
 
 /** 미국 대표 티커는 원어 그대로(sym), KRW 종목(KODEX)만 한국어 이름 사용 — locale과 무관, 자산의 원 통화 기준. */

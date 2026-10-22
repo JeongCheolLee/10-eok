@@ -7,8 +7,8 @@ import { join } from "node:path";
 import { alignSeries, type PricePoint, type FxPoint } from "../lib/backtest/align";
 import type { Bundle } from "../lib/backtest/types";
 import type { PxBundle, FxBundle } from "../lib/backtest/compose";
-import { TICKERS, tickerCurrency, tickerInfo } from "../lib/tickers";
-import { MARKETS } from "../lib/i18n/markets";
+import { TICKERS, TOSS_TICKERS, tickerCurrency, tickerInfo } from "../lib/tickers";
+import { MARKETS, type Market } from "../lib/i18n/markets";
 import { buildSummary } from "./summary";
 
 // TICKER env 지정 시 그 종목만, 없으면 레지스트리 전체.
@@ -200,12 +200,14 @@ function guardBundle(file: string, next: Bundle): void {
  * 프록시가 접합점을 못 주면(2026-09-16부터 Yahoo ^BXM이 당일 1행만 반환) 직전 px 번들의
  * 합성 구간을 재사용한다. 프록시 수집 자체가 실패해도 같은 경로로 폴백.
  */
-async function spliceProxy(real: PricePoint[], proxySymbol: string, prevPxFile: string): Promise<PricePoint[]> {
+async function spliceProxy(real: PricePoint[], proxySymbol: string, prevPxFile: string, fxToKrw: FxPoint[] | null = null): Promise<PricePoint[]> {
   if (real.length === 0) return real;
   const realStart = real[0].date;
   let proxy: PricePoint[] = [];
   try {
     proxy = await fetchPrices(proxySymbol);
+    // 원화 종목 ← 달러 프록시: 프록시를 그날 환율로 원화 환산한 뒤 접합(환노출 ETF의 원화 수익률 근사).
+    if (fxToKrw) proxy = proxyToKrw(proxy, fxToKrw);
   } catch (e: any) {
     console.warn(`  ${proxySymbol}: 프록시 수집 실패 (${e.message}) — 직전 번들 합성 구간으로 폴백 시도`);
   }
@@ -229,6 +231,22 @@ async function spliceProxy(real: PricePoint[], proxySymbol: string, prevPxFile: 
   }
   console.warn(`  ${proxySymbol}: 접합점 없음 — 직전 번들 합성 구간 ${fallback.length - real.length}행 재사용 (${fallback[0].date}~)`);
   return fallback;
+}
+
+/**
+ * 달러 프록시 가격을 원화로 환산(순수 함수, 테스트 대상). 각 날짜에 그날 이하 최근 환율(forward-fill)을 곱한다.
+ * 환율이 아직 없는 앞부분은 버린다. 원화 종목(환노출 해외 ETF)의 상장 전 구간을 미국 ETF로 추정할 때 쓴다.
+ */
+export function proxyToKrw(proxy: PricePoint[], fx: FxPoint[]): PricePoint[] {
+  const out: PricePoint[] = [];
+  let j = -1;
+  for (const p of proxy) {
+    while (j + 1 < fx.length && fx[j + 1].date <= p.date) j++;
+    if (j < 0) continue;
+    const rate = fx[j].rate;
+    out.push({ date: p.date, price: round(p.price * rate, 4), raw: round((p.raw ?? p.price) * rate, 4) });
+  }
+  return out;
 }
 
 /**
@@ -279,7 +297,9 @@ async function buildTicker(ticker: string, fx: FxPoint[], dir: string): Promise<
   const splice = tickerInfo(ticker).splice;
   if (splice) {
     const realStart = prices[0]?.date;
-    prices = await spliceProxy(prices, splice.proxy, pxFile);
+    // 원화 종목에 달러 프록시(.KS/.KQ가 아닌 심볼)를 붙일 땐 환율로 원화 환산 후 접합.
+    const needFx = tickerCurrency(ticker) === "KRW" && !/\.(KS|KQ)$/.test(splice.proxy);
+    prices = await spliceProxy(prices, splice.proxy, pxFile, needFx ? fx : null);
     console.log(`  ${ticker}: ${splice.proxy} 접합 — 합성 ${prices[0]?.date} ~ (실제 상장 ${realStart})`);
   }
   // 한국 종목은 원화 자산 → 환율=1 (1900년 더미 1점을 forward-fill). 미국은 실제 환율.
@@ -421,22 +441,28 @@ async function main() {
   }
   // 비교 요약(ko 기본 시나리오) — additive. 실패해도 경고만 남기고 나머지 결과는 유지(exit 0).
   // 이번 회차 갱신분(pendingPx) + 건너뛴 종목은 디스크의 기존 px 파일로 채운다.
-  try {
-    const market = MARKETS.ko;
-    const pxBySymbol: Record<string, PxBundle> = {};
-    for (const { px } of pendingPx) pxBySymbol[px.ticker] = px;
-    for (const symbol of market.tickers) {
-      if (pxBySymbol[symbol]) continue;
-      const prev = readPrevPx(join(dir, "px", `${symbol.toLowerCase()}.json`));
-      if (prev) pxBySymbol[symbol] = prev;
+  // ko.json = 웹 ko 시장 종목, toss.json = 미니앱 전체 종목(TOSS_TICKERS, 웹 숨김 포함). 같은 스키마·시나리오.
+  const summaries: { file: string; market: Market }[] = [
+    { file: "ko.json", market: MARKETS.ko },
+    { file: "toss.json", market: { ...MARKETS.ko, tickers: TOSS_TICKERS } },
+  ];
+  for (const { file, market } of summaries) {
+    try {
+      const pxBySymbol: Record<string, PxBundle> = {};
+      for (const { px } of pendingPx) pxBySymbol[px.ticker] = px;
+      for (const symbol of market.tickers) {
+        if (pxBySymbol[symbol]) continue;
+        const prev = readPrevPx(join(dir, "px", `${symbol.toLowerCase()}.json`));
+        if (prev) pxBySymbol[symbol] = prev;
+      }
+      const summary = buildSummary({ pxBySymbol, fx: fxBundle, market });
+      mkdirSync(join(dir, "summary"), { recursive: true });
+      writeFileSync(join(dir, "summary", file), JSON.stringify(summary));
+      console.log(`  summary/${file}: ${summary.rows.length}종목`);
+    } catch (e: any) {
+      console.warn(`  summary/${file} 생성 실패 (${e.message}) — 건너뜀(기존 파일 유지)`);
+      annotate("warning", `summary/${file} 생성 실패: ${e.message}`);
     }
-    const summary = buildSummary({ pxBySymbol, fx: fxBundle, market });
-    mkdirSync(join(dir, "summary"), { recursive: true });
-    writeFileSync(join(dir, "summary", "ko.json"), JSON.stringify(summary));
-    console.log(`  summary/ko.json: ${summary.rows.length}종목`);
-  } catch (e: any) {
-    console.warn(`  summary/ko.json 생성 실패 (${e.message}) — 건너뜀(기존 파일 유지)`);
-    annotate("warning", `summary/ko.json 생성 실패: ${e.message}`);
   }
   console.log(`  fx/krw: ${fxBundle.rows.length}행 (${FX_FILE_START}~)`);
   console.log(`  cpi-kr: ${cpi.length}개월, ${cpi[0]?.ym} ~ ${cpi[cpi.length - 1]?.ym}`);

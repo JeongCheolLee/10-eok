@@ -1,6 +1,6 @@
 // 프록시 이력 소실 시(2026-09-16~ Yahoo ^BXM) 직전 번들 합성 구간 재사용 로직의 골든 테스트.
 import { describe, it, expect } from "vitest";
-import { spliceFromPrev } from "./build-bundle";
+import { spliceFromPrev, proxyToKrw } from "./build-bundle";
 import type { PxBundle } from "../lib/backtest/compose";
 import type { PricePoint } from "../lib/backtest/align";
 
@@ -58,5 +58,26 @@ describe("spliceFromPrev", () => {
 
   it("실제 데이터가 비면 null", () => {
     expect(spliceFromPrev([], prev)).toBeNull();
+  });
+});
+
+describe("proxyToKrw", () => {
+  const fx = [
+    { date: "2020-01-02", rate: 1000 },
+    { date: "2020-01-06", rate: 1200 },
+  ];
+  it("그날 이하 최근 환율을 곱하고(forward-fill), 환율 이전 날짜는 버린다", () => {
+    const out = proxyToKrw(
+      [
+        { date: "2020-01-01", price: 1, raw: 2 },
+        { date: "2020-01-03", price: 10, raw: 20 },
+        { date: "2020-01-07", price: 10, raw: 20 },
+      ],
+      fx,
+    );
+    expect(out).toEqual([
+      { date: "2020-01-03", price: 10_000, raw: 20_000 },
+      { date: "2020-01-07", price: 12_000, raw: 24_000 },
+    ]);
   });
 });
