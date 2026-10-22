@@ -12,6 +12,7 @@ export const ChevronLeft = () => <I d="M15 5l-7 7 7 7" />;
 export const ChevronRight = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>;
 export const Dots = () => <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2" /><circle cx="12" cy="12" r="2" /><circle cx="19" cy="12" r="2" /></svg>;
 export const XIcon = () => <I d="M6 6l12 12M18 6L6 18" />;
+export const ChevronDown = () => <svg className="chev-down" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>;
 export const Check = () => <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10" /></svg>;
 export const ArrowDown = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 5v14M5 12l7 7 7-7" /></svg>;
 export const ArrowUp = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7" /></svg>;
@@ -163,8 +164,8 @@ export function Chart({ series, target, mark }: { series: Pt[]; target: number; 
 }
 
 /* ── 숫자 스테퍼 + 프리셋 칩 ── */
-export function Stepper({ id, label, value, unit, min, max, step, chips, chipLabel, onChange, accent }: {
-  id: string; label: string; value: number; unit: string; min: number; max: number; step: number;
+export function Stepper({ id, label, value, unit, min, max, step, stepLabel, chips, chipLabel, onChange, accent }: {
+  id: string; label: string; value: number; unit: string; min: number; max: number; step: number; stepLabel?: string;
   chips?: number[]; chipLabel?: (v: number) => string; onChange: (v: number) => void; accent?: boolean;
 }) {
   const [text, setText] = useState(String(value));
@@ -181,9 +182,12 @@ export function Stepper({ id, label, value, unit, min, max, step, chips, chipLab
             <span className="unit">{unit}</span>
           </span>
         </label>
-        <div className="stepper-btns">
-          <button type="button" className="stepper-btn" aria-label={`${label} 줄이기`} onClick={() => onChange(clamp(value - step))}>−</button>
-          <button type="button" className="stepper-btn" aria-label={`${label} 늘리기`} onClick={() => onChange(clamp(value + step))}>+</button>
+        <div className="stepper-col">
+          <div className="stepper-btns">
+            <button type="button" className="stepper-btn" aria-label={`${label} ${stepLabel ?? ""} 줄이기`} onClick={() => onChange(clamp(value - step))}>−</button>
+            <button type="button" className="stepper-btn" aria-label={`${label} ${stepLabel ?? ""} 늘리기`} onClick={() => onChange(clamp(value + step))}>+</button>
+          </div>
+          {stepLabel && <span className="step-hint">{stepLabel}씩</span>}
         </div>
       </div>
       {chips && (
@@ -198,8 +202,8 @@ export function Stepper({ id, label, value, unit, min, max, step, chips, chipLab
 }
 
 /* ── 분산 매수 종목 행: 아바타(누르면 종목 변경) · 이름 · 금액 입력 · −/+ · 빼기 ── */
-export function HoldingRow({ symbol, value, unit, min, max, step, onChange, onPick, onRemove }: {
-  symbol: string; value: number; unit: string; min: number; max: number; step: number;
+export function HoldingRow({ symbol, value, unit, min, max, step, share, onChange, onPick, onRemove }: {
+  symbol: string; value: number; unit: string; min: number; max: number; step: number; share?: number;
   onChange: (v: number) => void; onPick: () => void; onRemove: () => void;
 }) {
   const [text, setText] = useState(String(value));
@@ -212,7 +216,7 @@ export function HoldingRow({ symbol, value, unit, min, max, step, onChange, onPi
     <div className="row holding-row">
       <button type="button" className="holding-pick" aria-label={`${name} 종목 바꾸기`} aria-haspopup="dialog" onClick={onPick}><Avatar symbol={symbol} size={36} /></button>
       <label htmlFor={id} className="field">
-        <span className="field-label">{name}</span>
+        <span className="field-label">{name}{share != null && <span className="share"> · {Math.round(share * 100)}%</span>}</span>
         <span className="field-value-wrap">
           <input id={id} className="field-input" inputMode="numeric" value={text} onChange={(e) => setText(e.target.value)} onBlur={commit} onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }} style={{ width: `${Math.max(2, text.length + 0.5)}ch` }} />
           <span className="unit">{unit}</span>
