@@ -71,3 +71,9 @@ function finalSound(word: string): 0 | 1 | 2 {
 export function eulReul(word: string): string { return word + (finalSound(word) ? "을" : "를"); }
 /** 으로/로 (ㄹ 받침은 '로') */
 export function euroRo(word: string): string { return word + (finalSound(word) === 2 ? "으로" : "로"); }
+/** 이/가 */
+export function iGa(word: string): string { return word + (finalSound(word) ? "이" : "가"); }
+/** 은/는 */
+export function eunNeun(word: string): string { return word + (finalSound(word) ? "은" : "는"); }
+/** 이에요/예요 */
+export function ieyo(word: string): string { return word + (finalSound(word) ? "이에요" : "예요"); }

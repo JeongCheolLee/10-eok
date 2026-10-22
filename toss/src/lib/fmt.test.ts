@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { eulReul, euroRo } from "./fmt";
+import { eulReul, euroRo, iGa, eunNeun, ieyo } from "./fmt";
 
 describe("조사", () => {
   it("을/를 — 티커·한글·숫자", () => {
@@ -19,5 +19,14 @@ describe("조사", () => {
     expect(euroRo("SOXL")).toBe("SOXL로");
     expect(euroRo("QQQM")).toBe("QQQM으로");
     expect(euroRo("TIGER 미국S&P500")).toBe("TIGER 미국S&P500으로");
+  });
+  it("이/가·은/는·이에요", () => {
+    expect(iGa("QQQM")).toBe("QQQM이");
+    expect(iGa("JEPI")).toBe("JEPI가");
+    expect(eunNeun("QQQM")).toBe("QQQM은");
+    expect(eunNeun("JEPI")).toBe("JEPI는");
+    expect(ieyo("8.08억")).toBe("8.08억이에요");
+    expect(ieyo("9,500만")).toBe("9,500만이에요");
+    expect(ieyo("42%")).toBe("42%예요");
   });
 });

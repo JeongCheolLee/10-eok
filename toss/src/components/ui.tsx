@@ -3,6 +3,7 @@ import { TICKERS, tickerInfo, tickerMonogram, tickerTitle } from "@/lib/tickers"
 import { GROUPS, tickerGroup, tossSubtitle } from "../lib/groups";
 import { attachBanner, inToss } from "../lib/platform";
 import { fmt, ymKo } from "../lib/fmt";
+import { DATA_START, realStartOf } from "../lib/dataInfo";
 
 /* ── 아이콘 (모노톤 스트로크) ── */
 const I = ({ d, fill }: { d: string; fill?: boolean }) => (
@@ -67,7 +68,7 @@ export function Ring({ size = 112, stroke = 9, progress, children }: { size?: nu
   );
 }
 
-/* ── 자산 성장 차트 ── */
+/* ── 평가액 변화 차트 ── */
 type Pt = { date: string; value: number; principal: number };
 function downsample(pts: Pt[], max: number): Pt[] {
   if (pts.length <= max) return pts;
@@ -81,8 +82,9 @@ function niceStep(maxV: number): number {
   for (const s of [1e8, 2e8, 2.5e8, 5e8, 1e9, 2e9, 2.5e9, 5e9, 1e10]) if (maxV / s <= 4) return s;
   return 2e10;
 }
-/** mark: 처음 target을 넘은 날(있으면 그 지점에 테두리 점). */
-export function Chart({ series, target, mark }: { series: Pt[]; target: number; mark?: string }) {
+/** mark: 처음 target을 넘은 날(있으면 그 지점에 테두리 점).
+ *  estUntil: 상장 전 추정 가격이 끝나는 날(실제 가격 첫날). 있으면 그 전 구간에 옅은 띠. */
+export function Chart({ series, target, mark, estUntil }: { series: Pt[]; target: number; mark?: string; estUntil?: string }) {
   const pts = useMemo(() => downsample(series, 120), [series]);
   const [hi, setHi] = useState<number | null>(null); // 손가락·마우스가 가리키는 점
   const W = 360, H = 170, L = 38, R = 10, T = 14, B = 24;
@@ -117,6 +119,9 @@ export function Chart({ series, target, mark }: { series: Pt[]; target: number; 
   // 도달 지점: 다운샘플된 점 중 mark 이후 첫 점(그날 값이 target 이상이 되도록 원본에서 찾는다)
   const markPt = mark ? series.find((p) => p.date >= mark) : undefined;
   const markI = markPt ? pts.findIndex((p) => p.date >= markPt.date) : -1;
+  // 추정 구간 띠: 첫 점부터 실제 가격 첫날 직전 점까지
+  const estI = estUntil && pts[0].date < estUntil ? pts.findIndex((p) => p.date >= estUntil) : -1;
+  const estX = estI < 0 ? (estUntil && pts[0].date < estUntil ? x(pts.length - 1) : null) : x(Math.max(0, estI));
   const h = hi != null ? pts[hi] : null;
   const hx = hi != null ? x(hi) : 0;
   const tipOnLeft = hx > W / 2; // 가리키는 점 반대편 위쪽에 말풍선을 띄워 겹치지 않게
@@ -130,6 +135,7 @@ export function Chart({ series, target, mark }: { series: Pt[]; target: number; 
           <text x={L - 6} y={y(v) + 3.5} textAnchor="end" fontSize="10" fill="var(--grey500)">{v === 0 ? "0" : `${v / 1e8}억`}</text>
         </g>
       ))}
+      {estX != null && estX > L && <rect className="est-band" x={L} y={T} width={estX - L} height={H - T - B} />}
       <line x1={L} x2={W - R} y1={y(target)} y2={y(target)} stroke="var(--grey500)" strokeWidth="1.2" strokeDasharray="4 4" />
       <text x={L + 4} y={y(target) - 4} textAnchor="start" fontSize="10" fill="var(--grey600)">목표 {target / 1e8}억</text>
       <path d={area} fill="var(--brand)" fillOpacity="0.13" />
@@ -154,7 +160,7 @@ export function Chart({ series, target, mark }: { series: Pt[]; target: number; 
     </svg>
     {h && (
       <div className="chart-tip" style={tipOnLeft ? { left: `${(L / W) * 100 + 2}%` } : { right: `${(R / W) * 100 + 1}%` }} aria-live="polite">
-        <span className="chart-tip-d">{ymKo(h.date)}</span>
+        <span className="chart-tip-d">{ymKo(h.date)}{estUntil && h.date < estUntil ? " · 추정치" : ""}</span>
         <span>평가액 <b>{fmt.money(h.value)}</b></span>
         <span>넣은 돈 {fmt.money(h.principal)}</span>
       </div>
@@ -270,7 +276,13 @@ export function TickerSheet({ current, taken = [], onPick, onClose }: { current:
                 const isTaken = t.symbol !== current && taken.includes(t.symbol);
                 // 국내 상장 묶음 안에서는 부제 "국내 상장"이 겹치므로 이름(무엇을 담는지)만 둔다
                 const sub = g.id === "kr-listed" ? "" : tossSubtitle(t.symbol);
-                const extra = [sub, t.splice ? "상장 전은 추정치" : "", t.shortHistory ? "데이터가 짧아요" : ""].filter(Boolean).join(" · ");
+                const real = t.splice ? realStartOf(t.symbol) : null;
+                const short = t.shortHistory ? DATA_START[t.symbol] : undefined;
+                const extra = [
+                  sub,
+                  t.splice ? (real ? `${ymKo(real)} 상장 전은 추정치` : "상장 전은 추정치") : "",
+                  t.shortHistory ? (short ? `${ymKo(short)}부터 계산할 수 있어요` : "최근 몇 년만 계산할 수 있어요") : "",
+                ].filter(Boolean).join(" · ");
                 return (
                 <button key={t.symbol} type="button" className="list-row list-btn" aria-pressed={t.symbol === current} disabled={isTaken} onClick={() => onPick(t.symbol)}>
                   <span className="avatar" style={{ background: t.color }}>{tickerMonogram(t.symbol)}</span>
@@ -334,7 +346,8 @@ export function Avatar({ symbol, size = 36 }: { symbol: string; size?: number })
   return <span className="avatar" style={{ background: info.color, width: size, height: size, fontSize: size <= 28 ? 9 : 10 }}>{tickerMonogram(symbol)}</span>;
 }
 
-/* ── 배너 광고 슬롯: 토스에서는 TossAds.attachBanner, 밖에서는 자리만 ── */
+/* ── 배너 광고 슬롯: 토스에서는 TossAds.attachBanner, 밖(프로토타입)에서는 미리보기 자리 ──
+ *  토스 안에서 광고를 붙이지 못하면(미지원·로드 실패) 영역을 남기지 않는다. */
 export function AdSlot() {
   const ref = useRef<HTMLDivElement>(null);
   const [live, setLive] = useState(false);
@@ -346,10 +359,14 @@ export function AdSlot() {
     }
     return () => { on = false; dispose?.(); };
   }, []);
+  if (inToss) {
+    // 붙기 전·실패 시엔 높이 0(빈 회색 박스 없음). 붙으면 SDK가 채운 높이만큼.
+    return <div className={"ad-slot live" + (live ? "" : " pending")} role={live ? "region" : undefined} aria-label={live ? "광고" : undefined} aria-hidden={live ? undefined : true}><div ref={ref} className="ad-target" /></div>;
+  }
   return (
-    <div className={"ad-slot" + (live ? " live" : "")} role="region" aria-label="광고">
+    <div className="ad-slot" role="region" aria-label="광고 미리보기">
       <div ref={ref} className="ad-target" />
-      {!live && <><span className="ad-badge">AD</span><span>광고 자리 · 토스 배너 96px</span></>}
+      <span className="ad-badge">AD</span><span>배너 광고 미리보기</span>
     </div>
   );
 }

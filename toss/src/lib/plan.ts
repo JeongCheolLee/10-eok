@@ -90,7 +90,12 @@ export function isTracking(p: Plan): boolean { return p.tracking && /^\d{4}-\d{2
 /** monthlyWon = 1회 적립액 합계(원). portfolio는 종목 2개 이상일 때만(합계 결과·종목별 내역). */
 /** 기간 모드의 '처음 10억 도달'(반짝 고점 포함, 10/22). result.value·principal은 오늘 기준이고, 도달 시점 값은 여기에. */
 export type Reach = { date: string; value: number; principal: number };
-export type Calc = { result: BacktestResult; reqMonthly: number | null; yearsUsed: number; monthlyWon: number; tracking: boolean; portfolio: PortfolioResult | null; reach: Reach | null };
+/** 데이터가 모자라 고른 조건을 바꿔 계산했을 때(결과 화면 한 줄 안내용).
+ *  years: 금액 모드 기간 from년 → to년(ticker 데이터가 dataStart부터). start: 트래커 시작일 from → to(ticker 데이터 첫날). */
+export type Adjusted =
+  | { kind: "years"; from: number; to: number; ticker: string; dataStart: string }
+  | { kind: "start"; from: string; to: string; ticker: string };
+export type Calc = { result: BacktestResult; reqMonthly: number | null; yearsUsed: number; monthlyWon: number; tracking: boolean; portfolio: PortfolioResult | null; reach: Reach | null; adjusted?: Adjusted | null };
 
 /** 종목 → Row[]. 단일 종목이면 키 하나. */
 export type RowsBy = Record<string, Row[]>;
@@ -140,7 +145,8 @@ export function calcPlan(rowsBy: RowsBy, p: Plan): Calc {
   if (isTracking(p)) {
     const monthlyWon = p.amount * MAN;
     const start = p.startDate < rows[0].date ? rows[0].date : p.startDate;
-    return { result: runBacktest(rows, { monthly: monthlyWon, ...opts, startDate: start, target: Number.MAX_SAFE_INTEGER }), reqMonthly: null, yearsUsed, monthlyWon, tracking: true, portfolio: null, reach: null };
+    const adjusted: Adjusted | null = start !== p.startDate ? { kind: "start", from: p.startDate, to: start, ticker: p.ticker } : null;
+    return { result: runBacktest(rows, { monthly: monthlyWon, ...opts, startDate: start, target: Number.MAX_SAFE_INTEGER }), reqMonthly: null, yearsUsed, monthlyWon, tracking: true, portfolio: null, reach: null, adjusted };
   }
   if (p.mode === "time") {
     const monthlyWon = p.amount * MAN;
@@ -149,7 +155,8 @@ export function calcPlan(rowsBy: RowsBy, p: Plan): Calc {
   }
   const end = rows[rows.length - 1].date;
   const { monthly, result } = requiredMonthly(rows, { monthly: 0, startDate: startMonthsAgo(end, yearsUsed * 12), ...opts });
-  return { result, reqMonthly: monthly, yearsUsed, monthlyWon: monthly, tracking: false, portfolio: null, reach: null };
+  const adjusted: Adjusted | null = yearsUsed < p.years ? { kind: "years", from: p.years, to: yearsUsed, ticker: p.ticker, dataStart: rows[0].date } : null;
+  return { result, reqMonthly: monthly, yearsUsed, monthlyWon: monthly, tracking: false, portfolio: null, reach: null, adjusted };
 }
 
 function calcPortfolio(rowsBy: RowsBy, p: Plan): Calc {
@@ -158,7 +165,8 @@ function calcPortfolio(rowsBy: RowsBy, p: Plan): Calc {
   const monthlyWon = totalAmount(p) * MAN;
   if (isTracking(p)) {
     const r = runPortfolio(rowsBy, hs, portOpts(p, Number.MAX_SAFE_INTEGER), p.startDate);
-    return { result: r, reqMonthly: null, yearsUsed, monthlyWon, tracking: true, portfolio: r, reach: null };
+    const adjusted: Adjusted | null = r.limitedBy && r.startDate > p.startDate ? { kind: "start", from: p.startDate, to: r.startDate, ticker: r.limitedBy } : null;
+    return { result: r, reqMonthly: null, yearsUsed, monthlyWon, tracking: true, portfolio: r, reach: null, adjusted };
   }
   if (p.mode === "time") {
     const r = portfolioFirstReach(rowsBy, hs, portOpts(p));
@@ -167,7 +175,13 @@ function calcPortfolio(rowsBy: RowsBy, p: Plan): Calc {
   // 화면에서는 종목 1개일 때만 금액 모드를 열지만, 딥링크·저장본 대비로 계약대로 계산한다.
   const { amountsWon, result } = portfolioRequired(rowsBy, hs, portOpts(p), yearsUsed);
   const req = amountsWon.reduce((s, v) => s + v, 0);
-  return { result, reqMonthly: req, yearsUsed, monthlyWon: req, tracking: false, portfolio: result, reach: null };
+  let adjusted: Adjusted | null = null;
+  if (yearsUsed < p.years) {
+    // 기간을 줄인 종목 = 데이터로 셀 수 있는 햇수가 가장 짧은 종목
+    const short = hs.map((h) => ({ t: h.ticker, rows: rowsOf(rowsBy, h.ticker) })).reduce((a, b) => (maxYearsOf(b.rows) < maxYearsOf(a.rows) ? b : a));
+    adjusted = { kind: "years", from: p.years, to: yearsUsed, ticker: short.t, dataStart: short.rows[0].date };
+  }
+  return { result, reqMonthly: req, yearsUsed, monthlyWon: req, tracking: false, portfolio: result, reach: null, adjusted };
 }
 
 export type Timing = ReturnType<typeof timingRange>;

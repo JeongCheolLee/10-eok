@@ -252,3 +252,12 @@ input[type="date"].select { font-size: 18px; min-height: 29px; }
 .add-note { margin: 0; padding: 0 24px 4px 72px; font-size: 13px; line-height: 19.5px; color: var(--grey600); }
 .total-row { justify-content: space-between; }
 .field-label .share { color: var(--grey500); }
+/* 결과 화면 데이터 안내(10/22): 기준일·추정 구간·조건 보정 */
+.ad-slot.pending { margin: 0; }
+.est-band { fill: var(--grey500); fill-opacity: 0.12; }
+.chart-note { display: flex; align-items: center; gap: 6px; font-size: 12px; line-height: 18px; color: var(--grey600); }
+.est-swatch { display: inline-block; width: 14px; height: 10px; border-radius: 2px; background: var(--grey500); opacity: 0.22; flex: 0 0 auto; }
+.data-notes { padding: 4px 24px 0; display: flex; flex-direction: column; gap: 4px; }
+.data-note { margin: 0; font-size: 13px; line-height: 19.5px; color: var(--grey600); }
+.data-notes .tip { background: var(--grey100); }
+.stats-label { font-size: 12px; line-height: 18px; color: var(--grey600); margin-bottom: -6px; }
