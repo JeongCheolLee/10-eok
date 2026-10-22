@@ -37,7 +37,7 @@ const HOME_TITLE: Record<Locale, HomeTitle> = {
 function parseInitial(sp: SP) {
   const t = typeof sp.t === "string" ? sp.t.toUpperCase() : "";
   const d = typeof sp.d === "string" ? parseInt(sp.d, 10) : NaN;
-  if (!TICKERS.some((x) => x.symbol === t)) return null;
+  if (!TICKERS.some((x) => x.symbol === t && !x.webHidden)) return null; // 미니앱 전용 종목은 웹 URL로 열지 않는다
   if (!Number.isFinite(d) || d < 1 || d > 31) return null;
   let g = typeof sp.g === "string" ? parseInt(sp.g, 10) : 10;
   if (!Number.isFinite(g) || g < 1 || g > 100) g = 10;

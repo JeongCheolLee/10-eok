@@ -47,9 +47,18 @@ export type BacktestInput = {
   cpi?: { ym: string; idx: number }[];
   /** 배당 재투자 여부(기본 true). false면 미수정 종가(가격수익)로 계산. */
   reinvestDividends?: boolean;
-  /** 양도세 반영(기본 false). 미국 종목만 22%×max(0,gain−250만). */
+  /** 양도세 반영(기본 false). 미국 종목만 22%×max(0,gain−250만). = taxRule US_TAX_RULE과 동일. */
   taxMode?: boolean;
+  /** 세금 규칙(있으면 taxMode보다 우선): 평가액 −= rate × max(0, 평가액 − 원금 − deduction). */
+  taxRule?: TaxRule;
 };
+
+/** 차익 과세 규칙. rate = 세율(0.22), deduction = 공제액(원). */
+export type TaxRule = { rate: number; deduction: number };
+/** 해외주식 양도소득세 22%, 연 250만원 기본공제(taxMode:true와 같음). */
+export const US_TAX_RULE: TaxRule = { rate: 0.22, deduction: 2_500_000 };
+/** 국내 상장 해외주식형 ETF 매매차익 배당소득세 15.4%(공제 없음). */
+export const KR_FOREIGN_TAX_RULE: TaxRule = { rate: 0.154, deduction: 0 };
 
 export type BacktestResult = {
   reached: boolean;

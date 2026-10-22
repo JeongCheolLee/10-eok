@@ -52,8 +52,8 @@ test("입력 폼 → 결과 → 칩 수정 재계산", async ({ page }) => {
 test("종목 비교 페이지가 종목별 결과 표를 보여준다", async ({ page }) => {
   await page.goto("/compare");
   await expect(page.getByRole("heading", { name: /10억까지 비교/ })).toBeVisible({ timeout: 15_000 });
-  // 표는 번들이 있는 종목마다 한 행(tr). 현재 전 종목 번들이 존재하므로 TICKERS 수와 일치.
-  await expect(page.locator("table.cmp tbody tr")).toHaveCount(TICKERS.length);
+  // 표는 번들이 있는 종목마다 한 행(tr). 현재 전 종목 번들이 존재하므로 웹 종목(미니앱 전용 webHidden 제외) 수와 일치.
+  await expect(page.locator("table.cmp tbody tr")).toHaveCount(TICKERS.filter((t) => !t.webHidden).length);
 });
 
 test("물가연동 토글이 결과를 바꾼다", async ({ page }) => {

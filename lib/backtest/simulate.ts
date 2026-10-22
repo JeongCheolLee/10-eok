@@ -1,5 +1,6 @@
 // 적립식 백테스트 엔진 (순수 함수). 독립 오라클이 없으므로 단위/golden 테스트가 유일한 안전망.
 import type { Row, BacktestInput, BacktestResult, BuySchedule } from "./types";
+import { US_TAX_RULE } from "./types";
 
 const DEFAULT_TARGET = 1_000_000_000; // 10억
 
@@ -89,8 +90,10 @@ export function runBacktest(rows: Row[], input: BacktestInput): BacktestResult {
   const endIdx = reachIdx >= 0 ? reachIdx : endLimit;
   const months = monthsBetween(firstDate, rows[endIdx].date);
   let value = reachedDate ? valueAtReach : series[series.length - 1].value;
-  // 양도세(해외주식 22%, 연 250만 공제 1회 단순화). taxMode일 때만, 통화 분기는 호출부에서.
-  if (input.taxMode) value -= 0.22 * Math.max(0, value - principal - 2_500_000);
+  // 세금 1회 차감: taxRule이 있으면 그 규칙, 없고 taxMode면 해외주식 양도세(22%, 연 250만 공제 단순화).
+  // 종목별 규칙 분기(미국/국내 상장 해외형/국내형)는 호출부에서.
+  const rule = input.taxRule ?? (input.taxMode ? US_TAX_RULE : null);
+  if (rule) value -= rule.rate * Math.max(0, value - principal - rule.deduction);
 
   // 자산 연복리 수익률: 첫 매수일 ~ 도달(또는 마지막) 구간의 (price*fx) 성장률.
   const a0 = px(rows[firstBuyIdx]) * rows[firstBuyIdx].fx;

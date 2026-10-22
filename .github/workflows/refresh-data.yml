@@ -27,6 +27,7 @@ jobs:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # 종목 번들(px·레거시) + fx/cpi + 비교 요약 summary/ko.json(웹 ko)·summary/toss.json(미니앱 전체 종목)
       - name: Build bundle (Yahoo + FRED)
         run: pnpm gen
       - name: Commit & push if changed

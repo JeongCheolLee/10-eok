@@ -1,6 +1,6 @@
 import { runToToday, runBacktest, requiredMonthly, timingRange, monthsBetween } from "@/lib/backtest/simulate";
-import type { Row, BacktestResult, BacktestInput, BuySchedule } from "@/lib/backtest/types";
-import { tickerCurrency, TICKERS } from "@/lib/tickers";
+import { US_TAX_RULE, KR_FOREIGN_TAX_RULE, type Row, type BacktestResult, type BacktestInput, type BuySchedule, type TaxRule } from "@/lib/backtest/types";
+import { tickerTax, TICKERS } from "@/lib/tickers";
 import { runPortfolio, portfolioToToday, portfolioRequired, type Holding, type PortfolioOpts, type PortfolioResult } from "./portfolio";
 
 export type { Holding } from "./portfolio";
@@ -114,7 +114,14 @@ function rowsOf(rowsBy: RowsBy, ticker: string): Row[] {
 }
 
 function baseOpts(p: Plan): Omit<BacktestInput, "monthly"> {
-  return { initial: p.lump * MAN, buyDay: p.buyDay, schedule: scheduleOf(p), target: TARGET, reinvestDividends: p.reinvest, taxMode: p.tax && tickerCurrency(p.ticker) === "USD" };
+  return { initial: p.lump * MAN, buyDay: p.buyDay, schedule: scheduleOf(p), target: TARGET, reinvestDividends: p.reinvest, taxRule: taxRuleOf(p) };
+}
+
+/** 세금 켜짐일 때 종목 규칙: 미국 상장 22%(250만 공제) · 국내 상장 해외형 15.4%(공제 없음) · 국내형 없음. */
+function taxRuleOf(p: Plan): TaxRule | undefined {
+  if (!p.tax) return undefined;
+  const kind = tickerTax(p.ticker);
+  return kind === "us" ? US_TAX_RULE : kind === "kr-foreign" ? KR_FOREIGN_TAX_RULE : undefined;
 }
 
 export function maxYearsOf(rows: Row[]): number {

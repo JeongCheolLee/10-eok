@@ -2,7 +2,8 @@
 // ── 계약(2026-10-22): 화면 쪽은 아래 타입·함수 시그니처만 의존한다. 구현 2026-10-22. ──
 import type { BacktestResult, BuySchedule, Row } from "@/lib/backtest/types";
 import { runBacktest, monthsBetween, lowerBound } from "@/lib/backtest/simulate";
-import { tickerCurrency } from "@/lib/tickers";
+import { tickerTax } from "@/lib/tickers";
+import { US_TAX_RULE, KR_FOREIGN_TAX_RULE } from "@/lib/backtest/types";
 
 /** 보유 종목 1개. amount = 1회 적립액(만원). */
 export type Holding = { ticker: string; amount: number };
@@ -13,7 +14,7 @@ export type PortfolioOpts = {
   schedule: BuySchedule;
   buyDay: number;
   reinvest: boolean;
-  /** 해외주식 양도세 반영. 종목별이 아니라 USD 종목 차익 합계에 1회(22%·기본공제 250만). */
+  /** 세금 반영. 미국 상장 종목은 차익 합계에 1회(22%·기본공제 250만), 국내 상장 해외형은 종목별 15.4%(공제 없음), 국내형은 없음. */
   tax: boolean;
   target: number;
 };
@@ -145,8 +146,6 @@ export function portfolioRequired(rowsBy: Record<string, Row[]>, holdings: Holdi
 
 // ---- private ----
 const MAN = 10_000;
-const TAX_RATE = 0.22;
-const TAX_ALLOWANCE = 2_500_000;
 
 /** 목돈 배분 비율 = 적립액 비율(합이 0이면 균등). 스케일을 바꿔도 비율이 유지되도록 원래 holdings에서 계산해 넘긴다. */
 function weightsOf(holdings: Holding[]): number[] {
@@ -182,18 +181,28 @@ function inputOf(h: Holding, weight: number, opts: PortfolioOpts, startDate: str
     schedule: opts.schedule,
     buyDay: opts.buyDay,
     reinvestDividends: opts.reinvest,
-    taxMode: false, // 세금은 종목별이 아니라 합산 후 USD 종목 차익 합계에 1회
+    taxMode: false, // 세금은 합산 후 taxOn에서 1회(미국 종목 공제를 합산해야 해서)
     startDate,
     endDate,
     target: Number.MAX_SAFE_INTEGER,
   };
 }
 
-/** 해외주식 양도세: USD 종목 (평가액−원금) 합계에 22%, 기본공제 250만(1인 합산). KRW 종목 차익은 제외. */
+/**
+ * 세금 합계(원).
+ * - 미국 상장(us): (평가액−원금) 합계에 22%, 기본공제 250만(1인 합산, 손익 통산).
+ * - 국내 상장 해외형(kr-foreign): 종목별 차익>0일 때만 15.4%, 공제·통산 없음.
+ * - 국내형(kr-domestic): 비과세.
+ */
 function taxOn(holdings: Holding[], values: number[], principals: number[]): number {
-  let gain = 0;
-  holdings.forEach((h, i) => { if (tickerCurrency(h.ticker) !== "KRW") gain += values[i] - principals[i]; });
-  return TAX_RATE * Math.max(0, gain - TAX_ALLOWANCE);
+  let usGain = 0, krForeign = 0;
+  holdings.forEach((h, i) => {
+    const gain = values[i] - principals[i];
+    const kind = tickerTax(h.ticker);
+    if (kind === "us") usGain += gain;
+    else if (kind === "kr-foreign") krForeign += KR_FOREIGN_TAX_RULE.rate * Math.max(0, gain - KR_FOREIGN_TAX_RULE.deduction);
+  });
+  return US_TAX_RULE.rate * Math.max(0, usGain - US_TAX_RULE.deduction) + krForeign;
 }
 
 function runWeighted(

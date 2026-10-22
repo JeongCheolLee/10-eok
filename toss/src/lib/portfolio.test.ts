@@ -144,6 +144,38 @@ describe("세금: USD 차익 합계에 1회", () => {
   });
 });
 
+describe("세금: 국내 상장 해외형(kr-foreign)", () => {
+  const o = { ...OPTS, tax: true, target: Number.MAX_SAFE_INTEGER };
+  it("종목 1개 = runBacktest taxRule {0.154, 0}", () => {
+    const p = runPortfolio(rowsBy, [{ ticker: "360750.KS", amount: 100 }], o, "2021-01-01");
+    const r = runBacktest(rowsOf("360750.KS"), { ...single("360750.KS", 100, o), taxMode: false, taxRule: { rate: 0.154, deduction: 0 }, startDate: "2021-01-01" });
+    expect(rel(p.value, r.value)).toBeLessThan(1e-12);
+    const h = p.holdings[0];
+    expect(p.taxWon).toBeCloseTo(0.154 * Math.max(0, h.value - h.principal), 4);
+    expect(p.taxWon).toBeGreaterThan(0);
+  });
+  it("미국+해외형+국내형: 미국은 합산 공제 1회, 해외형은 공제 없이 15.4%, 국내형은 0", () => {
+    const p = runPortfolio(rowsBy, [
+      { ticker: "QQQ", amount: 100 }, { ticker: "SPY", amount: 50 },
+      { ticker: "360750.KS", amount: 100 }, { ticker: "133690.KS", amount: 50 },
+      { ticker: "069500.KS", amount: 100 },
+    ], o, "2015-01-01");
+    const g = p.holdings.map((h) => h.value - h.principal);
+    const expected = 0.22 * Math.max(0, g[0] + g[1] - 2_500_000) + 0.154 * Math.max(0, g[2]) + 0.154 * Math.max(0, g[3]);
+    expect(p.taxWon).toBeCloseTo(expected, 4);
+    expect(p.value).toBeCloseTo(p.series[p.series.length - 1].value - p.taxWon, 4);
+  });
+  it("해외형은 종목별: 손실 종목이 다른 종목 차익을 상쇄하지 않는다", () => {
+    // 2022년 나스닥 하락 구간: 133690(나스닥100)은 손실, 458730(배당다우존스, 상장 전 SCHD 원화 환산)은 차익
+    const p = runPortfolio(rowsBy, [{ ticker: "133690.KS", amount: 100 }, { ticker: "458730.KS", amount: 100 }], o, "2022-01-01", "2022-10-31");
+    const [a, b] = p.holdings.map((h) => h.value - h.principal);
+    expect(a).toBeLessThan(0);
+    expect(b).toBeGreaterThan(0);
+    expect(p.taxWon).toBeCloseTo(0.154 * b, 4);
+    expect(p.taxWon).toBeGreaterThan(0.154 * Math.max(0, a + b));
+  });
+});
+
 describe("limitedBy·혼합 시장", () => {
   it("QQQ+JEPQ: JEPQ가 시작을 제한", () => {
     const p = runPortfolio(rowsBy, [{ ticker: "QQQ", amount: 100 }, { ticker: "JEPQ", amount: 100 }], OPTS, "2010-01-01");
