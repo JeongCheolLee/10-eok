@@ -337,6 +337,7 @@ export type PortfolioReachResult = PortfolioResult & { reachValue: number; reach
 
 /**
  * 분산 매수 버전 runFirstReach: 합계가 오늘까지 한 번이라도 target을 넘은 가장 늦은 시작월.
+ * 의미는 "가장 최근에 시작해서 처음 10억을 넘은 경우"이며 최단 도달 기간을 보장하지 않는다(runFirstReach 주석·firstReach.test.ts 반례).
  * 세금은 미니앱 UI에서 제거됐지만(10/22) opts.tax를 그대로 runPortfolio에 넘긴다.
  */
 export function portfolioFirstReach(rowsBy: Record<string, Row[]>, holdings: Holding[], opts: PortfolioOpts): PortfolioReachResult {

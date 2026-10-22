@@ -41,7 +41,7 @@ export type SummaryInput = {
   market: Market;
   /** 테스트용 고정 시각. 생략 시 현재 시각. */
   generatedAt?: string;
-  /** "today"(기본, 웹 ko.json) = 오늘도 target 이상인 최단 기간. "firstReach"(미니앱 toss.json, 10/22) = 한 번이라도 target을 넘은 최단 기간. */
+  /** "today"(기본, 웹 ko.json) = 오늘도 target 이상인 최단 기간. "firstReach"(미니앱 toss.json, 10/22) = 한 번이라도 target을 넘은 가장 최근 시작과 그 시작부터 처음 넘기까지의 기간(최단 기간을 보장하지 않음, runFirstReach 주석). */
   mode?: "today" | "firstReach";
 };
 

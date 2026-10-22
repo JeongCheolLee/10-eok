@@ -35,7 +35,8 @@ describe("runFirstReach — 한 번이라도 10억을 찍은 가장 늦은 시�
         expect(fr.reachedDate! <= last).toBe(true);
         // 도달일 이전에는 한 번도 10억 미만이 아니었던 게 아니라, 도달일이 '처음' 넘은 날
         expect(fr.series.filter((p) => p.date < fr.reachedDate!).every((p) => p.value < TARGET)).toBe(true);
-        // 시작은 오늘-기준보다 같거나 늦고(고점 포함이라 더 짧음), 기간도 같거나 짧다
+        // 오늘-기준 시작도 '한 번이라도 넘은' 후보라서 가장 늦은 시작은 그보다 같거나 늦다.
+        // 기간 비교는 시작이 같거나 늦고 끝(처음 도달일)이 오늘 이하라서 성립한다 — '최단 기간'이라서가 아니다.
         expect(fr.series[0].date >= tt.series[0].date).toBe(true);
         expect(fr.months).toBeLessThanOrEqual(tt.months);
         // 한 달 늦게 시작하면 한 번도 10억을 못 찍는다(가장 늦은 시작)
@@ -67,5 +68,35 @@ describe("runFirstReach — 한 번이라도 10억을 찍은 가장 늦은 시�
       expect(b.series.filter((p) => p.date < b.reachedDate!).every((p) => p.value < TARGET)).toBe(true);
     }
     expect(b.series.length).toBeGreaterThan(100);
+  });
+  // 리뷰 반례(10/22): '가장 늦은 시작' ≠ '가장 짧은 기간'. 계산은 그대로(A안), 의미는 "가장 최근에 시작해서 처음 넘은 경우".
+  describe("가장 최근 시작은 최단 기간을 보장하지 않는다", () => {
+    // 2020-01 가격 1 → 2020-02 가격 20(급등) → 2020-03부터 2021-12까지 가격 1. 환율 1, 매달 1일 100원, 목표 1,000원.
+    // 2020-01 시작: 2월 1일 100주×20 + 100 = 2,100원 → 1개월 만에 도달.
+    // 가장 늦게 도달하는 시작: 2021-03(3~12월 10번 × 100원 = 1,000원) → 9개월.
+    const synth: Row[] = [];
+    for (let y = 2020; y <= 2021; y++) for (let m = 1; m <= 12; m++) {
+      const d = `${y}-${String(m).padStart(2, "0")}`;
+      const price = y === 2020 && m === 2 ? 20 : 1;
+      synth.push({ date: `${d}-01`, price, fx: 1 }, { date: `${d}-15`, price, fx: 1 });
+    }
+    const inp: BacktestInput = { monthly: 100, initial: 0, buyDay: 1, schedule: { kind: "monthly", day: 1 }, reinvestDividends: true, target: 1000 };
+    it("이른 시작이 1개월 만에 도달해도 더 늦은 시작을 고른다", () => {
+      const early = runBacktest(synth, { ...inp, startDate: "2020-01-01" });
+      expect(early.reached).toBe(true);
+      expect(early.months).toBe(1);
+      const fr = runFirstReach(synth, inp);
+      expect(fr.reached).toBe(true);
+      expect(fr.series[0].date).toBe("2021-03-01");
+      expect(fr.reachedDate).toBe("2021-12-01");
+      expect(fr.months).toBe(9);
+      expect(fr.months).toBeGreaterThan(early.months); // 최단이 아니다
+    });
+    it("분산 매수 버전도 같은 시작을 고른다", () => {
+      const pb = portfolioFirstReach({ QQQ: synth }, [{ ticker: "QQQ", amount: 0.01 }], { ...OPTS, target: 1000 });
+      expect(pb.reached).toBe(true);
+      expect(pb.reachedDate).toBe("2021-12-01");
+      expect(pb.months).toBe(9);
+    });
   });
 });
