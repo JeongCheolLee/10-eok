@@ -9,7 +9,7 @@ import { clockStats, calcPlan, singlePlan, type ClockStats, type RowsBy } from "
 import type { SavedClock } from "../lib/clock";
 import { fmt, manLabel, ymKo, mdKo, durKo, signedWon, signedPct, freqLabel, freqWord, holdingsTitle } from "../lib/fmt";
 
-type Other = { symbol: string; years: number; monthsRem: number; reached: boolean; value: number; cagr: number };
+type Other = { symbol: string; years: number; monthsRem: number; reached: boolean; value: number; cagr: number; end: string };
 
 export function ClockScreen({ saved, goHome, goResult, goCompare, onEdit, onMenu, onClose }: {
   saved: SavedClock | null; goHome: () => void; goResult: () => void; goCompare: () => void; onEdit: () => void; onMenu: () => void; onClose: () => void;
@@ -42,8 +42,10 @@ export function ClockScreen({ saved, goHome, goResult, goCompare, onEdit, onMenu
     const p = { ...plan, mode: "time" as const, tracking: false, startDate: "" };
     const man = Math.round(stats.monthlyWon / 10_000);
     Promise.all(picks.map(async (symbol) => {
-      const r = calcPlan({ [symbol]: await loadRows(symbol) }, singlePlan(p, symbol, man)).result;
-      return { symbol, years: r.years, monthsRem: r.monthsRem, reached: r.reached, value: r.value, cagr: r.cagr };
+      const rows = await loadRows(symbol);
+      const r = calcPlan({ [symbol]: rows }, singlePlan(p, symbol, man)).result;
+      // value는 그 종목 마지막 종가 기준 — 기준일을 같이 보여 위쪽 'N월 N일 종가 기준'과 어긋나지 않게
+      return { symbol, years: r.years, monthsRem: r.monthsRem, reached: r.reached, value: r.value, cagr: r.cagr, end: rows[rows.length - 1]?.date ?? "" };
     })).then((o) => { if (on) setOthers(o); }).catch(() => {});
     return () => { on = false; };
   }, [plan, stats]);
@@ -55,7 +57,7 @@ export function ClockScreen({ saved, goHome, goResult, goCompare, onEdit, onMenu
         <div className="state">
           <Ring size={96} stroke={8} progress={0}><span className="ring-pct">10억</span></Ring>
           <div className="state-title">아직 시계가 없어요</div>
-          <div className="state-desc">계산 결과에서 '내 10억 시계로 저장하기'를 누르면 매일 아침 여기서 볼 수 있어요.</div>
+          <div className="state-desc">계산 결과에서 '시계에 저장하기'를 누르면 여기서 새 가격으로 다시 볼 수 있어요.</div>
           <Button size="large" onClick={goHome}>10억까지 계산하기</Button>
         </div>
       </div>
@@ -82,7 +84,6 @@ export function ClockScreen({ saved, goHome, goResult, goCompare, onEdit, onMenu
     );
   }
   const down = stats.delta < 0;
-  const dayShift = stats.daysAheadToday != null && stats.daysAheadYesterday != null ? stats.daysAheadToday - stats.daysAheadYesterday : null;
   const names = multi ? plan.holdings.map((h) => `${tickerTitle(h.ticker)} ${manLabel(h.amount)}`).join(", ") : holdingsTitle(plan);
   const cond = `${names} · ${plan.lump > 0 ? `목돈 ${manLabel(plan.lump)} · ` : ""}${freqWord(plan.freq)} ${fmt.amount(stats.monthlyWon)} · ${freqLabel(plan)}${stats.tracking ? ` · ${ymKo(stats.startDate)}부터` : ""}`;
   const pct = Math.round(stats.progress * 100);
@@ -101,19 +102,23 @@ export function ClockScreen({ saved, goHome, goResult, goCompare, onEdit, onMenu
             {stats.progress >= 1 ? <><span className="ring-check"><Check /></span><span className="ring-lbl">목표 달성</span></> : <><span className="ring-pct">{Math.round(stats.progress * 100)}%</span><span className="ring-lbl">10억까지</span></>}
           </Ring>
           <div className="clock-text">
-            <div className="clock-lead">{stats.tracking ? `${ymKo(stats.startDate)}부터 모은 내 돈` : `${ymKo(stats.startDate)}부터 모았다면 지금`}</div>
+            <div className="clock-lead">{stats.tracking ? `${ymKo(stats.startDate)}부터 입력한 대로 샀다면` : `${ymKo(stats.startDate)}부터 이 조건으로 샀다면`}</div>
             <div className="clock-num">{fmt.money(stats.value)}</div>
-            <div className="clock-sub">{stats.tracking ? `원금 ${fmt.money(stats.principal)} · ${stats.reached ? "10억을 넘었어요" : `10억까지 ${pct}%`}` : stats.reached ? (stats.progress >= 1 ? `${durKo(stats.years, stats.monthsRem)} 만에 10억을 넘었어요` : `${durKo(stats.years, stats.monthsRem)} 만에 10억을 찍고 지금은 내려왔어요`) : `${durKo(stats.years, stats.monthsRem)}째 모으는 중이에요`}</div>
+            <div className="clock-sub">{stats.tracking ? (stats.reached ? "10억을 넘었어요" : `10억까지 ${pct}%`) : stats.reached ? (stats.progress >= 1 ? `${durKo(stats.years, stats.monthsRem)} 만에 처음 10억을 넘었어요` : `${durKo(stats.years, stats.monthsRem)} 만에 처음 10억을 넘었다가 내려왔어요`) : "이 기간에는 10억을 넘지 않았어요"}</div>
           </div>
         </div>
         <div className="clock-grid">
-          <div className="cg"><span className="cg-k">어제보다</span><span className={"cg-v " + (down ? "down" : "up")}>{signedWon(stats.delta)}</span></div>
-          <div className="cg"><span className="cg-k">등락률</span><span className={"cg-v " + (down ? "down" : "up")}>{signedPct(stats.deltaPct)}</span></div>
-          {stats.tracking
-            ? <div className="cg"><span className="cg-k">넣은 돈</span><span className="cg-v">{fmt.money(stats.principal)}</span></div>
-            : <div className="cg"><span className="cg-k">도달 예상 <span className="badge">추정</span></span><span className="cg-v">{dayShift == null ? "—" : `${Math.abs(Math.round(dayShift))}일 ${dayShift >= 0 ? "앞당겨짐" : "늦어짐"}`}</span></div>}
+          <div className="cg"><span className="cg-k">평가액 변화</span><span className={"cg-v " + (down ? "down" : "up")}>{signedWon(stats.delta)}</span></div>
+          <div className="cg"><span className="cg-k">변화율</span><span className={"cg-v " + (down ? "down" : "up")}>{signedPct(stats.deltaPct)}</span></div>
+          <div className="cg"><span className="cg-k">넣은 돈</span><span className="cg-v">{fmt.money(stats.principal)}</span></div>
         </div>
-        <div className="clock-note">{stats.tracking ? "매일 아침 7시 30분, 전날 종가와 환율로 다시 계산해요. 넣은 돈은 입력한 규칙대로 샀다고 보고, 실제 체결가와는 다를 수 있어요." : `매일 아침 7시 30분, 전날 종가와 환율로 다시 계산해요. 도달 일수는 연평균 ${fmt.pct(stats.cagr)}로 환산한 추정치예요.`}</div>
+        <div className="clock-note">
+          평가액 변화는 직전 거래일({mdKo(stats.yesterday)})보다 늘거나 준 금액이고, 그사이 새로 넣은 돈도 포함해요.<br />
+          {stats.tracking
+            ? "입력한 규칙대로 샀다고 보고 계산해서 실제 체결가와는 다를 수 있어요."
+            : stats.reached ? `10억을 넘은 경우 중 가장 최근에 시작한 ${ymKo(stats.startDate)}부터 계산했어요.` : "데이터가 있는 첫 달부터 계산했어요."}<br />
+          새 가격이 들어오면 다시 계산해요. 환율은 그날 값이 없으면 직전 값을 써요.
+        </div>
       </div>
 
       <div className="btn-row">
@@ -132,7 +137,7 @@ export function ClockScreen({ saved, goHome, goResult, goCompare, onEdit, onMenu
             key={o.symbol}
             left={<Avatar symbol={o.symbol} />}
             contents={<ListRow.Texts type="2RowTypeA" top={tickerTitle(o.symbol)} bottom={tossSubtitle(o.symbol)} />}
-            right={<span className="right"><span className="row-title">{o.reached ? durKo(o.years, o.monthsRem) : `다 모아도 ${fmt.money(o.value)}`}</span><span className="row-desc">{o.reached && o.value < 1e9 ? `지금 ${fmt.money(o.value)} · ` : ""}연평균 {fmt.pct(o.cagr)}</span></span>}
+            right={<span className="right"><span className="row-title">{o.reached ? durKo(o.years, o.monthsRem) : `다 모아도 ${fmt.money(o.value)}`}</span><span className="row-desc">{o.reached && o.end ? `${mdKo(o.end)} ${fmt.money(o.value)} · ` : ""}연평균 {fmt.pct(o.cagr)}</span></span>}
           />
         ))}
       </ul>

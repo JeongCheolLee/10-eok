@@ -19,18 +19,19 @@ export const inToss: boolean = (() => {
 /** 데이터 주소. 토스에서는 운영 서버(CORS 허용), 브라우저 프로토타입은 동봉한 ./data, dev는 .env의 VITE_DATA_BASE */
 export const DATA_BASE: string = import.meta.env.VITE_DATA_BASE ?? (inToss ? `${SITE}/data` : "data");
 
+/** get은 실패 시 null. set·remove는 성공 여부를 돌려준다(실패를 숨기면 '저장했어요'가 거짓이 된다). */
 export const storage = {
   async get(key: string): Promise<string | null> {
     if (inToss) { try { return await ait.Storage.getItem(key); } catch { return null; } }
     try { return localStorage.getItem(key); } catch { return null; }
   },
-  async set(key: string, value: string): Promise<void> {
-    if (inToss) { try { await ait.Storage.setItem(key, value); } catch { /* 저장 실패 시에도 앱은 동작 */ } return; }
-    try { localStorage.setItem(key, value); } catch { /* noop */ }
+  async set(key: string, value: string): Promise<boolean> {
+    if (inToss) { try { await ait.Storage.setItem(key, value); return true; } catch { return false; } }
+    try { localStorage.setItem(key, value); return true; } catch { return false; }
   },
-  async remove(key: string): Promise<void> {
-    if (inToss) { try { await ait.Storage.removeItem(key); } catch { /* noop */ } return; }
-    try { localStorage.removeItem(key); } catch { /* noop */ }
+  async remove(key: string): Promise<boolean> {
+    if (inToss) { try { await ait.Storage.removeItem(key); return true; } catch { return false; } }
+    try { localStorage.removeItem(key); return true; } catch { return false; }
   },
 };
 

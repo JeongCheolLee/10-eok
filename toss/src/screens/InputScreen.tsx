@@ -48,10 +48,10 @@ export function InputScreen({ plan, setPlan, onSubmit, adNeeded = false, hasCloc
         lowerGap={4}
         title={<Top.TitleParagraph size={28}>{plan.tracking ? <>내 돈은 지금,<br />10억까지 얼마나 왔을까요?</> : plan.mode === "amount" ? <>10억까지,<br />얼마씩 모았어야 했을까요?</> : <>10억까지,<br />얼마나 걸렸을까요?</>}</Top.TitleParagraph>}
         subtitleBottom={<Top.SubtitleParagraph size={15}>{plan.tracking
-          ? "투자를 시작한 날과 금액을 넣으면, 오늘 평가액과 10억까지 진행률을 계산해요."
+          ? "ETF를 사기 시작한 날과 금액으로, 오늘 평가액과 10억까지 얼마나 왔는지 계산해요."
           : plan.mode === "amount"
-            ? "정한 기간 안에 10억이 되려면 얼마씩 샀어야 했는지, 실제 과거 가격과 그날 환율로 계산해요."
-            : "같은 금액으로 꾸준히 샀다면 몇 년 만에 10억이 됐을지, 실제 과거 가격과 그날 환율로 계산해요."}</Top.SubtitleParagraph>}
+            ? "정한 기간 동안 ETF를 얼마씩 샀어야 10억이 됐을지, 과거 가격과 환율로 계산해요."
+            : "ETF를 같은 금액으로 꾸준히 샀다면 어땠을지, 과거 가격과 환율로 계산해요."}</Top.SubtitleParagraph>}
       />
       {hasClock && (
         <button type="button" className="clock-link" onClick={goClock}>
@@ -59,24 +59,8 @@ export function InputScreen({ plan, setPlan, onSubmit, adNeeded = false, hasCloc
         </button>
       )}
 
-      {/* 계산 기준을 바꾸는 선택이라 맨 위에 둔다 */}
-      <ul className="tds-list">
-        <ListRow
-          contents={<ListRow.Texts type="2RowTypeA" top="이미 투자 중이에요" bottom="시작한 날부터 오늘까지 내 돈으로 계산해요" />}
-          right={<Switch checked={plan.tracking} onChange={(_, c) => set({ tracking: c, mode: "time" })} aria-label="이미 투자 중이에요" />}
-        />
-      </ul>
-      {plan.tracking ? (
-        <div className="row">
-          <label htmlFor="startdate" className="field">
-            <span className="field-label brand">언제부터 샀나요?</span>
-            <span className="select-wrap">
-              <input id="startdate" type="date" className="select" value={plan.startDate} max={TODAY} min="1990-01-01" onChange={(e) => set({ startDate: e.target.value })} />
-              <ChevronDown />
-            </span>
-          </label>
-        </div>
-      ) : (
+      {/* 트래커가 켜지면 계산 모드는 '오늘까지 내 돈' 하나라 탭을 숨긴다 */}
+      {!plan.tracking && (
         <div className="seg-wrap">
           <SegmentedControl size="large" value={plan.mode} onChange={(v) => set({ mode: v === "amount" && !multi ? "amount" : "time" })} aria-label="계산 모드">
             <SegmentedControl.Item value="time">얼마나 걸렸을까</SegmentedControl.Item>
@@ -86,7 +70,7 @@ export function InputScreen({ plan, setPlan, onSubmit, adNeeded = false, hasCloc
         </div>
       )}
 
-      <div className="section-label">{multi ? `${hs.length}개 ETF에 나눠 사요` : "ETF"}</div>
+      <div className="section-label">{multi ? `${hs.length}개 ETF에 나눠 사요` : "계산할 ETF"}</div>
       {multi ? (
         hs.map((h, i) => (
           <HoldingRow key={h.ticker} symbol={h.ticker} value={h.amount} unit="만원" min={AMOUNT_MIN[plan.freq]} max={100_000} step={AMOUNT_STEP[plan.freq]} share={total > 0 ? h.amount / total : 0} onChange={(v) => setAmount(i, v)} onPick={() => setSheet(i)} onRemove={() => remove(i)} />
@@ -111,6 +95,25 @@ export function InputScreen({ plan, setPlan, onSubmit, adNeeded = false, hasCloc
       )}
 
       <div className="hr section-gap" />
+      <ul className="tds-list">
+        <ListRow
+          contents={<ListRow.Texts type="2RowTypeA" top="이미 투자 중이에요" bottom="시작한 날부터 오늘까지 내 돈으로 계산해요" />}
+          right={<Switch checked={plan.tracking} onChange={(_, c) => set({ tracking: c, mode: "time" })} aria-label="이미 투자 중이에요" />}
+        />
+      </ul>
+      {plan.tracking && (
+        <div className="row">
+          <label htmlFor="startdate" className="field">
+            <span className="field-label brand">언제부터 샀나요?</span>
+            <span className="select-wrap">
+              <input id="startdate" type="date" className="select" value={plan.startDate} max={TODAY} min="1990-01-01" onChange={(e) => set({ startDate: e.target.value })} />
+              <ChevronDown />
+            </span>
+          </label>
+        </div>
+      )}
+
+      <div className="hr section-gap" />
       <div className="section-label">얼마씩 살까요?</div>
       <div className="seg-wrap tight">
         <SegmentedControl size="small" value={plan.freq} onChange={(v) => setFreq(v as Freq)} aria-label="사는 주기">
@@ -124,7 +127,7 @@ export function InputScreen({ plan, setPlan, onSubmit, adNeeded = false, hasCloc
       ) : plan.mode === "time" || plan.tracking ? (
         <Stepper id="amount" label={`${freqWord(plan.freq)} 넣을 돈`} value={plan.amount} unit="만원" min={AMOUNT_MIN[plan.freq]} max={100_000} step={AMOUNT_STEP[plan.freq]} stepLabel={manLabel(AMOUNT_STEP[plan.freq])} chips={AMOUNT_CHIPS[plan.freq]} chipLabel={manLabel} onChange={(v) => setAmount(0, v)} accent />
       ) : (
-        <Stepper id="years" label="몇 년 안에 모을까요?" value={plan.years} unit="년" min={1} max={40} step={1} stepLabel="1년" chips={[5, 10, 15, 20]} chipLabel={(y) => `${y}년`} onChange={(v) => set({ years: v })} accent />
+        <Stepper id="years" label="몇 년 동안 샀다고 볼까요?" value={plan.years} unit="년" min={1} max={40} step={1} stepLabel="1년" chips={[5, 10, 15, 20]} chipLabel={(y) => `${y}년`} onChange={(v) => set({ years: v })} accent />
       )}
       {plan.freq === "monthly" && (
         <div className="row">

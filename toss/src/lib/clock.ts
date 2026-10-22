@@ -15,7 +15,9 @@ function parse(raw: string | null): SavedClock | null {
   } catch { return null; }
 }
 export async function loadSavedClock(): Promise<SavedClock | null> { return parse(await storage.get(KEY)); }
-export async function saveClock(plan: Plan): Promise<void> {
-  await storage.set(KEY, JSON.stringify({ v: 2, plan: normalizePlan(plan), savedAt: new Date().toISOString() } satisfies SavedClock));
+/** 성공하면 true. 실패(용량·권한·SDK 오류)는 false — 호출자가 '저장했어요' 대신 실패를 알린다. */
+export async function saveClock(plan: Plan): Promise<boolean> {
+  return storage.set(KEY, JSON.stringify({ v: 2, plan: normalizePlan(plan), savedAt: new Date().toISOString() } satisfies SavedClock));
 }
-export async function clearClock(): Promise<void> { await storage.remove(KEY); }
+/** 성공하면 true. */
+export async function clearClock(): Promise<boolean> { return storage.remove(KEY); }
