@@ -55,7 +55,7 @@ export function InputScreen({ plan, setPlan, onSubmit, adNeeded = false, hasCloc
       />
       {hasClock && (
         <button type="button" className="clock-link" onClick={goClock}>
-          <span>저장한 내 10억 시계가 있어요</span><span className="brand-text">보기</span>
+          <span>저장한 계산이 있어요</span><span className="brand-text">보기</span>
         </button>
       )}
 

@@ -32,8 +32,8 @@ const settled = (page) => page.waitForFunction(() => !document.body.innerText.in
   const errors = [];
   const shots = [
     { name: "home", url: "/", wait: "10억까지 계산하기" },
-    { name: "result", url: "/?t=QLD&m=100&d=1&f=m", wait: "시계에 저장하기" },
-    { name: "clock", url: "/?page=clock", wait: "평가액 변화", saved: true },
+    { name: "result", url: "/?t=QLD&m=100&d=1&f=m", wait: "계산 저장하기" },
+    { name: "clock", url: "/?page=clock", wait: "최근 종가로 계산한 평가액", saved: true },
     { name: "compare", url: "/?page=compare", wait: "누가 빨랐을까요" },
   ];
   for (const s of shots) {
@@ -54,7 +54,7 @@ const settled = (page) => page.waitForFunction(() => !document.body.innerText.in
   const caps = {
     home: ["매달 100만원씩 샀다면,<br>10억까지 몇 년 걸렸을까요", "매달·매주·매일 ETF를 샀다면 어땠을지<br>과거 가격과 환율로 계산해요"],
     result: ["처음 10억을 넘기까지<br>얼마나 걸렸을까요", "처음 10억을 넘은 때와 지금 금액,<br>넣은 돈·연평균을 한 화면에서 봐요"],
-    clock: ["저장한 조건,<br>지금은 얼마일까요", "새 가격이 들어오면 다시 계산하고<br>직전 거래일보다 얼마나 변했는지 보여줘요"],
+    clock: ["저장한 계산을<br>새 가격으로 다시 봐요", "저장한 조건과 최근 평가액,<br>넣은 돈을 한 화면에서 확인해요"],
     compare: ["같은 돈, 다른 ETF였다면<br>누가 빨랐을까요", `${TICKER_COUNT}개 ETF를 같은 조건으로 비교해요<br>특정 종목을 추천하지 않아요`],
   };
   const img = (n) => "data:image/png;base64," + fs.readFileSync(path.join(RAW, `${n}.png`)).toString("base64");
@@ -68,7 +68,7 @@ const settled = (page) => page.waitForFunction(() => !document.body.innerText.in
     <div style="position:absolute;left:80px;top:140px;width:500px">
       <div style="display:inline-block;background:${GREEN};color:#fff;font-weight:800;font-size:22px;padding:8px 16px;border-radius:12px">주식으로 10억 부자되기</div>
       <h1 style="margin:28px 0 0;font-size:52px;line-height:1.22;font-weight:800;letter-spacing:-0.02em">10억까지,<br>얼마나 걸렸을까요</h1>
-      <p style="margin:22px 0 0;font-size:22px;line-height:1.5;color:${SUB}">ETF를 매달·매주·매일 샀다면 어땠을지<br>과거 가격과 환율로 계산해요.<br>시계에 저장하면 새 가격으로 다시 계산해요.</p>
+      <p style="margin:22px 0 0;font-size:22px;line-height:1.5;color:${SUB}">ETF를 매달·매주·매일 샀다면 어땠을지<br>과거 가격과 환율로 계산해요.<br>계산을 저장하면 새 가격으로 다시 계산해요.</p>
       <p style="margin:26px 0 0;font-size:16px;line-height:1.5;color:${SUB}">과거 데이터로 계산한 참고용 결과예요.<br>특정 종목을 추천하지 않고, 미래 수익을 보장하지 않아요.</p></div>
     ${phone("home", 280, 620, 60, 30, 8)}${phone("result", 280, 920, 90, 30, 8)}${phone("clock", 280, 1220, 120, 30, 8)}</body></html>`;
   // 로고: store/logo.svg(돈주머니 $, 2026-10-22 사용자 선택). 600×600 불투명·각진 모서리.

@@ -129,7 +129,7 @@ export function App() {
           items={[
             { label: "공유하기", onClick: () => showToast("토스에서는 미니앱 링크를 공유해요") },
             { label: "신고하기", onClick: () => showToast("토스 신고 화면이 열려요") },
-            { label: "내 10억 시계 지우기", danger: true, onClick: async () => { if (!(await clearClock())) { showToast("지우지 못했어요. 다시 시도해 주세요"); return; } await refreshSaved(); showToast("저장한 시계를 지웠어요"); go("home"); } },
+            { label: "저장한 계산 지우기", danger: true, onClick: async () => { if (!(await clearClock())) { showToast("지우지 못했어요. 다시 시도해 주세요"); return; } await refreshSaved(); showToast("저장한 계산을 지웠어요"); go("home"); } },
           ]}
         />
       )}
