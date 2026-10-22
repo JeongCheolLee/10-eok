@@ -6,6 +6,8 @@ ETF 적립 백테스트 계산기. 웹(`app/`, jeongcheol.cloud)과 토스 미�
 
 ## 토스 미니앱 프로젝트 — 계획 문서는 저장소 밖(비공개)
 
+- **Codex와 공용 메모 `~/Documents/develop/10-eok-private/SHARED_CONTEXT.md`**: 세션 시작·컴팩션 때 훅(`.claude/hooks/inject-shared-context.sh`)이 이 파일과 비공개 `CLAUDE.md`를 자동으로 넣어준다. 작업하다 다음 작업자(다른 세션의 나든 Codex든)가 몰라서 같은 삽질을 할 만한 비자명한 걸 배우면 거기에 적는다(auto-memory에만 넣고 끝내지 않는다 — Codex는 그걸 못 본다). 적을 땐 `/shared-context-update`. Codex는 리포 `AGENTS.md`를 읽는다.
+
 - 마스터플랜(`TOSS_MASTERPLAN.md`), 세션 핸드오프용 '현재 상태' 블록(`CLAUDE.md` 원본), 앱 정보 초안(`toss/APP_INFO.md`), Codex 리뷰 원문은 **비공개 폴더 `~/Documents/develop/10-eok-private/`**(로컬 git)에 있다. 이 저장소는 공개라서 사업자·상호·수익 가정·일정 같은 사업 정보는 여기에 쓰지 않는다.
 - 토스·미니앱·`toss/` 작업을 시작하면 그 폴더의 `TOSS_MASTERPLAN.md`(§0 요약, 진행 상태 표, §5 결정, §7 미확인)와 `CLAUDE.md`의 '현재 상태' 블록을 먼저 읽는다. 작업을 마치면 거기서 플랜·현재 상태를 갱신하고 **그 폴더에서 따로 커밋**한다. 플랜에 없는 결정은 §5에 추천안과 함께 적고 사용자에게 묻는다. 플랜과 코드가 어긋나면 플랜을 코드에 맞춘다.
 - 코드·빌드 메모: `cd toss && pnpm build:ait` → `10eok.ait`(git 무시). 스토어 이미지 재생성 `cd toss && node_modules/.bin/vite build && node store/make-assets.cjs`. 토스 밖에서 AIT 프로바이더가 SafeAreaInsets console.error를 찍지만 무해. `vite build`는 `dist/data`를 지우므로 브라우저 모드 로컬 확인은 `public/data`를 같이 서빙한다. 서브에이전트는 `isolation: worktree`로만 뜬다.

@@ -13,4 +13,8 @@ playwright-report
 playwright/.cache
 
 .gstack/
-.claude/
+# Claude Code: 개인 설정은 무시, 공유하는 스킬·훅·훅 설정만 커밋
+.claude/*
+!.claude/skills/
+!.claude/hooks/
+!.claude/settings.json
