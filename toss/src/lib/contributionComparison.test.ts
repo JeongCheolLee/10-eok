@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Row } from "@/lib/backtest/types";
-import { runBacktest } from "@/lib/backtest/simulate";
+import { runBacktest, runFirstReach } from "@/lib/backtest/simulate";
 import { compareContributions } from "./contributionComparison";
 import { calcPlan, DEFAULT_PLAN, scheduleOf, withHoldings, type Calc, type Plan } from "./plan";
 import { runPortfolio } from "./portfolio";
@@ -19,6 +19,42 @@ const expected = (p: Plan, c: Calc, amount: number) => runBacktest(rows, {
 });
 
 describe("same-period contribution comparison", () => {
+  const holidayRows: Row[] = ["2022-12-30", "2023-01-03", "2023-01-04", "2023-01-09", "2023-01-10", "2023-01-17", "2023-01-23", "2023-01-24"].map((date, i) => ({ date, price: 100 + 10 * i, fx: 1 }));
+
+  it("preserves a weekly purchase rolled from a holiday Monday to Tuesday", () => {
+    const p: Plan = { ...plan, freq: "weekly", weekday: 1, startDate: "2023-01-02" };
+    const data = { QLD: holidayRows };
+    // Calc carries the original schedule anchor separately from its first plotted day.
+    const c = Object.assign(calcPlan(data, p), { calculationStart: p.startDate });
+    const result = compareContributions(p, data, c, c.monthlyWon);
+    expect(result.startDate).toBe("2023-01-03");
+    expect(result.baseline.value).toBe(c.result.value);
+    expect(result.baseline.principal).toBe(c.result.principal);
+    expect(result.alternate).toEqual(result.baseline);
+    const skipped = runBacktest(holidayRows, { monthly: c.monthlyWon, initial: p.lump * 10_000, schedule: scheduleOf(p), buyDay: p.buyDay, startDate: result.startDate, target: Number.MAX_SAFE_INTEGER });
+    expect(result.baseline.principal - skipped.principal).toBe(c.monthlyWon);
+  });
+
+  it("preserves each ETF's first rolled buy and lump date across different trading calendars", () => {
+    const p = withHoldings({ ...plan, freq: "weekly", weekday: 1, startDate: "2023-01-02" }, [{ ticker: "QLD", amount: 30 }, { ticker: "QQQ", amount: 70 }]);
+    const data = { QLD: holidayRows, QQQ: holidayRows.filter((r) => r.date !== "2023-01-03") };
+    const c = calcPlan(data, p);
+    const anchored = Object.assign(c, { calculationStart: c.portfolio!.startDate });
+    const result = compareContributions(p, data, anchored, c.monthlyWon);
+    expect(result.startDate).toBe("2023-01-03");
+    expect(result.baseline.value).toBeCloseTo(c.result.value, 7);
+    expect(result.baseline.principal).toBeCloseTo(c.result.principal, 7);
+    expect(result.alternate).toEqual(result.baseline);
+  });
+
+  it("exposes the searched start anchor without rerunning the first-reach search", () => {
+    const r = runFirstReach(holidayRows, { monthly: 100_000, buyDay: 1, schedule: { kind: "weekly", weekday: 1 }, target: Number.MAX_SAFE_INTEGER });
+    expect(r.calculationStart).toBe("2022-12-01");
+    const replay = runBacktest(holidayRows, { monthly: 100_000, buyDay: 1, schedule: { kind: "weekly", weekday: 1 }, startDate: r.calculationStart, target: Number.MAX_SAFE_INTEGER });
+    expect(replay.value).toBe(r.value);
+    expect(replay.principal).toBe(r.principal);
+  });
+
   it("uses the exact visible window even when data exists before and after it", () => {
     const c = calcPlan(rowsBy, plan);
     c.result = { ...c.result, series: c.result.series.slice(2, -3) };

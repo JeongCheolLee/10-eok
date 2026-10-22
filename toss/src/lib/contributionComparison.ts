@@ -15,7 +15,7 @@ export type ContributionComparisonResult = {
 /** Compare only the per-purchase contribution, over the visible result's exact window.
  * Amounts are won, including the amount mode's calculated baseline. Never search a start date.
  */
-export function compareContributions(plan: Plan, rowsBy: RowsBy, calc: Calc, alternateWon: number): ContributionComparisonResult {
+export function compareContributions(plan: Plan, rowsBy: RowsBy, calc: Calc & { calculationStart?: string }, alternateWon: number): ContributionComparisonResult {
   if (!Number.isFinite(alternateWon) || alternateWon < 10_000 || alternateWon > Number.MAX_SAFE_INTEGER) {
     throw new RangeError("비교할 금액은 1만원 이상으로 입력해 주세요");
   }
@@ -23,6 +23,9 @@ export function compareContributions(plan: Plan, rowsBy: RowsBy, calc: Calc, alt
   const startDate = calc.result.series[0]?.date;
   const endDate = calc.result.series[calc.result.series.length - 1]?.date;
   if (!startDate || !endDate) throw new Error("Comparison requires a result window");
+  // Keep the original schedule anchor: a Monday purchase may have rolled to Tuesday.
+  // Starting the weekly schedule on that Tuesday would silently skip that first buy.
+  const calculationStart = calc.calculationStart ?? startDate;
   const sum = plan.holdings.reduce((s, h) => s + h.amount, 0);
   const weights = plan.holdings.map((h) => sum > 0 ? h.amount / sum : 1 / plan.holdings.length);
   const opts = {
@@ -36,7 +39,7 @@ export function compareContributions(plan: Plan, rowsBy: RowsBy, calc: Calc, alt
       const r = runBacktest(rowsBy[plan.ticker], {
         monthly: amountWon, initial: plan.lump * 10_000, schedule: opts.schedule,
         buyDay: plan.buyDay, reinvestDividends: plan.reinvest, taxRule,
-        startDate, endDate, target: Number.MAX_SAFE_INTEGER,
+        startDate: calculationStart, endDate, target: Number.MAX_SAFE_INTEGER,
       });
       return { amountWon, value: r.value, principal: r.principal };
     }
@@ -44,7 +47,7 @@ export function compareContributions(plan: Plan, rowsBy: RowsBy, calc: Calc, alt
     // Its existing portfolio retains the allocation used by the amount solver.
     if (amountWon === 0) return { amountWon, value: calc.result.value, principal: calc.result.principal };
     const holdings = plan.holdings.map((h, i) => ({ ticker: h.ticker, amount: amountWon / 10_000 * weights[i] }));
-    const r = runPortfolio(rowsBy, holdings, opts, startDate, endDate);
+    const r = runPortfolio(rowsBy, holdings, opts, calculationStart, endDate);
     return { amountWon, value: r.value, principal: r.principal };
   };
   return { startDate, endDate, baseline: simulate(calc.monthlyWon), alternate: simulate(alternateWon) };

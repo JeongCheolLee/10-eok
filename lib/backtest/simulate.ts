@@ -332,6 +332,8 @@ export function monthsBetween(a: string, b: string): number {
 
 /** runFirstReach 결과: BacktestResult에 처음 도달 시점 금액을 더한다. */
 export type FirstReachResult = BacktestResult & {
+  /** 매수 주기 계산에 쓴 시작일. 휴장일 이월 전의 기준을 보존한다. */
+  calculationStart: string;
   /** 처음 target을 넘은 날의 평가액·누적 납입원금 (미달이면 오늘 값) */
   reachValue: number;
   reachPrincipal: number;
@@ -377,6 +379,7 @@ export function runFirstReach(rows: Row[], input: BacktestInput): FirstReachResu
   const today = runBacktest(rows, { ...input, buyDay, startDate: chosen, target: Number.MAX_SAFE_INTEGER }); // 오늘 평가액·원금·연복리
   const reachPt = atReach.reachedDate ? atReach.series.find((p) => p.date === atReach.reachedDate) : undefined;
   return {
+    calculationStart: chosen,
     reached: atReach.reached,
     reachedDate: atReach.reachedDate,
     months: atReach.months,
