@@ -107,7 +107,7 @@ export function App() {
       body = <ResultScreen plan={plan} setPlan={setPlan} watchAd={watchAd} back={back} goClock={async () => { await refreshSaved(); go("clock"); }} showToast={showToast} {...common} />;
       break;
     case "clock":
-      body = <ClockScreen saved={saved} goHome={() => go("home")} goResult={() => { if (saved) setPlan(saved.plan); go("result"); }} goCompare={() => go("compare")} onEdit={() => { if (saved) setPlan(saved.plan); go("home"); }} {...common} />;
+      body = <ClockScreen saved={saved} goHome={() => go("home")} goResult={() => { if (saved) setPlan(saved.plan); go("result"); }} goCompare={() => go("compare")} onEdit={() => { if (saved) setPlan(saved.plan); go("home"); }} {...common} showToast={showToast} />;
       break;
     case "compare":
       body = <CompareScreen plan={saved?.plan ?? plan} back={back} {...common} />;

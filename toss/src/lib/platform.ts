@@ -4,7 +4,8 @@ import * as ait from "@apps-in-toss/web-framework";
 
 export const APP_NAME = "10eok";
 export const SITE = "https://jeongcheol.cloud";
-export const OG_IMAGE = `${SITE}/api/og`;
+// 공유 링크 미리보기: 결과 숫자 없는 앱 소개 카드(숫자는 공유 문구에). 웹 /api/og는 웹 계산 기준이라 미니앱 결과와 다를 수 있다.
+export const OG_IMAGE = `${SITE}/og/toss-share.png`;
 
 /** 토스 앱(또는 샌드박스) 안에서 실행 중인지. SDK 호출이 실패하면 브라우저로 간주. */
 export const inToss: boolean = (() => {
@@ -52,14 +53,19 @@ async function copyText(text: string): Promise<boolean> {
   try { await navigator.clipboard.writeText(text); return true; } catch { return false; }
 }
 
-/** 결과 공유. 토스: 미니앱 딥링크(intoss://10eok?…)를 토스 공유 링크로 바꿔 공유 시트. 브라우저: 텍스트 복사. */
-export async function shareResult(text: string, query: string): Promise<"shared" | "copied" | "failed"> {
+/** 결과 공유. 토스: 미니앱 딥링크(intoss://10eok?…)를 토스 공유 링크로 바꿔 폰 공유 창(카카오톡·문자 등).
+ *  브라우저: 폰 공유 창(Web Share)이 있으면 그것, 없으면 텍스트 복사. 사용자가 공유 창을 닫으면 "cancelled". */
+export async function shareResult(text: string, query: string): Promise<"shared" | "copied" | "cancelled" | "failed"> {
   if (inToss) {
     try {
       const link = await ait.getTossShareLink(`intoss://${APP_NAME}?${query}`, OG_IMAGE);
       await ait.share({ message: `${text}\n${link}` });
       return "shared";
     } catch { return "failed"; }
+  }
+  if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
+    try { await navigator.share({ text }); return "shared"; }
+    catch (e) { if ((e as Error)?.name === "AbortError") return "cancelled"; }
   }
   return (await copyText(text)) ? "copied" : "failed";
 }

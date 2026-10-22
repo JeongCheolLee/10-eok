@@ -250,3 +250,12 @@ export function clockStats(rowsBy: RowsBy, p: Plan): ClockStats {
     tracking,
   };
 }
+
+/** 공유 딥링크 쿼리(App.tsx planFromQuery와 짝). 결과·시계 화면이 같이 쓴다. */
+export function shareQueryOf(p: Plan): string {
+  const tracking = isTracking(p);
+  const amtMode = p.mode === "amount" && !tracking;
+  const multi = p.holdings.length > 1;
+  const pick = multi ? `h=${p.holdings.map((h) => `${h.ticker}:${h.amount}`).join(",")}` : `t=${p.ticker}${amtMode ? "" : `&m=${p.amount}`}`;
+  return `${pick}${amtMode ? `&mode=amt&y=${p.years}` : ""}${p.lump > 0 ? `&i=${p.lump}` : ""}&d=${p.buyDay}&f=${p.freq[0]}${p.freq === "weekly" ? `&wd=${p.weekday}` : ""}${tracking ? `&s=${p.startDate}` : ""}${!p.reinvest ? "&div=0" : ""}`;
+}

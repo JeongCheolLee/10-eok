@@ -5,7 +5,7 @@ import { NavBar, Chart, AdSlot, Avatar } from "../components/ui";
 import { loadRowsBy } from "../lib/data";
 import { analytics, shareResult } from "../lib/platform";
 import type { WatchAd } from "../App";
-import { calcPlan, commonEnd, TARGET, type Calc, type Plan, type RowsBy } from "../lib/plan";
+import { calcPlan, commonEnd, TARGET, type Calc, type Plan, type RowsBy, shareQueryOf } from "../lib/plan";
 import { saveClock } from "../lib/clock";
 import { fmt, manLabel, ymKo, ymdKo, mdKo, durKo, freqAdverb, freqWord, holdingsTitle, eulReul, euroRo, ieyo } from "../lib/fmt";
 import { CalculationBasis } from "../components/CalculationBasis";
@@ -114,8 +114,7 @@ export function ResultScreen({ plan, setPlan, watchAd, back, goClock, showToast,
   const statsLabel = reachedTime ? `이후에도 계속 샀다면 · ${asOf}` : asOf;
   const cagrPct = `${Math.abs(Math.round(r.cagr * 100))}%`;
   const amtMode = plan.mode === "amount" && !calc.tracking;
-  const pick = multi ? `h=${plan.holdings.map((h) => `${h.ticker}:${h.amount}`).join(",")}` : `t=${plan.ticker}${amtMode ? "" : `&m=${plan.amount}`}`;
-  const query = `${pick}${amtMode ? `&mode=amt&y=${plan.years}` : ""}${plan.lump > 0 ? `&i=${plan.lump}` : ""}&d=${plan.buyDay}&f=${plan.freq[0]}${plan.freq === "weekly" ? `&wd=${plan.weekday}` : ""}${calc.tracking ? `&s=${plan.startDate}` : ""}${!plan.reinvest ? "&div=0" : ""}`;
+  const query = shareQueryOf(plan);
 
   // 공유 문구는 앞뒤 설명 없이 전달되므로 문장 안에 과거 조건(시작 시점·기간·기준일)을 담는다.
   const shareTextOf = (): string => {
@@ -164,6 +163,7 @@ export function ResultScreen({ plan, setPlan, watchAd, back, goClock, showToast,
         title={<Top.TitleParagraph size={28}>{num}</Top.TitleParagraph>}
         subtitleBottom={<Top.SubtitleParagraph size={15}>{sub}</Top.SubtitleParagraph>}
       />
+      <div className="share-top"><Button color="dark" variant="weak" size="medium" onClick={share}>결과 공유하기</Button></div>
       <div className="data-notes">
         {adjNote && <p className="data-note">{adjNote}</p>}
         <p className="data-note">{mdKo(end)} 종가 기준 · 실제 거래 기간으로 계산했어요</p>
@@ -237,7 +237,6 @@ export function ResultScreen({ plan, setPlan, watchAd, back, goClock, showToast,
             onClick={openTiming}
           />
         ) : null}
-        <ListRow contents={<ListRow.Texts type="1RowTypeA" top="결과 공유하기" />} withArrow onClick={share} />
       </ul>
       {!multi && timingAnalysis?.status === "unavailable" && <div className="card">
         <div className="card-title">시작 시점 비교</div>

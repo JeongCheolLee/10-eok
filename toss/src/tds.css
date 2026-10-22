@@ -272,3 +272,5 @@ input[type="date"].select { font-size: 18px; min-height: 29px; }
 .basis-list dd { margin: 0; font-size: 14px; line-height: 1.6; color: var(--grey800); word-break: keep-all; overflow-wrap: anywhere; }
 .basis-list ul { margin: 5px 0 0; padding-left: 18px; }
 .basis-list p { margin: 4px 0 0; }
+/* 공유 버튼: 결과 숫자 바로 아래·시계 버튼 아래 */
+.share-top { padding: 4px 24px 0; }

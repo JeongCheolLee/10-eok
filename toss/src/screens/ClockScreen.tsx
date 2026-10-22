@@ -3,15 +3,15 @@ import { Button } from "@toss/tds-mobile";
 import { tickerTitle } from "@/lib/tickers";
 import { NavBar, ChevronRight } from "../components/ui";
 import { loadRowsBy } from "../lib/data";
-import { analytics } from "../lib/platform";
-import { calcPlan, commonEnd, type Calc, type RowsBy } from "../lib/plan";
+import { analytics, shareResult } from "../lib/platform";
+import { calcPlan, commonEnd, shareQueryOf, type Calc, type RowsBy } from "../lib/plan";
 import type { SavedClock } from "../lib/clock";
 import { fmt, manLabel, ymdKo, freqLabel, freqWord } from "../lib/fmt";
 
 const disclaimer = <p className="disc">과거 데이터로 계산한 참고용 결과예요. 특정 종목을 추천하지 않고, 미래 수익을 보장하지 않아요.</p>;
 
-export function ClockScreen({ saved, goHome, goResult, goCompare, onEdit, onMenu, onClose }: {
-  saved: SavedClock | null; goHome: () => void; goResult: () => void; goCompare: () => void; onEdit: () => void; onMenu: () => void; onClose: () => void;
+export function ClockScreen({ saved, goHome, goResult, goCompare, onEdit, onMenu, onClose, showToast }: {
+  saved: SavedClock | null; goHome: () => void; goResult: () => void; goCompare: () => void; onEdit: () => void; onMenu: () => void; onClose: () => void; showToast?: (m: string) => void;
 }) {
   const plan = saved?.plan ?? null;
   const [rowsBy, setRowsBy] = useState<RowsBy | null>(null);
@@ -105,6 +105,13 @@ export function ClockScreen({ saved, goHome, goResult, goCompare, onEdit, onMenu
         <Button color="dark" variant="weak" display="full" size="large" onClick={onEdit}>조건 바꾸기</Button>
         <Button display="full" size="large" onClick={goResult}>결과 보기</Button>
       </div>
+      <div className="share-top"><Button color="dark" variant="weak" size="medium" onClick={async () => {
+        analytics.click("share", { from: "clock", holdings: plan.holdings.length });
+        const text = `${start ? `${ymdKo(start)}부터 ` : ""}${freqWord(plan.freq)} ${names}씩 샀다면 ${ymdKo(end)} 종가 기준 ${fmt.money(result.value)}이에요. 넣은 돈은 ${fmt.money(result.principal)}이에요 — 주식으로 10억 부자되기`;
+        const res = await shareResult(text, shareQueryOf(plan));
+        if (res === "copied") showToast?.("조건을 복사했어요 · 토스에서는 공유 링크로 열려요");
+        if (res === "failed") showToast?.("지금은 공유할 수 없어요");
+      }}>이 조건 공유하기</Button></div>
       <div className="list-head">
         <button type="button" className="text-btn" onClick={goCompare}>다른 ETF와 비교하기 <ChevronRight /></button>
       </div>
