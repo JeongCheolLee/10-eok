@@ -10,7 +10,8 @@ const rows: Row[] = Array.from({ length: 36 }, (_, i) => ({
   price: 100 + i * 4, raw: 100 + i * 2, fx: 1,
 }));
 const rowsBy = { QLD: rows, QQQ: rows.map((r, i) => ({ ...r, price: 100 + i, raw: 100 + i / 2 })) };
-const plan: Plan = { ...DEFAULT_PLAN, tracking: true, startDate: "2020-05-01", lump: 200 };
+// 기본 종목이 바뀌어도(10/22 QLD→SPY) 테스트가 흔들리지 않게 종목을 직접 지정
+const plan: Plan = withHoldings({ ...DEFAULT_PLAN, tracking: true, startDate: "2020-05-01", lump: 200 }, [{ ticker: "QLD", amount: 100 }]);
 const expected = (p: Plan, c: Calc, amount: number) => runBacktest(rows, {
   monthly: amount, initial: p.lump * 10_000, buyDay: p.buyDay,
   schedule: scheduleOf(p), reinvestDividends: p.reinvest,

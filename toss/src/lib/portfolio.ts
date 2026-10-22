@@ -66,7 +66,7 @@ export function portfolioToToday(rowsBy: Record<string, Row[]>, holdings: Holdin
   // 그 시작일로 끝까지 적립했을 때 합계 최종 평가액(세금 on이면 차감 후). 탐색용이라 합산 series는 만들지 않는다.
   const sim = (s: string) => {
     const eff = maxDate(s, commonStart);
-    const parts = holdings.map((h, i) => runBacktest(rows[i], inputOf(h, weights[i], opts, eff, undefined)));
+    const parts = holdings.map((h, i) => runBacktest(rows[i], inputOf(h, weights[i], opts, eff, endDate)));
     const value = parts.reduce((a, r) => a + r.value, 0);
     return value - (opts.tax ? taxOn(holdings, parts.map((r) => r.value), parts.map((r) => r.principal)) : 0);
   };
@@ -111,9 +111,9 @@ export function portfolioRequired(rowsBy: Record<string, Row[]>, holdings: Holdi
   // 종목별 최종값은 스케일 s에 선형: value_i(s) = s·A_i + B_i, principal_i(s) = s·P_i + L_i
   // (A·P = 원래 적립액·목돈 0, B·L = 적립 0·목돈만). 세금 off면 바로 풀고(requiredMonthly와 같은 방식),
   // on이면 이 선형식 위에서 세후 값을 이분 탐색한다(추가 시뮬 없음).
-  const unit = holdings.map((h, i) => runBacktest(rows[i], inputOf(h, weights[i], { ...opts, lump: 0 }, start, undefined)));
+  const unit = holdings.map((h, i) => runBacktest(rows[i], inputOf(h, weights[i], { ...opts, lump: 0 }, start, end)));
   const lumpOnly = holdings.map((h, i) =>
-    opts.lump > 0 ? runBacktest(rows[i], inputOf({ ...h, amount: 0 }, weights[i], opts, start, undefined)) : null);
+    opts.lump > 0 ? runBacktest(rows[i], inputOf({ ...h, amount: 0 }, weights[i], opts, start, end)) : null);
   const A = unit.map((r) => r.value), P = unit.map((r) => r.principal);
   const B = lumpOnly.map((r) => r?.value ?? 0), L = lumpOnly.map((r) => r?.principal ?? 0);
   const sumA = A.reduce((a, b) => a + b, 0), sumB = B.reduce((a, b) => a + b, 0);
@@ -175,8 +175,10 @@ function commonStartOf(holdings: Holding[], rows: Row[][], requested: string): {
   return dataStart > requested ? { start: dataStart, limitedBy: holdings[latest].ticker } : { start: requested, limitedBy: null };
 }
 
+/** 평가 끝 = 모든 종목에 실제 가격이 있는 마지막 날(종목별 마지막 날 중 가장 이른 날).
+ *  가장 늦은 날로 잡으면 일찍 끝난 종목은 직전 가격을 끌어다 쓰게 되고, 화면 기준일(commonEnd)과도 어긋난다(10/22 수정). */
 function lastDateOf(rows: Row[][]): string {
-  return rows.reduce((d, r) => maxDate(d, r[r.length - 1].date), "");
+  return rows.map((r) => r[r.length - 1].date).sort()[0];
 }
 
 function inputOf(h: Holding, weight: number, opts: PortfolioOpts, startDate: string, endDate: string | undefined) {
@@ -216,7 +218,8 @@ function runWeighted(
 ): PortfolioResult {
   const rows = rowsOf(rowsBy, holdings);
   const { start, limitedBy } = commonStartOf(holdings, rows, startDate);
-  const parts = holdings.map((h, i) => runBacktest(rows[i], inputOf(h, weights[i], opts, start, endDate)));
+  const end = endDate ?? lastDateOf(rows);
+  const parts = holdings.map((h, i) => runBacktest(rows[i], inputOf(h, weights[i], opts, start, end)));
 
   // 합계 series: 날짜 합집합(미국·한국 거래일이 다름), 종목별 직전 값 forward-fill(그 종목 첫 날 전은 0).
   const dates = [...new Set(parts.flatMap((r) => r.series.map((p) => p.date)))].sort();

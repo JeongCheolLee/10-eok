@@ -34,8 +34,8 @@ export type Plan = {
 };
 
 export const DEFAULT_PLAN: Plan = {
-  holdings: [{ ticker: "QLD", amount: 100 }],
-  ticker: "QLD", mode: "time", amount: 100, years: 10, lump: 0,
+  holdings: [{ ticker: "SPY", amount: 100 }],
+  ticker: "SPY", mode: "time", amount: 100, years: 10, lump: 0,
   freq: "monthly", buyDay: 1, weekday: 1, tracking: false, startDate: "",
   reinvest: true, tax: false,
 };

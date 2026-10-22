@@ -229,3 +229,21 @@ describe("성능", () => {
     expect(ms).toBeLessThan(10000);
   });
 });
+
+describe("평가 끝 = 모든 종목의 공통 마지막 날(10/22 버그 수정)", () => {
+  // 미국·한국 종목은 마지막 종가일이 다를 수 있다. 계산이 가장 늦은 날까지 가면 화면 기준일(가장 이른 날)과 어긋난다.
+  const hs = [{ ticker: "QQQ", amount: 50 }, { ticker: "069500.KS", amount: 50 }];
+  const ends = hs.map((h) => rowsOf(h.ticker)[rowsOf(h.ticker).length - 1].date).sort();
+  const common = ends[0];
+  it("runPortfolio series는 공통 마지막 날에서 끝난다", () => {
+    const r = runPortfolio(rowsBy, hs, { ...OPTS, target: Number.MAX_SAFE_INTEGER }, "2015-01-01");
+    expect(r.series[r.series.length - 1].date).toBe(common);
+  });
+  it("portfolioFirstReach·portfolioRequired도 같은 끝을 쓴다", async () => {
+    const { portfolioFirstReach } = await import("./portfolio");
+    const fr = portfolioFirstReach(rowsBy, hs, OPTS);
+    expect(fr.series[fr.series.length - 1].date).toBe(common);
+    const req = portfolioRequired(rowsBy, hs, OPTS, 10);
+    expect(req.result.series[req.result.series.length - 1].date <= common).toBe(true);
+  });
+});

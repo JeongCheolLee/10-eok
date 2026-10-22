@@ -15,7 +15,7 @@ const server = http.createServer((req, res) => {
 });
 const FONT = `"Toss Product Sans", Pretendard, "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif`;
 const GREEN = "#02a262", INK = "#191f28", SUB = "#4e5968", TINT = "#eef8f3";
-const SAVED = JSON.stringify({ v: 1, plan: { ticker: "QLD", mode: "time", amount: 100, years: 10, lump: 0, freq: "monthly", buyDay: 1, weekday: 1, tracking: false, startDate: "", reinvest: true, tax: false }, savedAt: "2026-10-20T00:00:00.000Z" });
+const SAVED = JSON.stringify({ v: 1, plan: { ticker: "SPY", mode: "time", amount: 100, years: 10, lump: 0, freq: "monthly", buyDay: 1, weekday: 1, tracking: false, startDate: "", reinvest: true, tax: false }, savedAt: "2026-10-20T00:00:00.000Z" });
 // 미니앱 종목 수 = lib/tickers.ts TICKERS 전체(TOSS_TICKERS). TS라 require할 수 없어 항목 수를 센다.
 const TICKER_COUNT = (() => {
   const src = fs.readFileSync(path.join(ROOT, "lib", "tickers.ts"), "utf8");
@@ -32,7 +32,7 @@ const settled = (page) => page.waitForFunction(() => !document.body.innerText.in
   const errors = [];
   const shots = [
     { name: "home", url: "/", wait: "10억까지 계산하기" },
-    { name: "result", url: "/?t=QLD&m=100&d=1&f=m", wait: "계산 저장하기" },
+    { name: "result", url: "/?t=SPY&m=100&d=1&f=m", wait: "계산 저장하기" },
     { name: "clock", url: "/?page=clock", wait: "최근 종가로 계산한 평가액", saved: true },
     { name: "compare", url: "/?page=compare", wait: "누가 빨랐을까요" },
   ];

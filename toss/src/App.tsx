@@ -14,7 +14,7 @@ function readHash(): Screen | null {
   const h = location.hash.replace(/^#/, "") as Screen;
   return SCREENS.includes(h) ? h : null;
 }
-/** 공유 딥링크(intoss://10eok?t=QLD&m=100&d=1&i=0, 분산 매수는 h=QQQ:50,SCHD:30) → 플랜.
+/** 공유 딥링크(intoss://10eok?t=SPY&m=100&d=1&i=0, 분산 매수는 h=QQQ:50,SCHD:30) → 플랜.
  *  h가 있으면 우선, 없으면 t·m. 유효하지 않은 티커는 버리고 남는 종목이 없으면 null. */
 function planFromQuery(q: URLSearchParams): Plan | null {
   const num = (k: string, d: number) => { const n = parseInt(q.get(k) ?? "", 10); return Number.isFinite(n) ? n : d; };
