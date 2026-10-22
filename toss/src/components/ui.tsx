@@ -199,7 +199,7 @@ export function Menu({ items, onClose }: { items: { label: string; onClick: () =
 }
 
 /* ── 보상형 광고 모의 (토스: loadFullScreenAd → showFullScreenAd → userEarnedReward) ── */
-export function AdGate({ onReward, onClose }: { onReward: () => void; onClose: () => void }) {
+export function AdGate({ onReward, onClose, desc = "끝까지 보면 바로 열려요.", cta = "계속하기" }: { onReward: () => void; onClose: () => void; desc?: string; cta?: string }) {
   const [left, setLeft] = useState(3);
   useEffect(() => {
     if (left <= 0) return;
@@ -211,10 +211,10 @@ export function AdGate({ onReward, onClose }: { onReward: () => void; onClose: (
       <div className="ad-box">
         <div className="ad-badge">AD</div>
         <div className="ad-title">광고 미리보기</div>
-        <div className="ad-desc">미니앱에서는 토스 보상형 광고가 여기에 나와요. 끝까지 보면 분석이 열려요.</div>
+        <div className="ad-desc">미니앱에서는 토스 보상형 광고가 여기에 나와요. {desc}</div>
         <div className="ad-timer" aria-live="polite">{left > 0 ? `${left}초 남았어요` : "다 봤어요"}</div>
         <div className="ad-actions">
-          {left > 0 ? <button type="button" className="btn dark-weak md" onClick={onClose}>닫기</button> : <button type="button" className="btn md" onClick={onReward}>분석 열기</button>}
+          {left > 0 ? <button type="button" className="btn dark-weak md" onClick={onClose}>닫기</button> : <button type="button" className="btn md" onClick={onReward}>{cta}</button>}
         </div>
       </div>
     </div>

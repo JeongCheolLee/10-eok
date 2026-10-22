@@ -209,3 +209,4 @@ input[type="date"].select { font-size: 18px; min-height: 29px; }
 .disc.cta-space { padding-bottom: 96px; }
 .saved-row .row-title { white-space: normal; word-break: keep-all; }
 .cg-v svg { flex: 0 0 auto; }
+.ad-chip { margin-left: 8px; font-size: 11px; font-weight: 700; line-height: 1; padding: 4px 6px; border-radius: 4px; background: rgba(255, 255, 255, 0.24); color: #fff; vertical-align: middle; }

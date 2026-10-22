@@ -8,8 +8,8 @@ import { AMOUNT_CHIPS, AMOUNT_MIN, AMOUNT_STEP, type Plan, type Freq, type Weekd
 
 const TODAY = new Date().toISOString().slice(0, 10);
 
-export function InputScreen({ plan, setPlan, onSubmit, hasClock, goClock, onMenu, onClose }: {
-  plan: Plan; setPlan: (p: Plan) => void; onSubmit: () => void; hasClock: boolean; goClock: () => void; onMenu: () => void; onClose: () => void;
+export function InputScreen({ plan, setPlan, onSubmit, adNeeded = false, hasClock, goClock, onMenu, onClose }: {
+  plan: Plan; setPlan: (p: Plan) => void; onSubmit: () => void; adNeeded?: boolean; hasClock: boolean; goClock: () => void; onMenu: () => void; onClose: () => void;
 }) {
   const [sheet, setSheet] = useState(false);
   useEffect(() => { analytics.screen("home"); }, []);
@@ -108,7 +108,7 @@ export function InputScreen({ plan, setPlan, onSubmit, hasClock, goClock, onMenu
       <p className="disc cta-space">과거 데이터로 계산한 참고용 결과예요. 투자 권유가 아니고, 미래 수익을 보장하지 않아요.</p>
       <div className="spacer" />
       <div className="cta-bar">
-        <Button display="full" size="xlarge" disabled={!canSubmit} onClick={onSubmit}>{plan.tracking ? "내 돈 계산하기" : plan.mode === "time" ? "10억까지 계산하기" : "필요한 금액 계산하기"}</Button>
+        <Button display="full" size="xlarge" disabled={!canSubmit} onClick={onSubmit}>{plan.tracking ? "내 돈 계산하기" : plan.mode === "time" ? "10억까지 계산하기" : "필요한 금액 계산하기"}{adNeeded && <span className="ad-chip">AD</span>}</Button>
       </div>
       {sheet && <TickerSheet current={plan.ticker} onPick={(t) => { set({ ticker: t }); setSheet(false); analytics.click("pick_ticker", { ticker: t }); }} onClose={() => setSheet(false)} />}
     </div>

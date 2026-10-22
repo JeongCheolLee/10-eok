@@ -1,12 +1,12 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { InputScreen } from "./screens/InputScreen";
 import { ResultScreen } from "./screens/ResultScreen";
 import { ClockScreen } from "./screens/ClockScreen";
 import { CompareScreen } from "./screens/CompareScreen";
-import { Menu, Toast } from "./components/ui";
+import { AdGate, Menu, Toast } from "./components/ui";
 import { DEFAULT_PLAN, type Plan } from "./lib/plan";
 import { loadSavedClock, clearClock, type SavedClock } from "./lib/clock";
-import { analytics, closeApp, entryPath, entryQuery, inToss } from "./lib/platform";
+import { analytics, closeApp, createRewarded, entryPath, entryQuery, inToss, type Rewarded } from "./lib/platform";
 import { TICKERS } from "@/lib/tickers";
 
 type Screen = "home" | "result" | "clock" | "compare";
@@ -29,6 +29,10 @@ function planFromQuery(q: URLSearchParams): Plan | null {
   return { ...DEFAULT_PLAN, ticker: t, mode: tracking ? "time" : mode, amount: Math.max(1, num("m", 100)), years: Math.max(1, num("y", 10)), lump: Math.max(0, num("i", 0)), buyDay: Math.min(29, Math.max(1, num("d", 1))), freq, weekday, tracking, startDate: tracking ? s : "", reinvest: q.get("div") !== "0", tax: q.get("tax") === "1" };
 }
 
+/** 보상형 광고로 여는 동작. 광고를 끝까지 보면 run, 광고를 못 불러오면 막지 않고 run(토스 정책). */
+export type WatchAd = (purpose: string, run: () => void, gate?: { desc: string; cta: string }) => void;
+const planKey = (p: Plan) => JSON.stringify(p);
+
 export function App() {
   const [saved, setSaved] = useState<SavedClock | null>(null);
   const [plan, setPlan] = useState<Plan>(DEFAULT_PLAN);
@@ -36,6 +40,16 @@ export function App() {
   const [ready, setReady] = useState(false);
   const [menu, setMenu] = useState(false);
   const [toast, setToast] = useState("");
+  // 마지막으로 결과를 본 조건. 첫 계산·같은 조건은 무료, 조건을 바꾼 재계산은 [AD] 버튼으로.
+  const [seenKey, setSeenKey] = useState<string | null>(null);
+  const [gate, setGate] = useState<{ run: () => void; desc: string; cta: string } | null>(null);
+  const rewarded = useRef<Rewarded | null>(null);
+  useEffect(() => {
+    rewarded.current = createRewarded();
+    rewarded.current?.load(); // 광고는 미리 로드하고 버튼에서 노출(체크리스트 10)
+    return () => { rewarded.current?.dispose(); rewarded.current = null; };
+  }, []);
+  useEffect(() => { if (screen === "result") setSeenKey(planKey(plan)); }, [screen, plan]);
 
   // 첫 진입: 공유 딥링크 플랜이 있으면 결과로, 주요 기능 경로(intoss://10eok/clock·compare·result)가 있으면 그 화면으로,
   // 저장한 시계가 있으면 시계로. history를 쌓지 않게 replaceState.
@@ -65,6 +79,13 @@ export function App() {
   const back = useCallback(() => { if (history.length > 1) history.back(); else go("home"); }, [go]);
   const showToast = useCallback((m: string) => { setToast(m); window.setTimeout(() => setToast(""), 2200); }, []);
   const refreshSaved = useCallback(async () => setSaved(await loadSavedClock()), []);
+  const watchAd: WatchAd = useCallback((purpose, run, g = { desc: "끝까지 보면 바로 열려요.", cta: "계속하기" }) => {
+    analytics.click("ad_gate", { purpose });
+    const rw = rewarded.current;
+    const done = () => { analytics.click("ad_rewarded", { purpose }); run(); };
+    if (rw) rw.show({ onReward: done, onDismiss: () => showToast("광고를 끝까지 보면 열려요"), onError: run });
+    else setGate({ run: done, ...g });
+  }, [showToast]);
   const onClose = async () => { if (!(await closeApp())) showToast("토스 앱에서는 미니앱이 닫혀요"); };
 
   if (!ready) return <div className="app" />;
@@ -72,7 +93,7 @@ export function App() {
   let body: JSX.Element;
   switch (screen) {
     case "result":
-      body = <ResultScreen plan={plan} setPlan={setPlan} back={back} goClock={async () => { await refreshSaved(); go("clock"); }} showToast={showToast} {...common} />;
+      body = <ResultScreen plan={plan} setPlan={setPlan} watchAd={watchAd} back={back} goClock={async () => { await refreshSaved(); go("clock"); }} showToast={showToast} {...common} />;
       break;
     case "clock":
       body = <ClockScreen saved={saved} goHome={() => go("home")} goResult={() => { if (saved) setPlan(saved.plan); go("result"); }} goCompare={() => go("compare")} onEdit={() => { if (saved) setPlan(saved.plan); go("home"); }} {...common} />;
@@ -81,7 +102,11 @@ export function App() {
       body = <CompareScreen plan={saved?.plan ?? plan} back={back} {...common} />;
       break;
     default:
-      body = <InputScreen plan={plan} setPlan={setPlan} onSubmit={() => { analytics.click("calculate", { ticker: plan.ticker, mode: plan.mode }); go("result"); }} hasClock={!!saved} goClock={() => go("clock")} {...common} />;
+      {
+        const adNeeded = seenKey !== null && seenKey !== planKey(plan);
+        const submit = () => { analytics.click("calculate", { ticker: plan.ticker, mode: plan.mode, ad: adNeeded }); go("result"); };
+        body = <InputScreen plan={plan} setPlan={setPlan} adNeeded={adNeeded} onSubmit={() => (adNeeded ? watchAd("recalc", submit, { desc: "끝까지 보면 바꾼 조건으로 계산해요.", cta: "계산 결과 보기" }) : submit())} hasClock={!!saved} goClock={() => go("clock")} {...common} />;
+      }
   }
 
   return (
@@ -97,6 +122,7 @@ export function App() {
           ]}
         />
       )}
+      {gate && <AdGate desc={gate.desc} cta={gate.cta} onReward={() => { const g = gate; setGate(null); g.run(); }} onClose={() => setGate(null)} />}
       <Toast msg={toast} />
     </div>
   );

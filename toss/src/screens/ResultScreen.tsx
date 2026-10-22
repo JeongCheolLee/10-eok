@@ -1,24 +1,23 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button, ListRow, Switch, Top } from "@toss/tds-mobile";
 import type { Row } from "@/lib/backtest/types";
 import { tickerCurrency, tickerTitle } from "@/lib/tickers";
-import { NavBar, Chart, AdGate, AdSlot } from "../components/ui";
+import { NavBar, Chart, AdSlot } from "../components/ui";
 import { loadRows } from "../lib/data";
-import { analytics, shareResult, createRewarded, type Rewarded } from "../lib/platform";
+import { analytics, shareResult } from "../lib/platform";
+import type { WatchAd } from "../App";
 import { calcPlan, calcTiming, TARGET, type Plan } from "../lib/plan";
 import { saveClock } from "../lib/clock";
 import { fmt, manLabel, ymKo, ymdKo, durKo, freqAdverb, freqLabel, freqWord } from "../lib/fmt";
 
-export function ResultScreen({ plan, setPlan, back, goClock, showToast, onMenu, onClose }: {
-  plan: Plan; setPlan: (p: Plan) => void; back: () => void; goClock: () => void; showToast: (m: string) => void; onMenu: () => void; onClose: () => void;
+export function ResultScreen({ plan, setPlan, watchAd, back, goClock, showToast, onMenu, onClose }: {
+  plan: Plan; setPlan: (p: Plan) => void; watchAd: WatchAd; back: () => void; goClock: () => void; showToast: (m: string) => void; onMenu: () => void; onClose: () => void;
 }) {
   const [rows, setRows] = useState<Row[] | null>(null);
   const [err, setErr] = useState(false);
-  const [ad, setAd] = useState(false);
   const [timingOpen, setTimingOpen] = useState(false);
   const [optsOpen, setOptsOpen] = useState(false);
   const [tip, setTip] = useState(false);
-  const rewarded = useRef<Rewarded | null>(null);
 
   useEffect(() => {
     let on = true;
@@ -27,12 +26,6 @@ export function ResultScreen({ plan, setPlan, back, goClock, showToast, onMenu, 
     return () => { on = false; };
   }, [plan.ticker]);
   useEffect(() => { analytics.screen("result", { ticker: plan.ticker, mode: plan.mode }); }, [plan.ticker, plan.mode]);
-  // 보상형 광고는 화면 진입 시 미리 로드(토스 정책), 버튼에서 노출
-  useEffect(() => {
-    rewarded.current = createRewarded();
-    rewarded.current?.load();
-    return () => { rewarded.current?.dispose(); rewarded.current = null; };
-  }, []);
 
   const calc = useMemo(() => (rows ? calcPlan(rows, plan) : null), [rows, plan]);
   const timing = useMemo(() => (timingOpen && rows && calc ? calcTiming(rows, plan, calc.monthlyWon, Math.max(12, calc.result.months)) : null), [timingOpen, rows, calc, plan]);
@@ -101,13 +94,7 @@ export function ResultScreen({ plan, setPlan, back, goClock, showToast, onMenu, 
     if (res === "copied") showToast("결과를 복사했어요 · 토스에서는 공유 링크로 열려요");
     if (res === "failed") showToast("지금은 공유할 수 없어요");
   };
-  const openTiming = () => {
-    analytics.click("timing_gate");
-    const rw = rewarded.current;
-    if (rw) {
-      rw.show({ onReward: () => { setTimingOpen(true); analytics.click("timing_unlocked"); }, onDismiss: () => showToast("광고를 끝까지 보면 분석이 열려요"), onError: () => { setTimingOpen(true); } });
-    } else setAd(true);
-  };
+  const openTiming = () => watchAd("timing", () => { setTimingOpen(true); analytics.click("timing_unlocked"); }, { desc: "끝까지 보면 분석이 열려요.", cta: "분석 열기" });
 
   return (
     <div className="screen">
@@ -190,7 +177,6 @@ export function ResultScreen({ plan, setPlan, back, goClock, showToast, onMenu, 
 
       <AdSlot />
       <p className="disc">과거 데이터로 계산한 참고용 결과예요. 특정 종목을 추천하지 않고, 미래 수익을 보장하지 않아요. 가격 Yahoo Finance · 환율 FRED</p>
-      {ad && <AdGate onReward={() => { setAd(false); setTimingOpen(true); analytics.click("timing_unlocked"); }} onClose={() => setAd(false)} />}
     </div>
   );
 }
