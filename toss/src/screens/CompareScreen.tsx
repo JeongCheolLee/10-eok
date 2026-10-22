@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { ListRow, Top } from "@toss/tds-mobile";
-import { TOSS_TICKERS, tickerTitle } from "@/lib/tickers";
+import { TOSS_TICKERS, tickerInfo, tickerTitle } from "@/lib/tickers";
 import { tossSubtitle } from "../lib/groups";
 import { NavBar, Avatar } from "../components/ui";
 import { loadRows } from "../lib/data";
@@ -13,6 +13,8 @@ type Summary = { dataEnd: string | null; rows: RowOut[] };
 
 /** 기본 시나리오(매달 100만원·1일·배당 재투자·세금 제외)면 매일 생성되는 요약 파일 한 번만 받는다.
  *  미니앱 전체 종목 요약(toss.json)을 먼저, 없으면 웹 16종 요약(ko.json), 그것도 없으면 직접 계산. */
+/** 상장 전 구간을 유사 지수로 이어 붙인 종목(레지스트리 splice 필드) — 하단 안내용 */
+const SPLICED = TOSS_TICKERS.filter((t) => tickerInfo(t).splice).map(tickerTitle).join("·");
 const SUMMARY_FILES = ["summary/toss.json", "summary/ko.json"];
 function isDefaultScenario(p: Plan): boolean {
   return p.mode === "time" && p.freq === "monthly" && p.amount === DEFAULT_PLAN.amount && p.buyDay === 1 && p.lump === 0 && p.reinvest && !p.tax;
@@ -81,7 +83,7 @@ export function CompareScreen({ plan, back, onMenu, onClose }: { plan: Plan; bac
         ))}
         {!done && <ListRow contents={<ListRow.Texts type="1RowTypeA" top={`${out.length}/${TOSS_TICKERS.length} 계산 중…`} />} />}
       </ul>
-      <p className="disc">'10억까지'는 오늘부터 거꾸로 센 기간이에요. 10억에 못 미친 종목은 데이터가 있는 전체 기간을 모았을 때 금액이에요. JEPI 상장 전 구간은 비슷한 지수로 추정했어요.</p>
+      <p className="disc">'10억까지'는 오늘부터 거꾸로 센 기간이에요. 10억에 못 미친 종목은 데이터가 있는 전체 기간을 모았을 때 금액이에요. {SPLICED} 상장 전 구간은 비슷한 지수로 추정했어요.</p>
       <p className="disc">과거 성과가 미래 수익을 보장하지 않아요. 특정 종목을 추천하지 않고, 투자 판단과 책임은 본인에게 있어요.</p>
     </div>
   );

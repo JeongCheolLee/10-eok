@@ -8,7 +8,7 @@ import { analytics, shareResult } from "../lib/platform";
 import type { WatchAd } from "../App";
 import { calcPlan, calcTiming, commonEnd, TARGET, type Calc, type Plan, type RowsBy } from "../lib/plan";
 import { saveClock } from "../lib/clock";
-import { fmt, manLabel, ymKo, ymdKo, durKo, freqAdverb, freqLabel, freqWord, holdingsTitle } from "../lib/fmt";
+import { fmt, manLabel, ymKo, ymdKo, durKo, freqAdverb, freqLabel, freqWord, holdingsTitle, eulReul, euroRo } from "../lib/fmt";
 
 export function ResultScreen({ plan, setPlan, watchAd, back, goClock, showToast, onMenu, onClose }: {
   plan: Plan; setPlan: (p: Plan) => void; watchAd: WatchAd; back: () => void; goClock: () => void; showToast: (m: string) => void; onMenu: () => void; onClose: () => void;
@@ -66,7 +66,7 @@ export function ResultScreen({ plan, setPlan, watchAd, back, goClock, showToast,
   const names = holdingsTitle(plan);
   const adverb = freqAdverb(plan);
   const lumpStr = plan.lump > 0 ? `${manLabel(plan.lump)}으로 시작해 ` : "";
-  const buyStr = `${lumpStr}${adverb} ${names}를 ${fmt.amount(calc.monthlyWon)}어치`;
+  const buyStr = `${lumpStr}${adverb} ${eulReul(names)} ${fmt.amount(calc.monthlyWon)}어치`;
   const cond = `${names}에 ${lumpStr}${freqWord(plan.freq)} ${fmt.amount(calc.monthlyWon)}, ${freqLabel(plan)}`;
   const start = r.series[0]?.date ?? rows[0].date;
   const end = multi ? commonEnd(rowsBy, plan) : rows[rows.length - 1].date;
@@ -81,7 +81,7 @@ export function ResultScreen({ plan, setPlan, watchAd, back, goClock, showToast,
   } else if (plan.mode === "amount") {
     lead = `${calc.yearsUsed}년 안에 10억을 모으려면`;
     num = calc.reqMonthly === 0 ? "목돈만으로 충분해요" : `${freqWord(plan.freq)} ${fmt.amount(calc.reqMonthly ?? 0)}`;
-    sub = `${ymKo(start)}부터 지금까지 ${lumpStr}${adverb} ${names}를 샀다고 봤어요`;
+    sub = `${ymKo(start)}부터 지금까지 ${lumpStr}${adverb} ${eulReul(names)} 샀다고 봤어요`;
   } else if (r.reached) {
     lead = "10억 모으는 데 걸린 시간";
     num = durKo(r.years, r.monthsRem);
@@ -100,7 +100,7 @@ export function ResultScreen({ plan, setPlan, watchAd, back, goClock, showToast,
     const text = calc.tracking
       ? `${cond} 모은 내 돈 ${fmt.money(r.value)} · 10억까지 ${progressPct}% — 10억 모으기`
       : plan.mode === "amount"
-      ? `${names}로 ${calc.yearsUsed}년 안에 10억 모으려면 ${freqWord(plan.freq)} ${fmt.amount(calc.reqMonthly ?? 0)} — 10억 모으기`
+      ? `${euroRo(names)} ${calc.yearsUsed}년 안에 10억 모으려면 ${freqWord(plan.freq)} ${fmt.amount(calc.reqMonthly ?? 0)} — 10억 모으기`
       : r.reached
         ? `${cond} 모았다면 10억까지 ${durKo(r.years, r.monthsRem)} — 10억 모으기`
         : `${cond} 모았다면 지금 ${fmt.money(r.value)} — 10억 모으기`;

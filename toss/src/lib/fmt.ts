@@ -47,3 +47,27 @@ export function freqWord(freq: "monthly" | "weekly" | "daily"): string {
 export function holdingsTitle(p: { holdings: { ticker: string }[] }): string {
   return p.holdings.map((h) => tickerTitle(h.ticker)).join("·");
 }
+
+/** 마지막 글자를 소리 내 읽었을 때의 받침. 0 = 없음, 1 = ㄹ, 2 = 그 밖의 받침.
+ *  한글은 음절 계산, 영문은 글자 이름(엘·엠·엔·알), 숫자는 한자어 읽기(일·삼·육·칠·팔, 끝 0은 십·백·천·만). */
+function finalSound(word: string): 0 | 1 | 2 {
+  const w = word.trim();
+  const c = w[w.length - 1] ?? "";
+  const code = c.charCodeAt(0);
+  if (code >= 0xac00 && code <= 0xd7a3) {
+    const jong = (code - 0xac00) % 28;
+    return jong === 0 ? 0 : jong === 8 ? 1 : 2;
+  }
+  if (/[0-9]/.test(c)) {
+    if (c === "0") return 2; // 영·십·백·천·만 모두 받침(ㄹ 아님)
+    return "178".includes(c) ? 1 : "36".includes(c) ? 2 : 0;
+  }
+  const u = c.toUpperCase();
+  if (u === "L" || u === "R") return 1; // 엘·알
+  if (u === "M" || u === "N") return 2; // 엠·엔
+  return 0;
+}
+/** 을/를 */
+export function eulReul(word: string): string { return word + (finalSound(word) ? "을" : "를"); }
+/** 으로/로 (ㄹ 받침은 '로') */
+export function euroRo(word: string): string { return word + (finalSound(word) === 2 ? "으로" : "로"); }
