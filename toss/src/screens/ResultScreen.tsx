@@ -135,7 +135,7 @@ export function ResultScreen({ plan, setPlan, watchAd, back, goClock, showToast,
           </div>
         </div>
         {tip && <div className="tip">연평균 {fmt.pct(r.cagr)}는 1년에 평균 이만큼씩 늘었다는 뜻이에요. ({names} 과거 수익률 기준)</div>}
-        {port && plan.tax && port.taxWon > 0 && <div className="tip">평가액은 양도세 {fmt.money(port.taxWon)}를 뺀 금액이에요.</div>}
+        {port && plan.tax && port.taxWon > 0 && <div className="tip">평가액은 양도세 {fmt.money(port.taxWon)}을 뺀 금액이에요.</div>}
       </div>
 
       {port && (
