@@ -7,7 +7,7 @@ import { analytics, shareResult } from "../lib/platform";
 import type { WatchAd } from "../App";
 import { calcPlan, commonEnd, TARGET, type Calc, type Plan, type RowsBy, shareQueryOf } from "../lib/plan";
 import { saveClock } from "../lib/clock";
-import { fmt, manLabel, ymKo, ymdKo, mdKo, durKo, freqAdverb, freqWord, holdingsTitle, eulReul, euroRo, ieyo } from "../lib/fmt";
+import { fmt, manLabel, ymKo, ymdKo, mdKo, durKo, freqAdverb, freqLabel, freqWord, holdingsTitle, eulReul, ieyo } from "../lib/fmt";
 import { CalculationBasis } from "../components/CalculationBasis";
 import { ContributionComparison } from "../components/ContributionComparison";
 import { prepareTimingAnalysis } from "../lib/timingAnalysis";
@@ -23,6 +23,7 @@ export function ResultScreen({ plan, setPlan, watchAd, back, goClock, showToast,
   const timingOpen = unlockedTimingKey === timingKey;
   const [optsOpen, setOptsOpen] = useState(false);
   const [tip, setTip] = useState(false);
+  const [reachTip, setReachTip] = useState(false);
 
   const tickers = plan.holdings.map((h) => h.ticker);
   const tickersKey = tickers.join(",");
@@ -71,7 +72,7 @@ export function ResultScreen({ plan, setPlan, watchAd, back, goClock, showToast,
   const names = holdingsTitle(plan);
   const adverb = freqAdverb(plan);
   const lumpStr = plan.lump > 0 ? `${manLabel(plan.lump)}으로 시작해 ` : "";
-  const buyStr = `${lumpStr}${adverb} ${eulReul(names)} ${fmt.amount(calc.monthlyWon)}어치`;
+  const buyStr = `${lumpStr}${adverb} ${eulReul(names)} ${multi ? "합계 " : ""}${fmt.amount(calc.monthlyWon)}어치`;
   const start = r.series[0]?.date ?? rows[0].date;
   // 가격 기준일: 모든 종목에 가격이 있는 마지막 날(분산 매수면 종목 중 가장 이른 마지막 날)
   const end = multi ? commonEnd(rowsBy, plan) : rows[rows.length - 1].date;
@@ -101,17 +102,15 @@ export function ResultScreen({ plan, setPlan, watchAd, back, goClock, showToast,
       ? <>{ymKo(start)}에 {eulReul(names)} {manLabel(plan.lump)}어치 샀다면<br />{asOf} 10억이 넘었어요</>
       : <>{ymKo(start)}부터 {lumpStr}{adverb} {eulReul(names)} {fmt.amount(calc.reqMonthly ?? 0)}씩 샀다면<br />{asOf} 10억이 됐어요</>;
   } else if (reachedTime && calc.reach) {
-    // 처음 10억을 넘은 시점까지(반짝 고점 포함, 10/22). 오늘 금액은 기준일과 함께 따로.
-    lead = "10억 모으는 데 걸린 시간";
+    lead = "처음 10억을 넘기까지";
     num = durKo(r.years, r.monthsRem);
-    const today = r.value >= TARGET ? `이후에도 계속 샀다면 ${asOf} ${ieyo(fmt.money(r.value))}` : `이후에도 계속 샀다면 ${asOf} ${euroRo(fmt.money(r.value))} 내려왔어요`;
-    sub = <>{ymKo(start)}부터 {buyStr} 샀다면, {ymdKo(calc.reach.date)}에 처음 10억을 넘었어요<br />{today}</>;
+    sub = <>{ymKo(start)}부터 사기 시작해<br />{ymdKo(calc.reach.date)}에 처음 넘었어요.</>;
   } else {
     lead = "이 기간에는 10억을 넘지 않았어요";
     num = fmt.money(r.value);
     sub = <>{ymKo(start)}부터 {durKo(r.years, r.monthsRem)} 동안 {buyStr} 샀을 때<br />{asOf} 금액이에요</>;
   }
-  const statsLabel = reachedTime ? `이후에도 계속 샀다면 · ${asOf}` : asOf;
+  const statsLabel = reachedTime ? "이후에도 계속 샀을 때" : asOf;
   const cagrPct = `${Math.abs(Math.round(r.cagr * 100))}%`;
   const amtMode = plan.mode === "amount" && !calc.tracking;
   const query = shareQueryOf(plan);
@@ -129,7 +128,7 @@ export function ResultScreen({ plan, setPlan, watchAd, back, goClock, showToast,
         : `${ymKo(start)}부터 ${calc.yearsUsed}년간 ${lumpStr}${adverb} ${eulReul(names)} ${fmt.amount(calc.reqMonthly ?? 0)}씩 샀다면 ${ymdKo(end)}에 10억이 됐어요${tail}`;
     }
     if (reachedTime && calc.reach) {
-      return `${ymKo(start)}부터 ${buyStr} 샀다면 ${durKo(r.years, r.monthsRem)} 만인 ${ymKo(calc.reach.date)}에 처음 10억을 넘었어요${tail}`;
+      return `${ymKo(start)}부터 ${buyStr} 샀다면 ${durKo(r.years, r.monthsRem)} 만인 ${ymdKo(calc.reach.date)}에 처음 10억을 넘었어요${tail}`;
     }
     return `${ymKo(start)}부터 ${buyStr} 샀다면 ${ymdKo(end)} 기준 ${ieyo(fmt.money(r.value))}${tail}`;
   };
@@ -159,15 +158,32 @@ export function ResultScreen({ plan, setPlan, watchAd, back, goClock, showToast,
       <Top
         upperGap={16}
         lowerGap={8}
-        subtitleTop={<Top.SubtitleParagraph size={15}>{lead}</Top.SubtitleParagraph>}
+        subtitleTop={<Top.SubtitleParagraph size={15}>
+          {lead}{reachedTime && <button type="button" className="info reach-info" aria-label="기간 계산 방식 설명" aria-expanded={reachTip} aria-controls="reach-basis" onClick={() => setReachTip((value) => !value)}>ⓘ</button>}
+        </Top.SubtitleParagraph>}
         title={<Top.TitleParagraph size={28}>{num}</Top.TitleParagraph>}
         subtitleBottom={<Top.SubtitleParagraph size={15}>{sub}</Top.SubtitleParagraph>}
       />
+      {reachedTime && <>
+        {reachTip && <div id="reach-basis" className="reach-basis tip">10억을 넘은 경우 중 가장 최근에 시작한 달을 찾았어요. 가장 짧게 걸린 기간을 뜻하지는 않아요.</div>}
+        <section className="result-conditions" aria-label="매수 조건">
+          <h2>이렇게 샀다면</h2>
+          <p className="result-etfs">{plan.holdings.map((holding) => tickerTitle(holding.ticker)).join(" · ")}</p>
+          <p>{plan.freq === "daily" ? "거래일마다" : freqLabel(plan)}, {multi ? `${tickers.length}개 ETF에 ` : ""}<strong>{multi ? "합계 " : ""}{fmt.amount(calc.monthlyWon)}씩</strong></p>
+          {plan.lump > 0 && <p className="result-lump">처음에 {manLabel(plan.lump)}으로 시작</p>}
+        </section>
+        <section className="result-current" aria-label="계속 샀을 때의 평가액">
+          <h2>이후에도 계속 샀다면</h2>
+          <p className="result-current-value">{fmt.money(r.value)}</p>
+          {r.value < TARGET && <p className="result-current-note">10억 아래로 내려왔어요.</p>}
+          <p className="result-current-date">{ymdKo(end)} 종가 기준</p>
+        </section>
+      </>}
       <div className="share-top"><Button color="dark" variant="weak" size="medium" onClick={share}>결과 공유하기</Button></div>
-      <div className="data-notes">
+      {(adjNote || !reachedTime) && <div className="data-notes">
         {adjNote && <p className="data-note">{adjNote}</p>}
-        <p className="data-note">{mdKo(end)} 종가 기준 · 실제 거래 기간으로 계산했어요</p>
-      </div>
+        {!reachedTime && <p className="data-note">{mdKo(end)} 종가 기준 · 실제 거래 기간으로 계산했어요</p>}
+      </div>}
 
       <div className="card">
         <div className="card-head">

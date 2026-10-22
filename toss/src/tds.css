@@ -274,3 +274,19 @@ input[type="date"].select { font-size: 18px; min-height: 29px; }
 .basis-list p { margin: 4px 0 0; }
 /* 공유 버튼: 결과 숫자 바로 아래·시계 버튼 아래 */
 .share-top { padding: 4px 24px 0; }
+
+/* 처음 도달한 때, 매수 조건, 계속 샀을 때의 평가액을 구분한다. */
+.reach-info { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; padding: 0; font-size: 15px; vertical-align: middle; cursor: pointer; }
+.reach-basis { margin: 4px 24px 0; background: var(--grey100); }
+.result-conditions { margin: 12px 24px 0; padding: 14px 16px; background: var(--grey50); border-radius: 14px; color: var(--grey700); font-size: 14px; line-height: 1.6; word-break: keep-all; overflow-wrap: anywhere; }
+.result-conditions h2 { margin: 0 0 6px; font-size: 13px; font-weight: 500; color: var(--grey600); }
+.result-conditions p { margin: 0; }
+.result-conditions .result-etfs { margin-bottom: 2px; color: var(--grey800); font-weight: 600; }
+.result-conditions strong { font-weight: 600; color: var(--grey800); }
+.result-conditions .result-lump { margin-top: 4px; font-size: 13px; color: var(--grey600); }
+.result-current { margin: 20px 24px 0; padding-top: 18px; border-top: 1px solid var(--grey200); }
+.result-current h2 { margin: 0; font-size: 15px; font-weight: 500; color: var(--grey700); }
+.result-current-value { margin: 4px 0; font-size: 26px; line-height: 1.35; font-weight: 700; color: var(--grey900); font-variant-numeric: tabular-nums; }
+.result-current-note { margin: 4px 0 0; font-size: 14px; color: var(--grey700); }
+.result-current-date { margin: 6px 0 0; font-size: 13px; color: var(--grey600); }
+.result-current + .share-top { padding-top: 16px; }
