@@ -95,7 +95,8 @@ export type Reach = { date: string; value: number; principal: number };
 export type Adjusted =
   | { kind: "years"; from: number; to: number; ticker: string; dataStart: string }
   | { kind: "start"; from: string; to: string; ticker: string };
-export type Calc = { result: BacktestResult; reqMonthly: number | null; yearsUsed: number; monthlyWon: number; tracking: boolean; portfolio: PortfolioResult | null; reach: Reach | null; adjusted?: Adjusted | null };
+/** calculationStart는 휴장일 이월 전 매수 일정의 시작점. 비교 계산에서 그대로 쓴다. */
+export type Calc = { calculationStart?: string; result: BacktestResult; reqMonthly: number | null; yearsUsed: number; monthlyWon: number; tracking: boolean; portfolio: PortfolioResult | null; reach: Reach | null; adjusted?: Adjusted | null };
 
 /** 종목 → Row[]. 단일 종목이면 키 하나. */
 export type RowsBy = Record<string, Row[]>;
@@ -146,17 +147,21 @@ export function calcPlan(rowsBy: RowsBy, p: Plan): Calc {
     const monthlyWon = p.amount * MAN;
     const start = p.startDate < rows[0].date ? rows[0].date : p.startDate;
     const adjusted: Adjusted | null = start !== p.startDate ? { kind: "start", from: p.startDate, to: start, ticker: p.ticker } : null;
-    return { result: runBacktest(rows, { monthly: monthlyWon, ...opts, startDate: start, target: Number.MAX_SAFE_INTEGER }), reqMonthly: null, yearsUsed, monthlyWon, tracking: true, portfolio: null, reach: null, adjusted };
+    return { result: runBacktest(rows, { monthly: monthlyWon, ...opts, startDate: start, target: Number.MAX_SAFE_INTEGER }), reqMonthly: null, yearsUsed, monthlyWon, tracking: true, portfolio: null, reach: null, adjusted, calculationStart: start };
   }
   if (p.mode === "time") {
     const monthlyWon = p.amount * MAN;
     const fr = runFirstReach(rows, { monthly: monthlyWon, ...opts });
-    return { result: fr, reqMonthly: null, yearsUsed, monthlyWon, tracking: false, portfolio: null, reach: fr.reachedDate ? { date: fr.reachedDate, value: fr.reachValue, principal: fr.reachPrincipal } : null };
+    return { result: fr, reqMonthly: null, yearsUsed, monthlyWon, tracking: false, portfolio: null, calculationStart: fr.calculationStart, reach: fr.reachedDate ? { date: fr.reachedDate, value: fr.reachValue, principal: fr.reachPrincipal } : null };
   }
   const end = rows[rows.length - 1].date;
-  const { monthly, result } = requiredMonthly(rows, { monthly: 0, startDate: startMonthsAgo(end, yearsUsed * 12), ...opts });
+  const amountStart = startMonthsAgo(end, yearsUsed * 12);
+  const { monthly, result: firstReach } = requiredMonthly(rows, { monthly: 0, startDate: amountStart, ...opts });
+  // 금액 모드의 평가액은 선택한 기간의 끝 기준. 중간에 10억을 넘었어도 끝까지 평가한다.
+  const fullPeriod = runBacktest(rows, { monthly, startDate: amountStart, ...opts, target: Number.MAX_SAFE_INTEGER });
+  const result = { ...fullPeriod, reached: firstReach.reached, reachedDate: firstReach.reachedDate };
   const adjusted: Adjusted | null = yearsUsed < p.years ? { kind: "years", from: p.years, to: yearsUsed, ticker: p.ticker, dataStart: rows[0].date } : null;
-  return { result, reqMonthly: monthly, yearsUsed, monthlyWon: monthly, tracking: false, portfolio: null, reach: null, adjusted };
+  return { result, reqMonthly: monthly, yearsUsed, monthlyWon: monthly, tracking: false, portfolio: null, reach: null, adjusted, calculationStart: amountStart };
 }
 
 function calcPortfolio(rowsBy: RowsBy, p: Plan): Calc {
@@ -166,14 +171,14 @@ function calcPortfolio(rowsBy: RowsBy, p: Plan): Calc {
   if (isTracking(p)) {
     const r = runPortfolio(rowsBy, hs, portOpts(p, Number.MAX_SAFE_INTEGER), p.startDate);
     const adjusted: Adjusted | null = r.limitedBy && r.startDate > p.startDate ? { kind: "start", from: p.startDate, to: r.startDate, ticker: r.limitedBy } : null;
-    return { result: r, reqMonthly: null, yearsUsed, monthlyWon, tracking: true, portfolio: r, reach: null, adjusted };
+    return { result: r, reqMonthly: null, yearsUsed, monthlyWon, tracking: true, portfolio: r, reach: null, adjusted, calculationStart: r.startDate };
   }
   if (p.mode === "time") {
     const r = portfolioFirstReach(rowsBy, hs, portOpts(p));
-    return { result: r, reqMonthly: null, yearsUsed, monthlyWon, tracking: false, portfolio: r, reach: r.reachedDate ? { date: r.reachedDate, value: r.reachValue, principal: r.reachPrincipal } : null };
+    return { result: r, reqMonthly: null, yearsUsed, monthlyWon, tracking: false, portfolio: r, calculationStart: r.startDate, reach: r.reachedDate ? { date: r.reachedDate, value: r.reachValue, principal: r.reachPrincipal } : null };
   }
   // 화면에서는 종목 1개일 때만 금액 모드를 열지만, 딥링크·저장본 대비로 계약대로 계산한다.
-  const { amountsWon, result } = portfolioRequired(rowsBy, hs, portOpts(p), yearsUsed);
+  const { amountsWon, result } = portfolioRequired(rowsBy, hs, portOpts(p), yearsUsed, "period-end");
   const req = amountsWon.reduce((s, v) => s + v, 0);
   let adjusted: Adjusted | null = null;
   if (yearsUsed < p.years) {
@@ -181,7 +186,7 @@ function calcPortfolio(rowsBy: RowsBy, p: Plan): Calc {
     const short = hs.map((h) => ({ t: h.ticker, rows: rowsOf(rowsBy, h.ticker) })).reduce((a, b) => (maxYearsOf(b.rows) < maxYearsOf(a.rows) ? b : a));
     adjusted = { kind: "years", from: p.years, to: yearsUsed, ticker: short.t, dataStart: short.rows[0].date };
   }
-  return { result, reqMonthly: req, yearsUsed, monthlyWon: req, tracking: false, portfolio: result, reach: null, adjusted };
+  return { result, reqMonthly: req, yearsUsed, monthlyWon: req, tracking: false, portfolio: result, reach: null, adjusted, calculationStart: result.startDate };
 }
 
 export type Timing = ReturnType<typeof timingRange>;

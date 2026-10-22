@@ -261,3 +261,14 @@ input[type="date"].select { font-size: 18px; min-height: 29px; }
 .data-note { margin: 0; font-size: 13px; line-height: 19.5px; color: var(--grey600); }
 .data-notes .tip { background: var(--grey100); }
 .stats-label { font-size: 12px; line-height: 18px; color: var(--grey600); margin-bottom: -6px; }
+
+/* 계산 기준은 필요할 때 펼쳐 읽고, 주요 결과는 간결하게 유지한다. */
+.calculation-basis { display: block; }
+.calculation-basis summary { cursor: pointer; font-size: 15px; font-weight: 600; color: var(--grey800); padding: 4px 0; }
+.calculation-basis summary:focus-visible { outline: 2px solid var(--down); outline-offset: 4px; border-radius: 4px; }
+.basis-content { padding-top: 16px; }
+.basis-list { margin: 0 0 16px; display: flex; flex-direction: column; gap: 14px; }
+.basis-list dt { font-size: 12px; color: var(--grey600); margin-bottom: 3px; }
+.basis-list dd { margin: 0; font-size: 14px; line-height: 1.6; color: var(--grey800); word-break: keep-all; overflow-wrap: anywhere; }
+.basis-list ul { margin: 5px 0 0; padding-left: 18px; }
+.basis-list p { margin: 4px 0 0; }

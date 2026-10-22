@@ -280,7 +280,7 @@ export function TickerSheet({ current, taken = [], onPick, onClose }: { current:
                 const short = t.shortHistory ? DATA_START[t.symbol] : undefined;
                 const extra = [
                   sub,
-                  t.splice ? (real ? `${ymKo(real)} 상장 전은 추정치` : "상장 전은 추정치") : "",
+                  real ? `${ymKo(real)}부터 계산할 수 있어요` : "",
                   t.shortHistory ? (short ? `${ymKo(short)}부터 계산할 수 있어요` : "최근 몇 년만 계산할 수 있어요") : "",
                 ].filter(Boolean).join(" · ");
                 return (

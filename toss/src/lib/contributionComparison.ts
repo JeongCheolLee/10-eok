@@ -15,7 +15,7 @@ export type ContributionComparisonResult = {
 /** Compare only the per-purchase contribution, over the visible result's exact window.
  * Amounts are won, including the amount mode's calculated baseline. Never search a start date.
  */
-export function compareContributions(plan: Plan, rowsBy: RowsBy, calc: Calc & { calculationStart?: string }, alternateWon: number): ContributionComparisonResult {
+export function compareContributions(plan: Plan, rowsBy: RowsBy, calc: Calc, alternateWon: number): ContributionComparisonResult {
   if (!Number.isFinite(alternateWon) || alternateWon < 10_000 || alternateWon > Number.MAX_SAFE_INTEGER) {
     throw new RangeError("비교할 금액은 1만원 이상으로 입력해 주세요");
   }

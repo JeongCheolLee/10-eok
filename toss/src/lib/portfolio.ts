@@ -101,7 +101,7 @@ export function portfolioToToday(rowsBy: Record<string, Row[]>, holdings: Holdin
 }
 
 /** 금액 모드: years년 전부터 오늘까지 target에 닿으려면 필요한 금액. holdings 비율을 고정하고 스케일만 찾는다. */
-export function portfolioRequired(rowsBy: Record<string, Row[]>, holdings: Holding[], opts: PortfolioOpts, years: number): { scale: number; amountsWon: number[]; result: PortfolioResult } {
+export function portfolioRequired(rowsBy: Record<string, Row[]>, holdings: Holding[], opts: PortfolioOpts, years: number, evaluation: "first-reach" | "period-end" = "first-reach"): { scale: number; amountsWon: number[]; result: PortfolioResult } {
   const rows = rowsOf(rowsBy, holdings);
   const weights = weightsOf(holdings);
   const end = lastDateOf(rows);
@@ -140,7 +140,12 @@ export function portfolioRequired(rowsBy: Record<string, Row[]>, holdings: Holdi
   }
 
   const scaled = holdings.map((h) => ({ ...h, amount: h.amount * scale }));
-  const result = runWeighted(rowsBy, scaled, weights, opts, reqStart, undefined, opts.target);
+  const result = runWeighted(rowsBy, scaled, weights, opts, reqStart, undefined, evaluation === "period-end" ? Number.MAX_SAFE_INTEGER : opts.target);
+  if (evaluation === "period-end") {
+    const reach = result.series.find((point) => point.value >= opts.target);
+    result.reached = !!reach;
+    result.reachedDate = reach?.date ?? null;
+  }
   return { scale, amountsWon: holdings.map((h) => h.amount * MAN * scale), result };
 }
 

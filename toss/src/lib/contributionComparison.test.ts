@@ -14,7 +14,7 @@ const plan: Plan = { ...DEFAULT_PLAN, tracking: true, startDate: "2020-05-01", l
 const expected = (p: Plan, c: Calc, amount: number) => runBacktest(rows, {
   monthly: amount, initial: p.lump * 10_000, buyDay: p.buyDay,
   schedule: scheduleOf(p), reinvestDividends: p.reinvest,
-  startDate: c.result.series[0].date, endDate: c.result.series[c.result.series.length - 1].date,
+  startDate: c.calculationStart ?? c.result.series[0].date, endDate: c.result.series[c.result.series.length - 1].date,
   target: Number.MAX_SAFE_INTEGER,
 });
 
@@ -25,7 +25,7 @@ describe("same-period contribution comparison", () => {
     const p: Plan = { ...plan, freq: "weekly", weekday: 1, startDate: "2023-01-02" };
     const data = { QLD: holidayRows };
     // Calc carries the original schedule anchor separately from its first plotted day.
-    const c = Object.assign(calcPlan(data, p), { calculationStart: p.startDate });
+    const c = calcPlan(data, p);
     const result = compareContributions(p, data, c, c.monthlyWon);
     expect(result.startDate).toBe("2023-01-03");
     expect(result.baseline.value).toBe(c.result.value);
@@ -39,8 +39,7 @@ describe("same-period contribution comparison", () => {
     const p = withHoldings({ ...plan, freq: "weekly", weekday: 1, startDate: "2023-01-02" }, [{ ticker: "QLD", amount: 30 }, { ticker: "QQQ", amount: 70 }]);
     const data = { QLD: holidayRows, QQQ: holidayRows.filter((r) => r.date !== "2023-01-03") };
     const c = calcPlan(data, p);
-    const anchored = Object.assign(c, { calculationStart: c.portfolio!.startDate });
-    const result = compareContributions(p, data, anchored, c.monthlyWon);
+    const result = compareContributions(p, data, c, c.monthlyWon);
     expect(result.startDate).toBe("2023-01-03");
     expect(result.baseline.value).toBeCloseTo(c.result.value, 7);
     expect(result.baseline.principal).toBeCloseTo(c.result.principal, 7);
@@ -58,6 +57,7 @@ describe("same-period contribution comparison", () => {
   it("uses the exact visible window even when data exists before and after it", () => {
     const c = calcPlan(rowsBy, plan);
     c.result = { ...c.result, series: c.result.series.slice(2, -3) };
+    c.calculationStart = c.result.series[0].date;
     const result = compareContributions(plan, rowsBy, c, 2_000_000);
     expect(result.startDate).toBe(c.result.series[0].date);
     expect(result.endDate).toBe(c.result.series.at(-1)?.date);

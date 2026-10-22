@@ -5,32 +5,34 @@ import { NavBar, Chart, AdSlot, Avatar } from "../components/ui";
 import { loadRowsBy } from "../lib/data";
 import { analytics, shareResult } from "../lib/platform";
 import type { WatchAd } from "../App";
-import { calcPlan, calcTiming, commonEnd, TARGET, type Calc, type Plan, type RowsBy } from "../lib/plan";
+import { calcPlan, commonEnd, TARGET, type Calc, type Plan, type RowsBy } from "../lib/plan";
 import { saveClock } from "../lib/clock";
-import { fmt, manLabel, ymKo, ymdKo, mdKo, durKo, freqAdverb, freqWord, holdingsTitle, eulReul, euroRo, iGa, eunNeun, ieyo } from "../lib/fmt";
-import { estimatedSpans, estLastMonth, needsFx } from "../lib/dataInfo";
+import { fmt, manLabel, ymKo, ymdKo, mdKo, durKo, freqAdverb, freqWord, holdingsTitle, eulReul, euroRo, ieyo } from "../lib/fmt";
+import { CalculationBasis } from "../components/CalculationBasis";
+import { ContributionComparison } from "../components/ContributionComparison";
+import { prepareTimingAnalysis } from "../lib/timingAnalysis";
 
 export function ResultScreen({ plan, setPlan, watchAd, back, goClock, showToast, onMenu, onClose }: {
   plan: Plan; setPlan: (p: Plan) => void; watchAd: WatchAd; back: () => void; goClock: () => void; showToast: (m: string) => void; onMenu: () => void; onClose: () => void;
 }) {
   const [rowsBy, setRowsBy] = useState<RowsBy | null>(null);
   const [err, setErr] = useState(false);
-  const [timingOpen, setTimingOpen] = useState(false);
+  const [unlockedTimingKey, setUnlockedTimingKey] = useState<string | null>(null);
+  const [retry, setRetry] = useState(0);
+  const timingKey = JSON.stringify(plan);
+  const timingOpen = unlockedTimingKey === timingKey;
   const [optsOpen, setOptsOpen] = useState(false);
   const [tip, setTip] = useState(false);
-  const [estTip, setEstTip] = useState(false);
-  const [fxTip, setFxTip] = useState(false);
 
   const tickers = plan.holdings.map((h) => h.ticker);
   const tickersKey = tickers.join(",");
   const multi = tickers.length > 1;
-  const load = () => {
+  useEffect(() => {
     let on = true;
     setRowsBy(null); setErr(false);
     loadRowsBy(tickers).then((r) => { if (on) setRowsBy(r); }).catch(() => { if (on) setErr(true); });
     return () => { on = false; };
-  };
-  useEffect(() => { setTimingOpen(false); return load(); }, [tickersKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [tickersKey, retry]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { analytics.screen("result", { ticker: plan.ticker, holdings: tickers.length, mode: plan.mode }); }, [tickersKey, plan.mode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 계산이 실패하면(데이터 이상 등) 화면을 깨뜨리지 않고 오류 상태로
@@ -39,7 +41,9 @@ export function ResultScreen({ plan, setPlan, watchAd, back, goClock, showToast,
     try { return calcPlan(rowsBy, plan); } catch (e) { console.error(e); return "error"; }
   }, [rowsBy, plan]);
   const rows = rowsBy?.[plan.ticker] ?? null;
-  const timing = useMemo(() => (!multi && timingOpen && rows && calc && calc !== "error" ? calcTiming(rows, plan, calc.monthlyWon, Math.max(12, calc.result.months)) : null), [multi, timingOpen, rows, calc, plan]);
+  const timingAnalysis = useMemo(() => rows && calc && calc !== "error"
+    ? prepareTimingAnalysis(rows, plan, calc) : null, [rows, calc, plan]);
+  const timing = timingAnalysis?.status === "ready" ? timingAnalysis.result : null;
 
   if (err || calc === "error") {
     return (
@@ -48,7 +52,7 @@ export function ResultScreen({ plan, setPlan, watchAd, back, goClock, showToast,
         <div className="state">
           <div className="state-title">데이터를 불러오지 못했어요</div>
           <div className="state-desc">잠시 후 다시 시도해 주세요</div>
-          <Button size="large" onClick={() => { load(); }}>다시 시도하기</Button>
+          <Button size="large" onClick={() => setRetry((value) => value + 1)}>다시 시도하기</Button>
         </div>
       </div>
     );
@@ -75,14 +79,6 @@ export function ResultScreen({ plan, setPlan, watchAd, back, goClock, showToast,
   const limited = port?.limitedBy ? port.holdings.find((h) => h.ticker === port.limitedBy) : undefined;
   const progressPct = Math.round((r.value / TARGET) * 100);
   const reachedTime = !calc.tracking && plan.mode === "time" && r.reached && !!calc.reach;
-
-  // 상장 전 추정 가격이 계산 구간에 들어갔는지
-  const est = estimatedSpans(tickers, start);
-  const estUntil = est.length ? est.map((e) => e.until).sort().reverse()[0] : undefined;
-  const estNames = est.map((e) => tickerTitle(e.ticker)).join("·");
-  const estWhere = !multi
-    ? `이 ETF가 거래되기 전 기간은 비슷한 ETF나 지수로 계산했어요. 실제 거래 가격은 아니에요. ${ymKo(estLastMonth(est[0]?.until ?? end))}까지가 추정 구간이에요.`
-    : `${iGa(estNames)} 거래되기 전 기간은 비슷한 ETF나 지수로 계산했어요. 실제 거래 가격은 아니에요. ${est.map((e) => `${eunNeun(tickerTitle(e.ticker))} ${ymKo(estLastMonth(e.until))}까지`).join(", ")}가 추정 구간이에요.`;
 
   // 데이터가 모자라 고른 조건을 바꿔 계산했으면 한 줄로(분산 매수 limitedBy 안내와 같은 문장 꼴)
   const adj = calc.adjusted;
@@ -150,10 +146,13 @@ export function ResultScreen({ plan, setPlan, watchAd, back, goClock, showToast,
     try { const res: unknown = await saveClock(plan); ok = res !== false; } catch { ok = false; }
     if (!ok) { showToast("저장하지 못했어요. 다시 시도해 주세요"); return; }
     analytics.click("save_clock", { ticker: plan.ticker, holdings: tickers.length });
-    showToast("시계에 저장했어요");
+    showToast("계산을 저장했어요");
     goClock();
   };
-  const openTiming = () => watchAd("timing", () => { setTimingOpen(true); analytics.click("timing_unlocked"); }, { desc: "끝까지 보면 분석이 열려요.", cta: "분석 열기" });
+  const openTiming = () => {
+    if (timingAnalysis?.status !== "ready") return;
+    watchAd("timing", () => { setUnlockedTimingKey(timingKey); analytics.click("timing_unlocked"); }, { desc: "끝까지 보면 시작 시점별 결과가 열려요.", cta: "분석 확인하기" });
+  };
 
   return (
     <div className="screen">
@@ -167,17 +166,7 @@ export function ResultScreen({ plan, setPlan, watchAd, back, goClock, showToast,
       />
       <div className="data-notes">
         {adjNote && <p className="data-note">{adjNote}</p>}
-        <p className="data-note">
-          {mdKo(end)} 종가 기준
-          {needsFx(tickers) && <> · 환율 <button type="button" className="info" aria-label="환율 설명" aria-expanded={fxTip} onClick={() => setFxTip((v) => !v)}>ⓘ</button></>}
-        </p>
-        {fxTip && <div className="tip">달러 종목은 사는 날 환율로 원화로 바꿔 계산했어요. 환율은 그날 값이 없으면 직전 값을 써요.</div>}
-        {est.length > 0 && (
-          <p className="data-note">
-            일부 과거 가격은 추정치예요 <button type="button" className="info" aria-label="추정치 설명" aria-expanded={estTip} onClick={() => setEstTip((v) => !v)}>ⓘ</button>
-          </p>
-        )}
-        {est.length > 0 && estTip && <div className="tip">{estWhere}</div>}
+        <p className="data-note">{mdKo(end)} 종가 기준 · 실제 거래 기간으로 계산했어요</p>
       </div>
 
       <div className="card">
@@ -185,8 +174,7 @@ export function ResultScreen({ plan, setPlan, watchAd, back, goClock, showToast,
           <span>평가액 변화</span>
           <span className="legend"><i className="dot brand" />평가액 <i className="dot grey" />넣은 돈</span>
         </div>
-        <Chart series={r.series} target={TARGET} mark={calc.reach?.date} estUntil={estUntil} />
-        {estUntil && <div className="chart-note"><i className="est-swatch" aria-hidden="true" />{multi ? `${estNames} 상장 전 추정 구간` : "상장 전 추정 구간"}</div>}
+        <Chart series={r.series} target={TARGET} mark={calc.reach?.date} />
         <div className="stats-label">{statsLabel}</div>
         <div className="stats">
           <div className="stat"><span className="stat-k">넣은 돈</span><span className="stat-v">{fmt.money(r.principal)}</span></div>
@@ -215,6 +203,9 @@ export function ResultScreen({ plan, setPlan, watchAd, back, goClock, showToast,
         </>
       )}
 
+      <CalculationBasis plan={plan} calc={calc} rowsBy={rowsBy} />
+      <ContributionComparison key={timingKey} plan={plan} calc={calc} rowsBy={rowsBy} />
+
       <ul className="tds-list">
         <ListRow
           contents={<ListRow.Texts type="2RowTypeA" top="계산 옵션" bottom={`배당 ${plan.reinvest ? "재투자" : "미반영"}`} />}
@@ -233,32 +224,36 @@ export function ResultScreen({ plan, setPlan, watchAd, back, goClock, showToast,
       </ul>
 
       <div className="card brand-card">
-        <div className="card-title">이 조건, 매일 확인할래요?</div>
-        <div className="card-desc">저장하면 새 가격이 들어올 때 다시 계산해요. 열 때마다 10억에 얼마나 가까워졌는지 볼 수 있어요.</div>
-        <Button display="full" size="large" onClick={save}>시계에 저장하기</Button>
+        <div className="card-title">이 계산을 저장할까요?</div>
+        <div className="card-desc">조건을 저장하면 다시 입력하지 않고 최근 자료로 계산한 결과를 확인할 수 있어요.</div>
+        <Button display="full" size="large" onClick={save}>계산 저장하기</Button>
       </div>
 
       <ul className="tds-list">
-        {!timingOpen && !multi ? (
+        {!timingOpen && !multi && timingAnalysis?.status === "ready" ? (
           <ListRow
-            contents={<ListRow.Texts type="2RowTypeA" top="시작 시점에 따른 차이 보기" bottom="운 좋은 달과 나쁜 달은 얼마나 달랐을까요" />}
-            right={<span className="pill brand">▶ 광고 보고 열기</span>}
+            contents={<ListRow.Texts type="2RowTypeA" top="시작 시점 비교하기" bottom="시작한 달에 따라 결과가 얼마나 달랐을까요" />}
+            right={<span className="pill brand">광고 보고 확인하기</span>}
             onClick={openTiming}
           />
         ) : null}
         <ListRow contents={<ListRow.Texts type="1RowTypeA" top="결과 공유하기" />} withArrow onClick={share} />
       </ul>
-      {timingOpen && !multi && (
+      {!multi && timingAnalysis?.status === "unavailable" && <div className="card">
+        <div className="card-title">시작 시점 비교</div>
+        <p className="data-note">{timingAnalysis.reason === "calculation-error" ? "시작 시점별 결과를 계산하지 못했어요. 잠시 후 다시 시도해 주세요." : "이 기간으로 시작 시점을 비교할 과거 자료가 부족해요."}</p>
+      </div>}
+      {timingOpen && !multi && timingAnalysis?.status === "ready" && (
         <div className="card">
           <div className="card-title">시작 시점에 따른 결과</div>
-          <div className="card-desc">같은 조건으로 {Math.max(12, r.months)}개월씩 모으되, 시작 달만 바꿔 {timing?.samples ?? 0}번 계산했어요.</div>
+          <div className="card-desc">같은 조건으로 {timingAnalysis.durationMonths}개월씩 모으되, 시작 달만 바꿔 {timing?.samples ?? 0}번 계산했어요.</div>
           {timing ? (
             <div className="timing">
               <div className="timing-row"><span className="k">가장 안 좋을 때</span><span className="v down">{fmt.money(timing.min)}</span><span className="d">{ymKo(timing.minStart)} 시작</span></div>
               <div className="timing-row"><span className="k">중간</span><span className="v">{fmt.money(timing.median)}</span><span className="d">절반은 이보다 많았어요</span></div>
               <div className="timing-row"><span className="k">가장 좋을 때</span><span className="v up">{fmt.money(timing.max)}</span><span className="d">{ymKo(timing.maxStart)} 시작</span></div>
             </div>
-          ) : <div className="card-desc">표본이 부족해 계산할 수 없어요.</div>}
+          ) : <div className="card-desc">이 기간으로 비교할 과거 자료가 부족해요.</div>}
         </div>
       )}
 
