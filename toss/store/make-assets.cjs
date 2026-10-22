@@ -65,10 +65,8 @@ const settled = (page) => page.waitForFunction(() => !document.body.innerText.in
       <p style="margin:22px 0 0;font-size:22px;line-height:1.5;color:${SUB}">ETF를 매달·매주·매일 샀다면 어땠을지<br>실제 과거 가격과 환율로 계산해요.<br>저장하면 매일 아침 내 10억 시계가 다시 계산해요.</p>
       <p style="margin:26px 0 0;font-size:16px;line-height:1.5;color:${SUB}">과거 데이터로 계산한 참고용 결과예요.<br>특정 종목을 추천하지 않고, 미래 수익을 보장하지 않아요.</p></div>
     ${phone("home", 280, 620, 60, 30, 8)}${phone("result", 280, 920, 90, 30, 8)}${phone("clock", 280, 1220, 120, 30, 8)}</body></html>`;
-  const logo = `<!doctype html><html><body style="margin:0;width:600px;height:600px;background:${GREEN};display:flex;align-items:center;justify-content:center;font-family:${FONT}">
-    <svg width="600" height="600" viewBox="0 0 600 600"><circle cx="300" cy="300" r="214" fill="none" stroke="rgba(255,255,255,.28)" stroke-width="34"/>
-      <circle cx="300" cy="300" r="214" fill="none" stroke="#fff" stroke-width="34" stroke-linecap="round" stroke-dasharray="${(2*Math.PI*214*0.72).toFixed(1)} ${(2*Math.PI*214).toFixed(1)}" transform="rotate(-90 300 300)"/>
-      <text x="300" y="306" text-anchor="middle" dominant-baseline="central" fill="#fff" font-family='${FONT}' font-weight="800" font-size="160" letter-spacing="-4">10억</text></svg></body></html>`;
+  // 로고: store/logo.svg(돈주머니 $, 2026-10-22 사용자 선택). 600×600 불투명·각진 모서리.
+  const logo = `<!doctype html><html><body style="margin:0;width:600px;height:600px">${fs.readFileSync(path.join(OUT, "logo.svg"), "utf8")}</body></html>`;
 
   const render = async (html, w, h, file) => {
     const c = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 1 });
