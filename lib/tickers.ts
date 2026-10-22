@@ -12,6 +12,13 @@ export type TickerInfo = {
   splice?: { proxy: string; label: string };
   // 상장이 늦어 데이터 이력이 짧음(장기 백테스트 한계). UI가 "이력 짧음" 안내를 띄운다.
   shortHistory?: boolean;
+  // 웹(jeongcheol.cloud) 시장 목록·ETF 상세 페이지에서 제외. 토스 미니앱에만 노출(웹은 4개 언어 콘텐츠가 필요해서, 2026-10-22).
+  webHidden?: boolean;
+  // 세금 규칙. 생략 시 currency로 결정: USD → "us"(해외주식 양도세 22%, 연 250만 공제 합산), KRW → "kr-domestic"(국내주식형 ETF 매매차익 비과세).
+  // "kr-foreign" = 국내 상장 해외주식형 ETF: 매매차익에 배당소득세 15.4%(공제 없음, 종목별).
+  tax?: "us" | "kr-domestic" | "kr-foreign";
+  // 미니앱 종목 선택 시트의 묶음.
+  group?: "index" | "leverage" | "dividend" | "sector" | "bond-gold" | "kr-listed";
 };
 
 // ETF만 (단일 종목 제외). 검색 가능한 드롭다운으로 고르며, 추후 ETF 추가 용이.
@@ -32,7 +39,25 @@ export const TICKERS: TickerInfo[] = [
   { symbol: "JEPI", name: "미국 커버드콜", color: "#4d7c0f", splice: { proxy: "^BXM", label: "CBOE S&P 500 커버드콜 지수(BXM)" } },
   { symbol: "JEPQ", name: "나스닥 커버드콜", color: "#b91c1c", shortHistory: true },
   { symbol: "069500.KS", name: "KODEX 200", color: "#c0392b", currency: "KRW", short: "K200" },
+  // ── 2026-10-22 추가(미니앱 전용). 데이터 시작·접합은 생성기에서 확인 ──
+  { symbol: "QQQM", name: "나스닥100 (저보수)", color: "#2563eb", webHidden: true, group: "index" },
+  { symbol: "SPLG", name: "S&P 500 (저보수)", color: "#f97316", webHidden: true, group: "index" },
+  { symbol: "DIA", name: "다우존스 30", color: "#475569", webHidden: true, group: "index" },
+  { symbol: "SOXL", name: "미국 반도체 3배", color: "#be185d", webHidden: true, group: "leverage" },
+  { symbol: "VYM", name: "미국 고배당", color: "#0f766e", webHidden: true, group: "dividend" },
+  { symbol: "DGRO", name: "미국 배당성장 (아이셰어즈)", color: "#047857", webHidden: true, group: "dividend" },
+  { symbol: "360750.KS", name: "TIGER 미국S&P500", color: "#ea580c", currency: "KRW", short: "T500", tax: "kr-foreign", webHidden: true, group: "kr-listed" },
+  { symbol: "133690.KS", name: "TIGER 미국나스닥100", color: "#1d4ed8", currency: "KRW", short: "TNDQ", tax: "kr-foreign", webHidden: true, group: "kr-listed" },
+  { symbol: "458730.KS", name: "TIGER 미국배당다우존스", color: "#0d9488", currency: "KRW", short: "TDIV", tax: "kr-foreign", webHidden: true, group: "kr-listed" },
 ];
+
+/** 세금 규칙(필드 생략 시 통화로 결정). */
+export function tickerTax(symbol: string): "us" | "kr-domestic" | "kr-foreign" {
+  const i = tickerInfo(symbol);
+  return i.tax ?? ((i.currency ?? "USD") === "KRW" ? "kr-domestic" : "us");
+}
+/** 미니앱에서 고를 수 있는 전체 종목(웹 숨김 포함). */
+export const TOSS_TICKERS: string[] = TICKERS.map((t) => t.symbol);
 
 export const DEFAULT_TICKER = "QLD";
 
