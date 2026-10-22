@@ -1,0 +1,16 @@
+.contribution-comparison { margin: 16px 24px; border: 1px solid var(--grey200); border-radius: 16px; overflow: hidden; }
+.contribution-toggle { display: flex; justify-content: space-between; align-items: center; gap: 12px; width: 100%; min-height: 56px; padding: 16px; border: 0; background: var(--bg); color: var(--grey800); font: inherit; font-weight: 600; text-align: left; }
+.contribution-toggle:focus-visible, .contribution-input input:focus-visible { outline: 2px solid var(--brand-strong); outline-offset: -3px; }
+.contribution-body { padding: 0 16px 18px; }
+.contribution-note { margin: 0 0 4px; color: var(--grey800); font-weight: 600; }
+.contribution-dates { margin: 0 0 18px; font-size: 13px; color: var(--grey600); }
+.contribution-label { display: block; font-size: 14px; color: var(--grey700); }
+.contribution-input { display: flex; align-items: center; gap: 8px; margin: 8px 0 18px; color: var(--grey700); }
+.contribution-input input { min-width: 0; width: 100%; border: 1px solid var(--grey300); border-radius: 10px; padding: 12px; font: inherit; font-size: 20px; color: var(--grey900); background: var(--bg); }
+.contribution-error { color: var(--grey700); font-size: 13px; }
+.contribution-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 12px; line-height: 1.5; color: var(--grey700); }
+.contribution-caption { text-align: left; margin-bottom: 8px; font-size: 13px; color: var(--grey600); }
+.contribution-table th, .contribution-table td { padding: 10px 3px; vertical-align: top; overflow-wrap: anywhere; text-align: right; font-variant-numeric: tabular-nums; }
+.contribution-table th:first-child { width: 28%; text-align: left; font-weight: 500; }
+.contribution-table thead th { font-size: 11px; font-weight: 500; color: var(--grey600); border-bottom: 1px solid var(--grey200); }
+.contribution-value td { color: var(--grey900); font-size: 15px; font-weight: 700; }

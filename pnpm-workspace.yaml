@@ -1,3 +1,17 @@
+packages:
+  - "toss"
+
+# pnpm 11: 빌드 스크립트 허용 여부(placeholder 그대로 두면 pnpm install이 실패한다). pnpm 10은 아래 onlyBuiltDependencies를 읽는다.
+allowBuilds:
+  esbuild: true
+  sharp: true
+  protobufjs: false
+
+minimumReleaseAgeExclude:
+  - '@apps-in-toss/cli@3.8.1'
+  - '@apps-in-toss/devtools@3.8.1'
+  - '@apps-in-toss/web-framework@3.8.1'
+
 # pnpm 10+ 는 네이티브 빌드 스크립트 승인을 여기서 읽는다.
 # (pnpm 9 의 package.json > pnpm.onlyBuiltDependencies 는 pnpm 10+ 에서 무시됨)
 # sharp: next/image·OG 이미지 최적화 / esbuild: 번들러 네이티브 바이너리

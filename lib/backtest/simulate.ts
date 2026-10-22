@@ -332,13 +332,18 @@ export function monthsBetween(a: string, b: string): number {
 
 /** runFirstReach 결과: BacktestResult에 처음 도달 시점 금액을 더한다. */
 export type FirstReachResult = BacktestResult & {
+  /** 매수 주기 계산에 쓴 시작일. 휴장일 이월 전의 기준을 보존한다. */
+  calculationStart: string;
   /** 처음 target을 넘은 날의 평가액·누적 납입원금 (미달이면 오늘 값) */
   reachValue: number;
   reachPrincipal: number;
 };
 
 /**
- * 오늘(최신 데이터일)까지 경로에서 **한 번이라도** target을 넘은 가장 늦은 시작월(=가장 짧은 도달 기간)을 찾는다.
+ * 오늘(최신 데이터일)까지 경로에서 **한 번이라도** target을 넘은 가장 늦은 시작월을 찾는다.
+ * 의미: "가장 최근에 시작해서 처음 10억을 넘은 경우"와 그때까지 걸린 기간(사용자 결정 2026-10-22, A안).
+ * **최단 도달 기간을 보장하지 않는다** — 더 이른 시작이 급등 구간을 타서 더 짧게 도달할 수 있다(firstReach.test.ts 반례).
+ * 최단·중간·최장은 timingRange('시작 시점에 따른 차이')가 맡는다.
  * runToToday(오늘도 target 이상)와 달리, 고점에 잠깐 찍고 내려온 경우도 '도달'로 친다(미니앱 2026-10-22 결정).
  * 반환 의미: reached·reachedDate·months/years/monthsRem = 시작~처음 도달, series = 오늘까지 전체,
  * value·principal·cagr = **오늘** 기준(화면이 "오늘은 N억"을 같이 보여준다), reachValue·reachPrincipal = 도달일 기준.
@@ -374,6 +379,7 @@ export function runFirstReach(rows: Row[], input: BacktestInput): FirstReachResu
   const today = runBacktest(rows, { ...input, buyDay, startDate: chosen, target: Number.MAX_SAFE_INTEGER }); // 오늘 평가액·원금·연복리
   const reachPt = atReach.reachedDate ? atReach.series.find((p) => p.date === atReach.reachedDate) : undefined;
   return {
+    calculationStart: chosen,
     reached: atReach.reached,
     reachedDate: atReach.reachedDate,
     months: atReach.months,
