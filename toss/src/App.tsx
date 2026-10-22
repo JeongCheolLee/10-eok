@@ -4,10 +4,9 @@ import { ResultScreen } from "./screens/ResultScreen";
 import { ClockScreen } from "./screens/ClockScreen";
 import { CompareScreen } from "./screens/CompareScreen";
 import { AdGate, Menu, Toast } from "./components/ui";
-import { DEFAULT_PLAN, type Plan } from "./lib/plan";
+import { DEFAULT_PLAN, cleanHoldings, withHoldings, type Plan } from "./lib/plan";
 import { loadSavedClock, clearClock, type SavedClock } from "./lib/clock";
 import { analytics, closeApp, createRewarded, entryPath, entryQuery, inToss, type Rewarded } from "./lib/platform";
-import { TICKERS } from "@/lib/tickers";
 
 type Screen = "home" | "result" | "clock" | "compare";
 const SCREENS: Screen[] = ["home", "result", "clock", "compare"];
@@ -15,18 +14,23 @@ function readHash(): Screen | null {
   const h = location.hash.replace(/^#/, "") as Screen;
   return SCREENS.includes(h) ? h : null;
 }
-/** 공유 딥링크(intoss://10eok?t=QLD&m=100&d=1&i=0) → 플랜. 종목이 유효할 때만. */
+/** 공유 딥링크(intoss://10eok?t=QLD&m=100&d=1&i=0, 분산 매수는 h=QQQ:50,SCHD:30) → 플랜.
+ *  h가 있으면 우선, 없으면 t·m. 유효하지 않은 티커는 버리고 남는 종목이 없으면 null. */
 function planFromQuery(q: URLSearchParams): Plan | null {
-  const t = (q.get("t") ?? "").toUpperCase();
-  if (!TICKERS.some((x) => x.symbol === t)) return null;
   const num = (k: string, d: number) => { const n = parseInt(q.get(k) ?? "", 10); return Number.isFinite(n) ? n : d; };
-  const mode: Plan["mode"] = q.get("mode") === "amt" ? "amount" : "time";
+  const h = q.get("h");
+  const holdings = h
+    ? cleanHoldings(h.split(",").map((part) => { const [ticker, amount] = part.split(":"); return { ticker, amount: parseInt(amount ?? "", 10) }; }))
+    : cleanHoldings([{ ticker: q.get("t") ?? "", amount: Math.max(1, num("m", 100)) }]);
+  if (holdings.length === 0) return null;
   const f = q.get("f");
   const freq: Plan["freq"] = f === "w" ? "weekly" : f === "d" ? "daily" : "monthly";
   const weekday = Math.min(5, Math.max(1, num("wd", 1))) as Plan["weekday"];
   const s = q.get("s") ?? "";
   const tracking = /^\d{4}-\d{2}-\d{2}$/.test(s);
-  return { ...DEFAULT_PLAN, ticker: t, mode: tracking ? "time" : mode, amount: Math.max(1, num("m", 100)), years: Math.max(1, num("y", 10)), lump: Math.max(0, num("i", 0)), buyDay: Math.min(29, Math.max(1, num("d", 1))), freq, weekday, tracking, startDate: tracking ? s : "", reinvest: q.get("div") !== "0", tax: q.get("tax") === "1" };
+  // 금액 모드는 종목 1개일 때만 연다
+  const mode: Plan["mode"] = q.get("mode") === "amt" && !tracking && holdings.length === 1 ? "amount" : "time";
+  return withHoldings({ ...DEFAULT_PLAN, mode, years: Math.max(1, num("y", 10)), lump: Math.max(0, num("i", 0)), buyDay: Math.min(29, Math.max(1, num("d", 1))), freq, weekday, tracking, startDate: tracking ? s : "", reinvest: q.get("div") !== "0", tax: q.get("tax") === "1" }, holdings);
 }
 
 /** 보상형 광고로 여는 동작. 광고를 끝까지 보면 run, 광고를 못 불러오면 막지 않고 run(토스 정책). */
@@ -40,7 +44,7 @@ export function App() {
   const [ready, setReady] = useState(false);
   const [menu, setMenu] = useState(false);
   const [toast, setToast] = useState("");
-  // 마지막으로 결과를 본 조건. 첫 계산·같은 조건은 무료, 조건을 바꾼 재계산은 [AD] 버튼으로.
+  // 마지막으로 결과를 본 조건(planKey = 플랜 전체 JSON이라 holdings 변경도 '조건 변경'). 첫 계산·같은 조건은 무료, 조건을 바꾼 재계산은 [AD] 버튼으로.
   const [seenKey, setSeenKey] = useState<string | null>(null);
   const [gate, setGate] = useState<{ run: () => void; desc: string; cta: string } | null>(null);
   const rewarded = useRef<Rewarded | null>(null);
@@ -104,7 +108,7 @@ export function App() {
     default:
       {
         const adNeeded = seenKey !== null && seenKey !== planKey(plan);
-        const submit = () => { analytics.click("calculate", { ticker: plan.ticker, mode: plan.mode, ad: adNeeded }); go("result"); };
+        const submit = () => { analytics.click("calculate", { ticker: plan.ticker, holdings: plan.holdings.length, mode: plan.mode, ad: adNeeded }); go("result"); };
         body = <InputScreen plan={plan} setPlan={setPlan} adNeeded={adNeeded} onSubmit={() => (adNeeded ? watchAd("recalc", submit, { desc: "끝까지 보면 바꾼 조건으로 계산해요.", cta: "계산 결과 보기" }) : submit())} hasClock={!!saved} goClock={() => go("clock")} {...common} />;
       }
   }

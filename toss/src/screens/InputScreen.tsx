@@ -1,24 +1,41 @@
 import { useEffect, useState } from "react";
 import { Button, ListRow, SegmentedControl, Switch, Top } from "@toss/tds-mobile";
 import { tickerTitle, tickerSubtitle } from "@/lib/tickers";
-import { NavBar, Stepper, TickerSheet, Avatar } from "../components/ui";
+import { NavBar, Stepper, TickerSheet, Avatar, HoldingRow } from "../components/ui";
 import { analytics } from "../lib/platform";
 import { manLabel, freqWord } from "../lib/fmt";
-import { AMOUNT_CHIPS, AMOUNT_MIN, AMOUNT_STEP, type Plan, type Freq, type Weekday } from "../lib/plan";
+import { AMOUNT_CHIPS, AMOUNT_MIN, AMOUNT_STEP, MAX_HOLDINGS, withHoldings, totalAmount, type Plan, type Freq, type Weekday, type Holding } from "../lib/plan";
 
 const TODAY = new Date().toISOString().slice(0, 10);
 
 export function InputScreen({ plan, setPlan, onSubmit, adNeeded = false, hasClock, goClock, onMenu, onClose }: {
   plan: Plan; setPlan: (p: Plan) => void; onSubmit: () => void; adNeeded?: boolean; hasClock: boolean; goClock: () => void; onMenu: () => void; onClose: () => void;
 }) {
-  const [sheet, setSheet] = useState(false);
+  // 종목 시트: 바꿀 행 번호, -1 = 새로 추가, null = 닫힘
+  const [sheet, setSheet] = useState<number | null>(null);
   useEffect(() => { analytics.screen("home"); }, []);
   const set = (patch: Partial<Plan>) => setPlan({ ...plan, ...patch });
+  const hs = plan.holdings;
+  const multi = hs.length > 1;
+  const midChip = (f: Freq) => { const chips = AMOUNT_CHIPS[f]; return chips[Math.floor(chips.length / 2)]; };
+  const setHs = (next: Holding[], patch: Partial<Plan> = {}) => setPlan(withHoldings({ ...plan, ...patch }, next));
+  const setAmount = (i: number, v: number) => setHs(hs.map((h, j) => (j === i ? { ...h, amount: v } : h)));
   const setFreq = (f: Freq) => {
     // 주기를 바꾸면 금액 단위가 달라지므로 프리셋 중간값으로 맞춘다
-    const chips = AMOUNT_CHIPS[f];
-    set({ freq: f, amount: chips[Math.floor(chips.length / 2)] });
+    setHs(hs.map((h) => ({ ...h, amount: midChip(f) })), { freq: f });
   };
+  const pick = (t: string) => {
+    if (sheet === -1) {
+      // 금액 모드는 종목 1개일 때만 — 종목을 더하면 기간 모드로
+      setHs([...hs, { ticker: t, amount: midChip(plan.freq) }], { mode: "time" });
+      analytics.click("add_holding", { ticker: t, count: hs.length + 1 });
+    } else if (sheet != null) {
+      setHs(hs.map((h, j) => (j === sheet ? { ...h, ticker: t } : h)));
+      analytics.click("pick_ticker", { ticker: t });
+    }
+    setSheet(null);
+  };
+  const remove = (i: number) => { setHs(hs.filter((_, j) => j !== i)); analytics.click("remove_holding", { count: hs.length - 1 }); };
   const canSubmit = !plan.tracking || /^\d{4}-\d{2}-\d{2}$/.test(plan.startDate);
   return (
     <div className="screen">
@@ -36,22 +53,38 @@ export function InputScreen({ plan, setPlan, onSubmit, adNeeded = false, hasCloc
       )}
       {!plan.tracking && (
         <div className="seg-wrap">
-          <SegmentedControl size="large" value={plan.mode} onChange={(v) => set({ mode: v === "amount" ? "amount" : "time" })} aria-label="계산 모드">
+          <SegmentedControl size="large" value={plan.mode} onChange={(v) => set({ mode: v === "amount" && !multi ? "amount" : "time" })} aria-label="계산 모드">
             <SegmentedControl.Item value="time">걸리는 기간</SegmentedControl.Item>
-            <SegmentedControl.Item value="amount">넣을 돈</SegmentedControl.Item>
+            <SegmentedControl.Item value="amount" disabled={multi}>넣을 돈</SegmentedControl.Item>
           </SegmentedControl>
+          {multi && <p className="seg-note">넣을 돈 계산은 종목이 하나일 때 할 수 있어요</p>}
         </div>
       )}
 
-      <ul className="tds-list">
-        <ListRow
-          left={<Avatar symbol={plan.ticker} size={40} />}
-          contents={<ListRow.Texts type="2RowTypeA" top={`${tickerTitle(plan.ticker)} · ${tickerSubtitle(plan.ticker)}`} bottom="종목" />}
-          withArrow
-          onClick={() => setSheet(true)}
-          aria-haspopup="dialog"
-        />
-      </ul>
+      {multi ? (
+        <>
+          <div className="holdings-head">
+            <span className="field-label">{hs.length}개 종목에 나눠 사요</span>
+            <span className="holdings-total">{freqWord(plan.freq)} {manLabel(totalAmount(plan))}</span>
+          </div>
+          {hs.map((h, i) => (
+            <HoldingRow key={h.ticker} symbol={h.ticker} value={h.amount} unit="만원" min={AMOUNT_MIN[plan.freq]} max={100_000} step={AMOUNT_STEP[plan.freq]} onChange={(v) => setAmount(i, v)} onPick={() => setSheet(i)} onRemove={() => remove(i)} />
+          ))}
+        </>
+      ) : (
+        <ul className="tds-list">
+          <ListRow
+            left={<Avatar symbol={plan.ticker} size={40} />}
+            contents={<ListRow.Texts type="2RowTypeA" top={`${tickerTitle(plan.ticker)} · ${tickerSubtitle(plan.ticker)}`} bottom="종목" />}
+            withArrow
+            onClick={() => setSheet(0)}
+            aria-haspopup="dialog"
+          />
+        </ul>
+      )}
+      {hs.length < MAX_HOLDINGS && (
+        <button type="button" className="add-row" onClick={() => setSheet(-1)} aria-haspopup="dialog"><span className="plus" aria-hidden="true">+</span>종목 추가하기</button>
+      )}
 
       <div className="seg-wrap">
         <SegmentedControl size="small" value={plan.freq} onChange={(v) => setFreq(v as Freq)} aria-label="사는 주기">
@@ -61,8 +94,8 @@ export function InputScreen({ plan, setPlan, onSubmit, adNeeded = false, hasCloc
         </SegmentedControl>
       </div>
 
-      {plan.mode === "time" || plan.tracking ? (
-        <Stepper id="amount" label={`${freqWord(plan.freq)} 넣을 돈`} value={plan.amount} unit="만원" min={AMOUNT_MIN[plan.freq]} max={100_000} step={AMOUNT_STEP[plan.freq]} chips={AMOUNT_CHIPS[plan.freq]} chipLabel={manLabel} onChange={(v) => set({ amount: v })} accent />
+      {multi ? null : plan.mode === "time" || plan.tracking ? (
+        <Stepper id="amount" label={`${freqWord(plan.freq)} 넣을 돈`} value={plan.amount} unit="만원" min={AMOUNT_MIN[plan.freq]} max={100_000} step={AMOUNT_STEP[plan.freq]} chips={AMOUNT_CHIPS[plan.freq]} chipLabel={manLabel} onChange={(v) => setAmount(0, v)} accent />
       ) : (
         <Stepper id="years" label="몇 년 안에 모을까요?" value={plan.years} unit="년" min={1} max={40} step={1} chips={[5, 10, 15, 20]} chipLabel={(y) => `${y}년`} onChange={(v) => set({ years: v })} accent />
       )}
@@ -110,7 +143,7 @@ export function InputScreen({ plan, setPlan, onSubmit, adNeeded = false, hasCloc
       <div className="cta-bar">
         <Button display="full" size="xlarge" disabled={!canSubmit} onClick={onSubmit}>{plan.tracking ? "내 돈 계산하기" : plan.mode === "time" ? "10억까지 계산하기" : "필요한 금액 계산하기"}{adNeeded && <span className="ad-chip">AD</span>}</Button>
       </div>
-      {sheet && <TickerSheet current={plan.ticker} onPick={(t) => { set({ ticker: t }); setSheet(false); analytics.click("pick_ticker", { ticker: t }); }} onClose={() => setSheet(false)} />}
+      {sheet != null && <TickerSheet current={sheet >= 0 ? hs[sheet]?.ticker ?? "" : ""} taken={hs.map((h) => h.ticker)} onPick={pick} onClose={() => setSheet(null)} />}
     </div>
   );
 }

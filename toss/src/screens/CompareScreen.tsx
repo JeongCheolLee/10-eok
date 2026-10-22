@@ -5,8 +5,8 @@ import { tickerTitle, tickerSubtitle } from "@/lib/tickers";
 import { NavBar, Avatar } from "../components/ui";
 import { loadRows } from "../lib/data";
 import { analytics, DATA_BASE } from "../lib/platform";
-import { calcPlan, DEFAULT_PLAN, type Plan } from "../lib/plan";
-import { fmt, mdKo, durKo, freqAdverb, freqWord } from "../lib/fmt";
+import { calcPlan, singlePlan, totalAmount, DEFAULT_PLAN, type Plan } from "../lib/plan";
+import { fmt, mdKo, durKo, freqAdverb, freqWord, manLabel } from "../lib/fmt";
 
 type RowOut = { symbol: string; reached: boolean; years: number; monthsRem: number; months: number; value: number; cagr: number; dataEnd?: string };
 type Summary = { dataEnd: string | null; rows: RowOut[] };
@@ -20,13 +20,15 @@ export function CompareScreen({ plan, back, onMenu, onClose }: { plan: Plan; bac
   const [out, setOut] = useState<RowOut[]>([]);
   const [done, setDone] = useState(false);
   const [asOf, setAsOf] = useState("");
-  const monthlyMan = plan.mode === "time" || plan.tracking ? plan.amount : 100;
+  // 분산 매수면 1회 적립액 합계를 한 종목에 넣었다고 본다
+  const multi = plan.holdings.length > 1;
+  const monthlyMan = plan.mode === "time" || plan.tracking ? totalAmount(plan) : 100;
   useEffect(() => { analytics.screen("compare"); }, []);
   useEffect(() => {
     let on = true;
     setOut([]); setDone(false);
     const syms = MARKETS.ko.tickers;
-    const p: Plan = { ...plan, mode: "time", tracking: false, startDate: "", amount: monthlyMan };
+    const p: Plan = singlePlan({ ...plan, mode: "time", tracking: false, startDate: "" }, plan.ticker, monthlyMan);
     (async () => {
       if (isDefaultScenario(p)) {
         try {
@@ -42,7 +44,7 @@ export function CompareScreen({ plan, back, onMenu, onClose }: { plan: Plan; bac
       for (const symbol of syms) {
         try {
           const rows = await loadRows(symbol);
-          const r = calcPlan(rows, { ...p, ticker: symbol }).result;
+          const r = calcPlan({ [symbol]: rows }, singlePlan(p, symbol, monthlyMan)).result;
           acc.push({ symbol, reached: r.reached, years: r.years, monthsRem: r.monthsRem, months: r.months, value: r.value, cagr: r.cagr, dataEnd: rows[rows.length - 1].date });
           ends.add(rows[rows.length - 1].date);
           if (on) { setOut([...acc]); setAsOf(ends.size === 1 ? [...ends][0]! : ""); }
@@ -52,7 +54,7 @@ export function CompareScreen({ plan, back, onMenu, onClose }: { plan: Plan; bac
       if (on) { setOut(acc); setDone(true); }
     })();
     return () => { on = false; };
-  }, [plan.ticker, plan.lump, plan.buyDay, plan.freq, plan.weekday, plan.reinvest, plan.tax, monthlyMan]);
+  }, [plan.ticker, multi, plan.lump, plan.buyDay, plan.freq, plan.weekday, plan.reinvest, plan.tax, monthlyMan]);
 
   return (
     <div className="screen">
@@ -60,7 +62,7 @@ export function CompareScreen({ plan, back, onMenu, onClose }: { plan: Plan; bac
       <Top
         upperGap={16}
         lowerGap={4}
-        title={<Top.TitleParagraph size={22}>{freqWord(plan.freq)} {monthlyMan}만원이면,<br />10억까지 누가 빨랐을까요</Top.TitleParagraph>}
+        title={<Top.TitleParagraph size={22}>{multi ? <>{freqWord(plan.freq)} {manLabel(monthlyMan)}을 한 종목에 넣었다면,<br />10억까지 누가 빨랐을까요</> : <>{freqWord(plan.freq)} {monthlyMan}만원이면,<br />10억까지 누가 빨랐을까요</>}</Top.TitleParagraph>}
         subtitleBottom={<Top.SubtitleParagraph size={15}>{MARKETS.ko.tickers.length}개 ETF를 {freqAdverb(plan)} 샀다면? {asOf ? `${mdKo(asOf)} 종가` : "종목별 최근 종가"}에서 거꾸로 계산했어요. 배당은 {plan.reinvest ? "다시 샀고" : "빼고"}, 세금·수수료는 계산에 넣지 않았어요.</Top.SubtitleParagraph>}
       />
       <div className="list-cols"><span>종목</span><span>10억까지 · 연평균</span></div>

@@ -27,3 +27,9 @@ export function loadRows(ticker: string): Promise<Row[]> {
   }
   return p;
 }
+
+/** 여러 종목을 한 번에(Promise.all). 하나라도 실패하면 reject. */
+export async function loadRowsBy(tickers: string[]): Promise<Record<string, Row[]>> {
+  const list = await Promise.all(tickers.map((t) => loadRows(t)));
+  return Object.fromEntries(tickers.map((t, i) => [t.toUpperCase(), list[i]]));
+}

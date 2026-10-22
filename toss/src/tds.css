@@ -210,3 +210,16 @@ input[type="date"].select { font-size: 18px; min-height: 29px; }
 .saved-row .row-title { white-space: normal; word-break: keep-all; }
 .cg-v svg { flex: 0 0 auto; }
 .ad-chip { margin-left: 8px; font-size: 11px; font-weight: 700; line-height: 1; padding: 4px 6px; border-radius: 4px; background: rgba(255, 255, 255, 0.24); color: #fff; vertical-align: middle; }
+
+/* 분산 매수 */
+.holding-row { gap: 10px; padding-right: 12px; }
+.holding-pick { border: 0; background: transparent; padding: 0; border-radius: 50%; flex: 0 0 auto; }
+.holding-del { width: 32px; height: 32px; color: var(--grey500); flex: 0 0 auto; }
+.holding-del svg { width: 18px; height: 18px; }
+.add-row { display: flex; align-items: center; gap: 10px; width: calc(100% - 40px); margin: 4px 20px 0; padding: 12px 4px; border: 0; background: transparent; font-size: 15px; font-weight: 600; color: var(--brand-strong); text-align: left; }
+.add-row .plus { width: 36px; height: 36px; border-radius: 50%; background: var(--brand-weak); display: inline-flex; align-items: center; justify-content: center; font-size: 20px; }
+.holdings-head { display: flex; align-items: baseline; justify-content: space-between; padding: 16px 24px 2px; }
+.holdings-total { font-size: 20px; font-weight: 700; color: var(--grey900); font-variant-numeric: tabular-nums; }
+.seg-note { padding: 6px 24px 0; margin: 0; font-size: 13px; line-height: 19.5px; color: var(--grey600); }
+.list-btn:disabled { opacity: 0.45; }
+.seg-wrap .seg-note { padding: 6px 0 0; }

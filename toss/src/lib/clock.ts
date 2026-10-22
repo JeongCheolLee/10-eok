@@ -1,18 +1,21 @@
 import { storage } from "./platform";
-import type { Plan } from "./plan";
+import { normalizePlan, type Plan } from "./plan";
 
+// v2(2026-10-22): plan.holdings 추가. 키는 그대로 두고 v1 저장본은 읽을 때 holdings=[{ticker, amount}]로 옮긴다.
 const KEY = "10eok-toss-clock-v1";
-export type SavedClock = { v: 1; plan: Plan; savedAt: string };
+export type SavedClock = { v: 2; plan: Plan; savedAt: string };
+type SavedV1 = { v: 1; plan: Omit<Plan, "holdings">; savedAt: string };
 
 function parse(raw: string | null): SavedClock | null {
   if (!raw) return null;
   try {
-    const j = JSON.parse(raw) as SavedClock;
-    return j && j.v === 1 && j.plan ? j : null;
+    const j = JSON.parse(raw) as SavedClock | SavedV1;
+    if (!j || !j.plan || (j.v !== 1 && j.v !== 2)) return null;
+    return { v: 2, plan: normalizePlan(j.plan as Partial<Plan>), savedAt: j.savedAt };
   } catch { return null; }
 }
 export async function loadSavedClock(): Promise<SavedClock | null> { return parse(await storage.get(KEY)); }
 export async function saveClock(plan: Plan): Promise<void> {
-  await storage.set(KEY, JSON.stringify({ v: 1, plan, savedAt: new Date().toISOString() } satisfies SavedClock));
+  await storage.set(KEY, JSON.stringify({ v: 2, plan: normalizePlan(plan), savedAt: new Date().toISOString() } satisfies SavedClock));
 }
 export async function clearClock(): Promise<void> { await storage.remove(KEY); }

@@ -1,13 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { Button, ListRow } from "@toss/tds-mobile";
-import type { Row } from "@/lib/backtest/types";
 import { tickerTitle, tickerSubtitle } from "@/lib/tickers";
 import { NavBar, Ring, Check, Avatar, ChevronRight } from "../components/ui";
-import { loadRows } from "../lib/data";
+import { loadRows, loadRowsBy } from "../lib/data";
 import { analytics } from "../lib/platform";
-import { clockStats, calcPlan, type Plan, type ClockStats } from "../lib/plan";
+import { clockStats, calcPlan, singlePlan, type ClockStats, type RowsBy } from "../lib/plan";
 import type { SavedClock } from "../lib/clock";
-import { fmt, manLabel, ymKo, mdKo, durKo, signedWon, signedPct, freqLabel, freqWord } from "../lib/fmt";
+import { fmt, manLabel, ymKo, mdKo, durKo, signedWon, signedPct, freqLabel, freqWord, holdingsTitle } from "../lib/fmt";
 
 type Other = { symbol: string; years: number; monthsRem: number; reached: boolean; value: number; cagr: number };
 
@@ -15,24 +14,34 @@ export function ClockScreen({ saved, goHome, goResult, goCompare, onEdit, onMenu
   saved: SavedClock | null; goHome: () => void; goResult: () => void; goCompare: () => void; onEdit: () => void; onMenu: () => void; onClose: () => void;
 }) {
   const plan = saved?.plan ?? null;
-  const [rows, setRows] = useState<Row[] | null>(null);
+  const [rowsBy, setRowsBy] = useState<RowsBy | null>(null);
+  const [err, setErr] = useState(false);
+  const [retry, setRetry] = useState(0);
   const [others, setOthers] = useState<Other[]>([]);
+  const tickersKey = plan ? plan.holdings.map((h) => h.ticker).join(",") : "";
+  const multi = !!plan && plan.holdings.length > 1;
   useEffect(() => { analytics.screen("clock", { saved: !!saved }); }, [saved]);
   useEffect(() => {
     if (!plan) return;
     let on = true;
-    setRows(null);
-    loadRows(plan.ticker).then((r) => { if (on) setRows(r); }).catch(() => {});
+    setRowsBy(null); setErr(false);
+    loadRowsBy(plan.holdings.map((h) => h.ticker)).then((r) => { if (on) setRowsBy(r); }).catch(() => { if (on) setErr(true); });
     return () => { on = false; };
-  }, [plan?.ticker]);
-  const stats: ClockStats | null = useMemo(() => (rows && plan ? clockStats(rows, plan) : null), [rows, plan]);
+  }, [tickersKey, retry]); // eslint-disable-line react-hooks/exhaustive-deps
+  const stats: ClockStats | "error" | null = useMemo(() => {
+    if (!rowsBy || !plan) return null;
+    try { return clockStats(rowsBy, plan); } catch (e) { console.error(e); return "error"; }
+  }, [rowsBy, plan]);
   useEffect(() => {
-    if (!plan || !stats) return;
+    if (!plan || !stats || stats === "error") return;
     let on = true;
-    const picks = ["TQQQ", "SOXX", "SPY", "QQQ"].filter((t) => t !== plan.ticker).slice(0, 3);
-    const p: Plan = { ...plan, mode: "time", tracking: false, startDate: "", amount: Math.round(stats.monthlyWon / 10_000) };
+    const mine = plan.holdings.map((h) => h.ticker);
+    const picks = ["TQQQ", "SOXX", "SPY", "QQQ"].filter((t) => !mine.includes(t)).slice(0, 3);
+    // 같은 조건(분산 매수면 합계 금액)을 한 종목에 넣었을 때
+    const p = { ...plan, mode: "time" as const, tracking: false, startDate: "" };
+    const man = Math.round(stats.monthlyWon / 10_000);
     Promise.all(picks.map(async (symbol) => {
-      const r = calcPlan(await loadRows(symbol), { ...p, ticker: symbol }).result;
+      const r = calcPlan({ [symbol]: await loadRows(symbol) }, singlePlan(p, symbol, man)).result;
       return { symbol, years: r.years, monthsRem: r.monthsRem, reached: r.reached, value: r.value, cagr: r.cagr };
     })).then((o) => { if (on) setOthers(o); }).catch(() => {});
     return () => { on = false; };
@@ -51,6 +60,18 @@ export function ClockScreen({ saved, goHome, goResult, goCompare, onEdit, onMenu
       </div>
     );
   }
+  if (err || stats === "error") {
+    return (
+      <div className="screen">
+        <NavBar onMenu={onMenu} onClose={onClose} />
+        <div className="state">
+          <div className="state-title">데이터를 불러오지 못했어요</div>
+          <div className="state-desc">잠시 후 다시 시도해 주세요</div>
+          <Button size="large" onClick={() => setRetry((n) => n + 1)}>다시 시도하기</Button>
+        </div>
+      </div>
+    );
+  }
   if (!stats) {
     return (
       <div className="screen">
@@ -61,7 +82,8 @@ export function ClockScreen({ saved, goHome, goResult, goCompare, onEdit, onMenu
   }
   const down = stats.delta < 0;
   const dayShift = stats.daysAheadToday != null && stats.daysAheadYesterday != null ? stats.daysAheadToday - stats.daysAheadYesterday : null;
-  const cond = `${tickerTitle(plan.ticker)} · ${plan.lump > 0 ? `목돈 ${manLabel(plan.lump)} · ` : ""}${freqWord(plan.freq)} ${fmt.amount(stats.monthlyWon)} · ${freqLabel(plan)}${stats.tracking ? ` · ${ymKo(stats.startDate)}부터` : ""}`;
+  const names = multi ? plan.holdings.map((h) => `${tickerTitle(h.ticker)} ${manLabel(h.amount)}`).join(", ") : holdingsTitle(plan);
+  const cond = `${names} · ${plan.lump > 0 ? `목돈 ${manLabel(plan.lump)} · ` : ""}${freqWord(plan.freq)} ${fmt.amount(stats.monthlyWon)} · ${freqLabel(plan)}${stats.tracking ? ` · ${ymKo(stats.startDate)}부터` : ""}`;
   const pct = Math.round(stats.progress * 100);
 
   return (
@@ -99,7 +121,7 @@ export function ClockScreen({ saved, goHome, goResult, goCompare, onEdit, onMenu
       </div>
 
       <div className="list-head">
-        <span>같은 조건, 다른 종목이었다면</span>
+        <span>{multi ? "같은 금액을 한 종목에 넣었다면" : "같은 조건, 다른 종목이었다면"}</span>
         <button type="button" className="text-btn" onClick={goCompare}>전체 보기 <ChevronRight /></button>
       </div>
       <ul className="tds-list">

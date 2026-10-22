@@ -1,4 +1,5 @@
 import { getFormatter } from "@/lib/i18n/format";
+import { tickerTitle } from "@/lib/tickers";
 
 export const fmt = getFormatter("ko");
 
@@ -40,4 +41,9 @@ export function freqAdverb(p: { freq: "monthly" | "weekly" | "daily"; buyDay: nu
 /** "매달 넣을 돈" 류 라벨의 앞말 */
 export function freqWord(freq: "monthly" | "weekly" | "daily"): string {
   return freq === "daily" ? "매일" : freq === "weekly" ? "매주" : "매달";
+}
+
+/** 보유 종목 이름 나열: "QLD" · "QQQ·SCHD" */
+export function holdingsTitle(p: { holdings: { ticker: string }[] }): string {
+  return p.holdings.map((h) => tickerTitle(h.ticker)).join("·");
 }

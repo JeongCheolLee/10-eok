@@ -144,6 +144,36 @@ export function Stepper({ id, label, value, unit, min, max, step, chips, chipLab
   );
 }
 
+/* ── 분산 매수 종목 행: 아바타(누르면 종목 변경) · 이름 · 금액 입력 · −/+ · 빼기 ── */
+export function HoldingRow({ symbol, value, unit, min, max, step, onChange, onPick, onRemove }: {
+  symbol: string; value: number; unit: string; min: number; max: number; step: number;
+  onChange: (v: number) => void; onPick: () => void; onRemove: () => void;
+}) {
+  const [text, setText] = useState(String(value));
+  useEffect(() => { setText(String(value)); }, [value]);
+  const clamp = (v: number) => Math.min(max, Math.max(min, v));
+  const commit = () => { const n = parseInt(text.replace(/[^0-9]/g, ""), 10); onChange(Number.isFinite(n) ? clamp(n) : value); };
+  const name = tickerTitle(symbol);
+  const id = `h-${symbol}`;
+  return (
+    <div className="row holding-row">
+      <button type="button" className="holding-pick" aria-label={`${name} 종목 바꾸기`} aria-haspopup="dialog" onClick={onPick}><Avatar symbol={symbol} size={36} /></button>
+      <label htmlFor={id} className="field">
+        <span className="field-label">{name}</span>
+        <span className="field-value-wrap">
+          <input id={id} className="field-input" inputMode="numeric" value={text} onChange={(e) => setText(e.target.value)} onBlur={commit} onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }} style={{ width: `${Math.max(2, text.length + 0.5)}ch` }} />
+          <span className="unit">{unit}</span>
+        </span>
+      </label>
+      <div className="stepper-btns">
+        <button type="button" className="stepper-btn" aria-label={`${name} 금액 줄이기`} onClick={() => onChange(clamp(value - step))}>−</button>
+        <button type="button" className="stepper-btn" aria-label={`${name} 금액 늘리기`} onClick={() => onChange(clamp(value + step))}>+</button>
+      </div>
+      <button type="button" className="icon-btn holding-del" aria-label={`${name} 빼기`} onClick={onRemove}><XIcon /></button>
+    </div>
+  );
+}
+
 /* ── 스위치 행 (ListRow right=Switch) ── */
 export function SwitchRow({ id, title, desc, checked, onChange, disabled }: { id: string; title: string; desc?: string; checked: boolean; onChange: (v: boolean) => void; disabled?: boolean }) {
   return (
@@ -156,7 +186,8 @@ export function SwitchRow({ id, title, desc, checked, onChange, disabled }: { id
 }
 
 /* ── 바텀시트: 종목 선택 (검색) ── */
-export function TickerSheet({ current, onPick, onClose }: { current: string; onPick: (t: string) => void; onClose: () => void }) {
+/** taken: 다른 행에서 이미 고른 종목(선택 불가) */
+export function TickerSheet({ current, taken = [], onPick, onClose }: { current: string; taken?: string[]; onPick: (t: string) => void; onClose: () => void }) {
   const [q, setQ] = useState("");
   const ref = useRef<HTMLInputElement>(null);
   useEffect(() => { ref.current?.focus(); }, []);
@@ -170,13 +201,16 @@ export function TickerSheet({ current, onPick, onClose }: { current: string; onP
           <input ref={ref} className="search" placeholder="종목 검색" value={q} onChange={(e) => setQ(e.target.value)} aria-label="종목 검색" />
         </div>
         <div className="sheet-list">
-          {list.map((t) => (
-            <button key={t.symbol} type="button" className="list-row list-btn" aria-pressed={t.symbol === current} onClick={() => onPick(t.symbol)}>
+          {list.map((t) => {
+            const isTaken = t.symbol !== current && taken.includes(t.symbol);
+            return (
+            <button key={t.symbol} type="button" className="list-row list-btn" aria-pressed={t.symbol === current} disabled={isTaken} onClick={() => onPick(t.symbol)}>
               <span className="avatar" style={{ background: t.color }}>{tickerMonogram(t.symbol)}</span>
-              <span className="field"><span className="row-title">{tickerTitle(t.symbol)}</span><span className="row-desc">{tickerSubtitle(t.symbol)}{t.splice ? " · 상장 전은 추정치" : ""}{t.shortHistory ? " · 데이터가 짧아요" : ""}</span></span>
+              <span className="field"><span className="row-title">{tickerTitle(t.symbol)}</span><span className="row-desc">{isTaken ? "이미 담았어요" : <>{tickerSubtitle(t.symbol)}{t.splice ? " · 상장 전은 추정치" : ""}{t.shortHistory ? " · 데이터가 짧아요" : ""}</>}</span></span>
               {t.symbol === current && <span className="brand-text" aria-hidden="true"><Check /></span>}
             </button>
-          ))}
+            );
+          })}
           {list.length === 0 && <div className="empty">검색 결과가 없어요</div>}
         </div>
         <div className="sheet-foot"><button type="button" className="btn dark-weak md" onClick={onClose}>닫기</button></div>
