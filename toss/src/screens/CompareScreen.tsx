@@ -15,7 +15,8 @@ type Summary = { dataEnd: string | null; rows: RowOut[] };
  *  미니앱 전체 종목 요약(toss.json)을 먼저, 없으면 웹 16종 요약(ko.json), 그것도 없으면 직접 계산. */
 /** 상장 전 구간을 유사 지수로 이어 붙인 종목(레지스트리 splice 필드) — 하단 안내용 */
 const SPLICED = TOSS_TICKERS.filter((t) => tickerInfo(t).splice).map(tickerTitle).join("·");
-const SUMMARY_FILES = ["summary/toss.json", "summary/ko.json"];
+// 처음 10억 도달 기준(10/22)으로 만든 toss.json만 쓴다. 행에 reachDate 키가 없으면 옛 기준(오늘도 10억 이상)이라 직접 계산.
+const SUMMARY_FILES = ["summary/toss.json"];
 function isDefaultScenario(p: Plan): boolean {
   return p.mode === "time" && p.freq === "monthly" && p.amount === DEFAULT_PLAN.amount && p.buyDay === 1 && p.lump === 0 && p.reinvest && !p.tax;
 }
@@ -41,7 +42,7 @@ export function CompareScreen({ plan, back, onMenu, onClose }: { plan: Plan; bac
             if (!res.ok) continue;
             const s = (await res.json()) as Summary;
             if (!on) return;
-            if (Array.isArray(s.rows) && s.rows.length > 0) { setOut(s.rows); const ends = new Set(s.rows.map((r) => r.dataEnd).filter(Boolean)); setAsOf(ends.size === 1 ? [...ends][0]! : ""); setDone(true); return; }
+            if (Array.isArray(s.rows) && s.rows.length > 0 && "reachDate" in s.rows[0]) { setOut(s.rows); const ends = new Set(s.rows.map((r) => r.dataEnd).filter(Boolean)); setAsOf(ends.size === 1 ? [...ends][0]! : ""); setDone(true); return; }
           } catch { /* 이 요약 파일이 없으면 다음 후보 → 직접 계산 */ }
         }
       }
@@ -78,12 +79,12 @@ export function CompareScreen({ plan, back, onMenu, onClose }: { plan: Plan; bac
             key={o.symbol}
             left={<Avatar symbol={o.symbol} />}
             contents={<ListRow.Texts type="2RowTypeA" top={tickerTitle(o.symbol)} bottom={tossSubtitle(o.symbol)} />}
-            right={<span className="right"><span className={"row-title" + (o.reached ? "" : " muted")}>{o.reached ? durKo(o.years, o.monthsRem) : `다 모아도 ${fmt.money(o.value)}`}</span><span className="row-desc">{o.reached ? "" : `${durKo(o.years, o.monthsRem)} · `}연평균 {fmt.pct(o.cagr)}</span></span>}
+            right={<span className="right"><span className={"row-title" + (o.reached ? "" : " muted")}>{o.reached ? durKo(o.years, o.monthsRem) : `다 모아도 ${fmt.money(o.value)}`}</span><span className="row-desc">{o.reached ? (o.value < 1e9 ? `지금 ${fmt.money(o.value)} · ` : "") : `${durKo(o.years, o.monthsRem)} · `}연평균 {fmt.pct(o.cagr)}</span></span>}
           />
         ))}
         {!done && <ListRow contents={<ListRow.Texts type="1RowTypeA" top={`${out.length}/${TOSS_TICKERS.length} 계산 중…`} />} />}
       </ul>
-      <p className="disc">'10억까지'는 오늘부터 거꾸로 센 기간이에요. 10억에 못 미친 종목은 데이터가 있는 전체 기간을 모았을 때 금액이에요. {SPLICED} 상장 전 구간은 비슷한 지수로 추정했어요.</p>
+      <p className="disc">'10억까지'는 처음 10억을 넘기까지 걸린 가장 짧은 기간이에요. 그 뒤 10억 아래로 내려온 종목은 지금 금액을 같이 적었어요. 10억에 못 미친 종목은 데이터가 있는 전체 기간을 모았을 때 금액이에요. {SPLICED} 상장 전 구간은 비슷한 지수로 추정했어요.</p>
       <p className="disc">과거 성과가 미래 수익을 보장하지 않아요. 특정 종목을 추천하지 않고, 투자 판단과 책임은 본인에게 있어요.</p>
     </div>
   );

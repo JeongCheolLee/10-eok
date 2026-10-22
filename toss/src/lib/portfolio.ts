@@ -331,3 +331,50 @@ function ymOf(iso: string): [number, number] {
 }
 function pad(n: number): string { return n < 10 ? "0" + n : String(n); }
 function maxDate(a: string, b: string): string { return a >= b ? a : b; }
+
+/** portfolioFirstReach 결과 — runFirstReach와 같은 의미(기간=처음 도달까지, value·principal·cagr=오늘, reachValue=도달일). */
+export type PortfolioReachResult = PortfolioResult & { reachValue: number; reachPrincipal: number };
+
+/**
+ * 분산 매수 버전 runFirstReach: 합계가 오늘까지 한 번이라도 target을 넘은 가장 늦은 시작월.
+ * 세금은 미니앱 UI에서 제거됐지만(10/22) opts.tax를 그대로 runPortfolio에 넘긴다.
+ */
+export function portfolioFirstReach(rowsBy: Record<string, Row[]>, holdings: Holding[], opts: PortfolioOpts): PortfolioReachResult {
+  const rows = rowsOf(rowsBy, holdings);
+  const { start: commonStart } = commonStartOf(holdings, rows, "0000-01-01");
+  const endDate = lastDateOf(rows);
+  const [y0, m0] = ymOf(commonStart);
+  const [yT, mT] = ymOf(endDate);
+  const starts: string[] = [];
+  for (let y = y0, m = m0; y < yT || (y === yT && m <= mT); ) {
+    starts.push(`${y}-${pad(m)}-01`);
+    m++;
+    if (m > 12) { m = 1; y++; }
+  }
+  const sim = (s: string) => runPortfolio(rowsBy, holdings, opts, maxDate(s, commonStart));
+  let ans = -1;
+  if (opts.lump > 0) {
+    for (let i = starts.length - 1; i >= 0; i--) if (sim(starts[i]).reached) { ans = i; break; }
+  } else {
+    let lo = 0, hi = starts.length - 1;
+    while (lo <= hi) {
+      const mid = (lo + hi) >> 1;
+      if (sim(starts[mid]).reached) { ans = mid; lo = mid + 1; } else hi = mid - 1;
+    }
+  }
+  const chosen = maxDate(ans >= 0 ? starts[ans] : starts[0], commonStart);
+  const atReach = sim(chosen);
+  const today = runPortfolio(rowsBy, holdings, { ...opts, target: Number.MAX_SAFE_INTEGER }, chosen);
+  const reachPt = atReach.reachedDate ? today.series.find((p) => p.date === atReach.reachedDate) : undefined;
+  return {
+    ...today,
+    reached: atReach.reached,
+    reachedDate: atReach.reachedDate,
+    months: atReach.months,
+    years: atReach.years,
+    monthsRem: atReach.monthsRem,
+    limitedBy: ans >= 0 ? atReach.limitedBy : today.limitedBy,
+    reachValue: atReach.reached ? atReach.value : today.value,
+    reachPrincipal: reachPt ? reachPt.principal : today.principal,
+  };
+}

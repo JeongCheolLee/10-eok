@@ -1,7 +1,7 @@
-import { runToToday, runBacktest, requiredMonthly, timingRange, monthsBetween } from "@/lib/backtest/simulate";
+import { runBacktest, runFirstReach, requiredMonthly, timingRange, monthsBetween } from "@/lib/backtest/simulate";
 import { US_TAX_RULE, KR_FOREIGN_TAX_RULE, type Row, type BacktestResult, type BacktestInput, type BuySchedule, type TaxRule } from "@/lib/backtest/types";
 import { tickerTax, TICKERS } from "@/lib/tickers";
-import { runPortfolio, portfolioToToday, portfolioRequired, type Holding, type PortfolioOpts, type PortfolioResult } from "./portfolio";
+import { runPortfolio, portfolioFirstReach, portfolioRequired, type Holding, type PortfolioOpts, type PortfolioResult } from "./portfolio";
 
 export type { Holding } from "./portfolio";
 
@@ -88,7 +88,9 @@ export function scheduleOf(p: Plan): BuySchedule {
 export function isTracking(p: Plan): boolean { return p.tracking && /^\d{4}-\d{2}-\d{2}$/.test(p.startDate); }
 
 /** monthlyWon = 1회 적립액 합계(원). portfolio는 종목 2개 이상일 때만(합계 결과·종목별 내역). */
-export type Calc = { result: BacktestResult; reqMonthly: number | null; yearsUsed: number; monthlyWon: number; tracking: boolean; portfolio: PortfolioResult | null };
+/** 기간 모드의 '처음 10억 도달'(반짝 고점 포함, 10/22). result.value·principal은 오늘 기준이고, 도달 시점 값은 여기에. */
+export type Reach = { date: string; value: number; principal: number };
+export type Calc = { result: BacktestResult; reqMonthly: number | null; yearsUsed: number; monthlyWon: number; tracking: boolean; portfolio: PortfolioResult | null; reach: Reach | null };
 
 /** 종목 → Row[]. 단일 종목이면 키 하나. */
 export type RowsBy = Record<string, Row[]>;
@@ -138,15 +140,16 @@ export function calcPlan(rowsBy: RowsBy, p: Plan): Calc {
   if (isTracking(p)) {
     const monthlyWon = p.amount * MAN;
     const start = p.startDate < rows[0].date ? rows[0].date : p.startDate;
-    return { result: runBacktest(rows, { monthly: monthlyWon, ...opts, startDate: start, target: Number.MAX_SAFE_INTEGER }), reqMonthly: null, yearsUsed, monthlyWon, tracking: true, portfolio: null };
+    return { result: runBacktest(rows, { monthly: monthlyWon, ...opts, startDate: start, target: Number.MAX_SAFE_INTEGER }), reqMonthly: null, yearsUsed, monthlyWon, tracking: true, portfolio: null, reach: null };
   }
   if (p.mode === "time") {
     const monthlyWon = p.amount * MAN;
-    return { result: runToToday(rows, { monthly: monthlyWon, ...opts }), reqMonthly: null, yearsUsed, monthlyWon, tracking: false, portfolio: null };
+    const fr = runFirstReach(rows, { monthly: monthlyWon, ...opts });
+    return { result: fr, reqMonthly: null, yearsUsed, monthlyWon, tracking: false, portfolio: null, reach: fr.reachedDate ? { date: fr.reachedDate, value: fr.reachValue, principal: fr.reachPrincipal } : null };
   }
   const end = rows[rows.length - 1].date;
   const { monthly, result } = requiredMonthly(rows, { monthly: 0, startDate: startMonthsAgo(end, yearsUsed * 12), ...opts });
-  return { result, reqMonthly: monthly, yearsUsed, monthlyWon: monthly, tracking: false, portfolio: null };
+  return { result, reqMonthly: monthly, yearsUsed, monthlyWon: monthly, tracking: false, portfolio: null, reach: null };
 }
 
 function calcPortfolio(rowsBy: RowsBy, p: Plan): Calc {
@@ -155,16 +158,16 @@ function calcPortfolio(rowsBy: RowsBy, p: Plan): Calc {
   const monthlyWon = totalAmount(p) * MAN;
   if (isTracking(p)) {
     const r = runPortfolio(rowsBy, hs, portOpts(p, Number.MAX_SAFE_INTEGER), p.startDate);
-    return { result: r, reqMonthly: null, yearsUsed, monthlyWon, tracking: true, portfolio: r };
+    return { result: r, reqMonthly: null, yearsUsed, monthlyWon, tracking: true, portfolio: r, reach: null };
   }
   if (p.mode === "time") {
-    const r = portfolioToToday(rowsBy, hs, portOpts(p));
-    return { result: r, reqMonthly: null, yearsUsed, monthlyWon, tracking: false, portfolio: r };
+    const r = portfolioFirstReach(rowsBy, hs, portOpts(p));
+    return { result: r, reqMonthly: null, yearsUsed, monthlyWon, tracking: false, portfolio: r, reach: r.reachedDate ? { date: r.reachedDate, value: r.reachValue, principal: r.reachPrincipal } : null };
   }
   // 화면에서는 종목 1개일 때만 금액 모드를 열지만, 딥링크·저장본 대비로 계약대로 계산한다.
   const { amountsWon, result } = portfolioRequired(rowsBy, hs, portOpts(p), yearsUsed);
   const req = amountsWon.reduce((s, v) => s + v, 0);
-  return { result, reqMonthly: req, yearsUsed, monthlyWon: req, tracking: false, portfolio: result };
+  return { result, reqMonthly: req, yearsUsed, monthlyWon: req, tracking: false, portfolio: result, reach: null };
 }
 
 export type Timing = ReturnType<typeof timingRange>;
@@ -199,7 +202,7 @@ export function clockStats(rowsBy: RowsBy, p: Plan): ClockStats {
   if (isMulti(p)) {
     // 금액 모드였다면 역산된 종목별 금액으로 기간 모드를 다시 돌린다
     const hs: Holding[] = tracking || p.mode === "time" ? p.holdings : (c.portfolio?.holdings ?? []).map((h) => ({ ticker: h.ticker, amount: h.amountWon / MAN }));
-    const pr = tracking || p.mode === "time" ? c.portfolio! : portfolioToToday(rowsBy, hs, portOpts(p));
+    const pr = tracking || p.mode === "time" ? c.portfolio! : portfolioFirstReach(rowsBy, hs, portOpts(p));
     r = pr;
     startDate = pr.startDate || (pr.series[0]?.date ?? "");
     today = commonEnd(rowsBy, p);
@@ -210,7 +213,7 @@ export function clockStats(rowsBy: RowsBy, p: Plan): ClockStats {
   } else {
     const rows = rowsOf(rowsBy, p.ticker);
     const opts = baseOpts(p);
-    r = tracking || p.mode === "time" ? c.result : runToToday(rows, { monthly: monthlyWon, ...opts });
+    r = tracking || p.mode === "time" ? c.result : runFirstReach(rows, { monthly: monthlyWon, ...opts });
     startDate = r.series[0]?.date ?? rows[0].date;
     today = rows[rows.length - 1].date;
     yesterday = rows[rows.length - 2]?.date ?? today;

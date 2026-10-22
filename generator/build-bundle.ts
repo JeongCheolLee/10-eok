@@ -442,11 +442,11 @@ async function main() {
   // 비교 요약(ko 기본 시나리오) — additive. 실패해도 경고만 남기고 나머지 결과는 유지(exit 0).
   // 이번 회차 갱신분(pendingPx) + 건너뛴 종목은 디스크의 기존 px 파일로 채운다.
   // ko.json = 웹 ko 시장 종목, toss.json = 미니앱 전체 종목(TOSS_TICKERS, 웹 숨김 포함). 같은 스키마·시나리오.
-  const summaries: { file: string; market: Market }[] = [
+  const summaries: { file: string; market: Market; mode?: "today" | "firstReach" }[] = [
     { file: "ko.json", market: MARKETS.ko },
-    { file: "toss.json", market: { ...MARKETS.ko, tickers: TOSS_TICKERS } },
+    { file: "toss.json", market: { ...MARKETS.ko, tickers: TOSS_TICKERS }, mode: "firstReach" },
   ];
-  for (const { file, market } of summaries) {
+  for (const { file, market, mode } of summaries) {
     try {
       const pxBySymbol: Record<string, PxBundle> = {};
       for (const { px } of pendingPx) pxBySymbol[px.ticker] = px;
@@ -455,7 +455,7 @@ async function main() {
         const prev = readPrevPx(join(dir, "px", `${symbol.toLowerCase()}.json`));
         if (prev) pxBySymbol[symbol] = prev;
       }
-      const summary = buildSummary({ pxBySymbol, fx: fxBundle, market });
+      const summary = buildSummary({ pxBySymbol, fx: fxBundle, market, mode });
       mkdirSync(join(dir, "summary"), { recursive: true });
       writeFileSync(join(dir, "summary", file), JSON.stringify(summary));
       console.log(`  summary/${file}: ${summary.rows.length}종목`);

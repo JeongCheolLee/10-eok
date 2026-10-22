@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Button, ListRow, Switch, Top } from "@toss/tds-mobile";
 import { tickerTitle } from "@/lib/tickers";
 import { NavBar, Chart, AdSlot, Avatar } from "../components/ui";
@@ -71,7 +71,7 @@ export function ResultScreen({ plan, setPlan, watchAd, back, goClock, showToast,
   const limited = port?.limitedBy ? port.holdings.find((h) => h.ticker === port.limitedBy) : undefined;
   const progressPct = Math.round((r.value / TARGET) * 100);
 
-  let lead: string, num: string, sub: string;
+  let lead: string, num: string, sub: ReactNode;
   if (calc.tracking) {
     lead = `${ymKo(start)}부터 모은 내 돈`;
     num = fmt.money(r.value);
@@ -80,10 +80,12 @@ export function ResultScreen({ plan, setPlan, watchAd, back, goClock, showToast,
     lead = `${calc.yearsUsed}년 안에 10억을 모으려면`;
     num = calc.reqMonthly === 0 ? "목돈만으로 충분해요" : `${freqWord(plan.freq)} ${fmt.amount(calc.reqMonthly ?? 0)}`;
     sub = `${ymKo(start)}부터 지금까지 ${lumpStr}${adverb} ${eulReul(names)} 샀다고 봤어요`;
-  } else if (r.reached) {
+  } else if (r.reached && calc.reach) {
+    // 처음 10억을 넘은 시점까지(반짝 고점 포함, 10/22). 오늘 금액은 따로 정직하게.
     lead = "10억 모으는 데 걸린 시간";
     num = durKo(r.years, r.monthsRem);
-    sub = `${ymKo(start)}부터 ${buyStr} 샀다면, ${ymdKo(end)}에 10억을 넘었어요`;
+    const today = r.value >= TARGET ? `오늘은 ${fmt.money(r.value)}이에요` : `지금은 ${fmt.money(r.value)}으로 내려왔어요`;
+    sub = <>{ymKo(start)}부터 {buyStr} 샀다면, {ymdKo(calc.reach.date)}에 처음 10억을 넘었어요<br />{today}</>;
   } else {
     lead = "아직 10억은 멀어요";
     num = fmt.money(r.value);
@@ -124,7 +126,7 @@ export function ResultScreen({ plan, setPlan, watchAd, back, goClock, showToast,
           <span>자산 성장</span>
           <span className="legend"><i className="dot brand" />평가액 <i className="dot grey" />넣은 돈</span>
         </div>
-        <Chart series={r.series} target={TARGET} />
+        <Chart series={r.series} target={TARGET} mark={calc.reach?.date} />
         <div className="stats">
           <div className="stat"><span className="stat-k">넣은 돈</span><span className="stat-v">{fmt.money(r.principal)}</span></div>
           <div className="stat"><span className="stat-k">평가액</span><span className="stat-v">{fmt.money(r.value)}</span></div>
@@ -155,7 +157,7 @@ export function ResultScreen({ plan, setPlan, watchAd, back, goClock, showToast,
 
       <ul className="tds-list">
         <ListRow
-          contents={<ListRow.Texts type="2RowTypeA" top="계산 옵션" bottom={`배당 ${plan.reinvest ? "재투자" : "미반영"} · 세금 제외`} />}
+          contents={<ListRow.Texts type="2RowTypeA" top="계산 옵션" bottom={`배당 ${plan.reinvest ? "재투자" : "미반영"}`} />}
           withArrow
           onClick={() => setOptsOpen((v) => !v)}
           aria-expanded={optsOpen}

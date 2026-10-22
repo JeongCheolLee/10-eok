@@ -80,7 +80,8 @@ function niceStep(maxV: number): number {
   for (const s of [1e8, 2e8, 2.5e8, 5e8, 1e9, 2e9, 2.5e9, 5e9, 1e10]) if (maxV / s <= 4) return s;
   return 2e10;
 }
-export function Chart({ series, target }: { series: Pt[]; target: number }) {
+/** mark: 처음 target을 넘은 날(있으면 그 지점에 테두리 점). */
+export function Chart({ series, target, mark }: { series: Pt[]; target: number; mark?: string }) {
   const pts = useMemo(() => downsample(series, 120), [series]);
   const [hi, setHi] = useState<number | null>(null); // 손가락·마우스가 가리키는 점
   const W = 360, H = 170, L = 38, R = 10, T = 14, B = 24;
@@ -112,6 +113,9 @@ export function Chart({ series, target }: { series: Pt[]; target: number }) {
     xTicks.push({ yr, x: px, anchor: px < L + 14 ? "start" : px > W - R - 14 ? "end" : "middle" });
   }
   const last = pts[pts.length - 1];
+  // 도달 지점: 다운샘플된 점 중 mark 이후 첫 점(그날 값이 target 이상이 되도록 원본에서 찾는다)
+  const markPt = mark ? series.find((p) => p.date >= mark) : undefined;
+  const markI = markPt ? pts.findIndex((p) => p.date >= markPt.date) : -1;
   const h = hi != null ? pts[hi] : null;
   const hx = hi != null ? x(hi) : 0;
   const tipOnLeft = hx > W / 2; // 가리키는 점 반대편 위쪽에 말풍선을 띄워 겹치지 않게
@@ -130,6 +134,12 @@ export function Chart({ series, target }: { series: Pt[]; target: number }) {
       <path d={area} fill="var(--brand)" fillOpacity="0.13" />
       <path d={dp} fill="none" stroke="var(--grey500)" strokeWidth="1.5" />
       <path d={d} fill="none" stroke="var(--brand)" strokeWidth="2.2" strokeLinejoin="round" />
+      {markPt && markI >= 0 && (
+        <g pointerEvents="none">
+          <circle cx={x(markI)} cy={y(markPt.value)} r="6" fill="#fff" stroke="var(--brand-strong, var(--brand))" strokeWidth="2.5" />
+          <text x={x(markI)} y={y(markPt.value) - 10} textAnchor={x(markI) > W - 50 ? "end" : x(markI) < L + 40 ? "start" : "middle"} fontSize="10" fontWeight="600" fill="var(--brand-strong, var(--brand))">처음 10억</text>
+        </g>
+      )}
       {h ? (
         <g pointerEvents="none">
           <line x1={hx} x2={hx} y1={T} y2={H - B} stroke="var(--grey400)" strokeWidth="1" />

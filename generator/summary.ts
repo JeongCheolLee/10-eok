@@ -2,7 +2,7 @@
 // public/data/summary/ko.json으로 매일 생성 — 토스 미니앱 비교 화면이 px 16개 대신 이것 하나만 읽는다.
 // 계산·정렬은 lib/etfResults.ts(웹 /compare)와 동일해야 한다.
 import { composeRows, type PxBundle, type FxBundle } from "../lib/backtest/compose";
-import { runToToday } from "../lib/backtest/simulate";
+import { runToToday, runFirstReach } from "../lib/backtest/simulate";
 import type { BacktestResult, Row } from "../lib/backtest/types";
 import { tickerCurrency, tickerName } from "../lib/tickers";
 import type { Market } from "../lib/i18n/markets";
@@ -19,6 +19,9 @@ export type SummaryRow = {
   principal: number;
   dataStart: string;
   dataEnd: string;
+  /** mode="firstReach"일 때만: 처음 target을 넘은 날·그때 평가액(value는 오늘 평가액) */
+  reachDate?: string | null;
+  reachValue?: number;
 };
 
 export type Summary = {
@@ -38,12 +41,14 @@ export type SummaryInput = {
   market: Market;
   /** 테스트용 고정 시각. 생략 시 현재 시각. */
   generatedAt?: string;
+  /** "today"(기본, 웹 ko.json) = 오늘도 target 이상인 최단 기간. "firstReach"(미니앱 toss.json, 10/22) = 한 번이라도 target을 넘은 최단 기간. */
+  mode?: "today" | "firstReach";
 };
 
 const BUY_DAY = 1;
 
 /** 순수 함수: px 번들 + 환율 → 정렬된 요약. px가 없거나 계산에 실패한 종목은 건너뛴다(etfResults와 동일). */
-export function buildSummary({ pxBySymbol, fx, market, generatedAt }: SummaryInput): Summary {
+export function buildSummary({ pxBySymbol, fx, market, generatedAt, mode = "today" }: SummaryInput): Summary {
   const monthly = market.monthly.default * market.monthly.unit;
   const target = market.goal.default * market.goal.unit;
   const rows: SummaryRow[] = [];
@@ -53,10 +58,10 @@ export function buildSummary({ pxBySymbol, fx, market, generatedAt }: SummaryInp
     if (!px) continue;
     const isNative = tickerCurrency(symbol) === market.currency;
     let composed: Row[];
-    let r: BacktestResult;
+    let r: BacktestResult & { reachValue?: number };
     try {
       composed = composeRows(px, isNative ? null : fx);
-      r = runToToday(composed, { monthly, buyDay: BUY_DAY, target });
+      r = mode === "firstReach" ? runFirstReach(composed, { monthly, buyDay: BUY_DAY, target }) : runToToday(composed, { monthly, buyDay: BUY_DAY, target });
     } catch {
       continue;
     }
@@ -73,6 +78,7 @@ export function buildSummary({ pxBySymbol, fx, market, generatedAt }: SummaryInp
       principal: Math.round(r.principal),
       dataStart: composed[0].date,
       dataEnd: end,
+      ...(mode === "firstReach" ? { reachDate: r.reachedDate, reachValue: Math.round(r.reachValue ?? r.value) } : {}),
     });
     if (!dataEnd || end > dataEnd) dataEnd = end;
   }

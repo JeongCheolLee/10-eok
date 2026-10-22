@@ -44,7 +44,7 @@ export function InputScreen({ plan, setPlan, onSubmit, adNeeded = false, hasCloc
       <Top
         upperGap={16}
         lowerGap={4}
-        title={<Top.TitleParagraph size={28}>{plan.tracking ? <>내 돈은 지금,<br />10억까지 얼마나 왔을까요?</> : <>10억까지,<br />얼마나 걸릴까요?</>}</Top.TitleParagraph>}
+        title={<Top.TitleParagraph size={28}>{plan.tracking ? <>내 돈은 지금,<br />10억까지 얼마나 왔을까요?</> : plan.mode === "amount" ? <>10억까지,<br />얼마씩 모아야 할까요?</> : <>10억까지,<br />얼마나 걸릴까요?</>}</Top.TitleParagraph>}
         subtitleBottom={<Top.SubtitleParagraph size={15}>{plan.tracking ? "실제로 모으기 시작한 날과 금액을 넣으면, 지금 평가액과 10억까지 진행률을 매일 다시 계산해요." : "매달·매주·매일 같은 금액으로 ETF를 샀다면 어땠을지, 실제 과거 가격과 그날 환율로 계산해요."}</Top.SubtitleParagraph>}
       />
       {hasClock && (
@@ -55,10 +55,10 @@ export function InputScreen({ plan, setPlan, onSubmit, adNeeded = false, hasCloc
       {!plan.tracking && (
         <div className="seg-wrap">
           <SegmentedControl size="large" value={plan.mode} onChange={(v) => set({ mode: v === "amount" && !multi ? "amount" : "time" })} aria-label="계산 모드">
-            <SegmentedControl.Item value="time">걸리는 기간</SegmentedControl.Item>
-            <SegmentedControl.Item value="amount" disabled={multi}>넣을 돈</SegmentedControl.Item>
+            <SegmentedControl.Item value="time">얼마나 걸릴까</SegmentedControl.Item>
+            <SegmentedControl.Item value="amount" disabled={multi}>얼마씩 모을까</SegmentedControl.Item>
           </SegmentedControl>
-          {multi && <p className="seg-note">넣을 돈 계산은 종목이 하나일 때 할 수 있어요</p>}
+          {multi && <p className="seg-note">얼마씩 모을지는 종목이 하나일 때 계산할 수 있어요</p>}
         </div>
       )}
 

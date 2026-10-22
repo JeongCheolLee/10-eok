@@ -98,12 +98,12 @@ export function ClockScreen({ saved, goHome, goResult, goCompare, onEdit, onMenu
       <div className="card brand-card clock-card">
         <div className="clock-main">
           <Ring size={112} stroke={9} progress={stats.progress}>
-            {stats.reached ? <><span className="ring-check"><Check /></span><span className="ring-lbl">목표 달성</span></> : <><span className="ring-pct">{Math.round(stats.progress * 100)}%</span><span className="ring-lbl">10억까지</span></>}
+            {stats.progress >= 1 ? <><span className="ring-check"><Check /></span><span className="ring-lbl">목표 달성</span></> : <><span className="ring-pct">{Math.round(stats.progress * 100)}%</span><span className="ring-lbl">10억까지</span></>}
           </Ring>
           <div className="clock-text">
             <div className="clock-lead">{stats.tracking ? `${ymKo(stats.startDate)}부터 모은 내 돈` : `${ymKo(stats.startDate)}부터 모았다면 지금`}</div>
             <div className="clock-num">{fmt.money(stats.value)}</div>
-            <div className="clock-sub">{stats.tracking ? `원금 ${fmt.money(stats.principal)} · ${stats.reached ? "10억을 넘었어요" : `10억까지 ${pct}%`}` : stats.reached ? `${durKo(stats.years, stats.monthsRem)} 만에 10억을 넘었어요` : `${durKo(stats.years, stats.monthsRem)}째 모으는 중이에요`}</div>
+            <div className="clock-sub">{stats.tracking ? `원금 ${fmt.money(stats.principal)} · ${stats.reached ? "10억을 넘었어요" : `10억까지 ${pct}%`}` : stats.reached ? (stats.progress >= 1 ? `${durKo(stats.years, stats.monthsRem)} 만에 10억을 넘었어요` : `${durKo(stats.years, stats.monthsRem)} 만에 10억을 찍고 지금은 내려왔어요`) : `${durKo(stats.years, stats.monthsRem)}째 모으는 중이에요`}</div>
           </div>
         </div>
         <div className="clock-grid">
@@ -132,7 +132,7 @@ export function ClockScreen({ saved, goHome, goResult, goCompare, onEdit, onMenu
             key={o.symbol}
             left={<Avatar symbol={o.symbol} />}
             contents={<ListRow.Texts type="2RowTypeA" top={tickerTitle(o.symbol)} bottom={tossSubtitle(o.symbol)} />}
-            right={<span className="right"><span className="row-title">{o.reached ? durKo(o.years, o.monthsRem) : `다 모아도 ${fmt.money(o.value)}`}</span><span className="row-desc">연평균 {fmt.pct(o.cagr)}</span></span>}
+            right={<span className="right"><span className="row-title">{o.reached ? durKo(o.years, o.monthsRem) : `다 모아도 ${fmt.money(o.value)}`}</span><span className="row-desc">{o.reached && o.value < 1e9 ? `지금 ${fmt.money(o.value)} · ` : ""}연평균 {fmt.pct(o.cagr)}</span></span>}
           />
         ))}
       </ul>
