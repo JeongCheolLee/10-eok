@@ -81,6 +81,17 @@ export async function loadWebRows(
       ? Promise.resolve(null)
       : json<FxBundle>(market.fxFile),
   ]);
+  return composeWebRows(key, px, fx, options);
+}
+
+/** Shared by browser calculations and server-rendered ETF examples. */
+export function composeWebRows(
+  ticker: string,
+  px: PxBundle,
+  fx: FxBundle | null,
+  options: { estimated?: boolean } = {},
+): Row[] {
+  const key = ticker.toUpperCase();
   const full = composeRows(px, fx);
   const boundary = WEB_REAL_START[key];
   if (tickerInfo(key).splice && !boundary)

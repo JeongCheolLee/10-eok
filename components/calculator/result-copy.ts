@@ -27,7 +27,7 @@ export const resultCopy = {
     value: "평가액",
     annual: "연평균",
     annualHelp:
-      "매수 시점과 납입액을 반영한 수익률이 아니라, 보유 기간의 자산 가격 변화로 계산한 연평균이에요.",
+      "시작일부터 마지막 평가일까지의 자산 가격 변화를 연평균으로 바꾼 값이에요. 환율과 배당 설정을 반영하고, 여러 ETF는 적립액 비중으로 합쳐요. 매수 시점별로 넣은 돈의 수익률은 아니며 세금은 빼지 않아요.",
     share: "결과 공유하기",
     save: "계산 저장하기",
     saved: "저장했어요",
@@ -35,7 +35,7 @@ export const resultCopy = {
     compare: "같은 조건으로 비교하기",
     basis: "계산 기준 보기",
     basisText:
-      "오늘까지 한 번이라도 목표를 넘은 경우 중 가장 최근에 시작한 달을 찾아요. 가장 짧은 기간을 뜻하지는 않아요.",
+      "자료의 마지막 날까지 한 번이라도 목표를 넘은 경우 중 가장 최근에 시작한 달을 찾아요. 가장 짧은 기간을 뜻하지는 않아요.",
     range: "계산 기간",
     schedule: "모으는 주기",
     dividend: "배당",
@@ -100,7 +100,7 @@ export const resultCopy = {
     value: "Value",
     annual: "Annualized",
     annualHelp:
-      "Annualized asset price growth over the holding period. This is not a money-weighted return on your contributions.",
+      "Annualized asset price growth from the start to the final valuation, including exchange rates and the dividend setting. Multiple ETFs are weighted by their regular contribution amounts. It is not a return on dated contributions and does not deduct taxes.",
     share: "Share result",
     save: "Save calculation",
     saved: "Saved",
@@ -173,7 +173,7 @@ export const resultCopy = {
     value: "評価額",
     annual: "年平均",
     annualHelp:
-      "保有期間中の資産価格の変化を年率換算した値です。入金時期と金額を反映した収益率ではありません。",
+      "開始日から最終評価日までの資産価格の変化を年率に換算します。為替と配当設定を反映し、複数のETFは定期購入額の割合で合算します。入金時期ごとの収益率ではなく、税金も差し引きません。",
     share: "結果を共有",
     save: "計算を保存",
     saved: "保存しました",
@@ -245,7 +245,7 @@ export const resultCopy = {
     value: "Wert",
     annual: "Pro Jahr",
     annualHelp:
-      "Annualisierte Kursentwicklung über die Haltedauer. Kein geldgewichteter Ertrag deiner Einzahlungen.",
+      "Annualisierte Kursentwicklung vom Start bis zum letzten Bewertungstag, mit Wechselkursen und Dividendeneinstellung. Mehrere ETFs werden nach ihren regelmäßigen Kaufbeträgen gewichtet. Keine Rendite aus den Einzahlungszeitpunkten; ohne Steuerabzug.",
     share: "Ergebnis teilen",
     save: "Berechnung speichern",
     saved: "Gespeichert",

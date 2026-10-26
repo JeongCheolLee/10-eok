@@ -4,14 +4,14 @@ import { ContentShell } from "@/components/ContentShell";
 import { Sources } from "@/components/Sources";
 import { JsonLd, guideLd } from "@/components/JsonLd";
 import type { Locale } from "@/lib/i18n/locales";
-import { langAlternates } from "@/lib/i18n/seo";
+import { langAlternates, localeHref } from "@/lib/i18n/seo";
 import { DCA_EN } from "@/lib/content/pages/en";
 import { DCA_JA } from "@/lib/content/pages/ja";
 import { DCA_DE } from "@/lib/content/pages/de";
 
 const KO = {
   metaTitle: "적립식 투자(DCA)의 원리",
-  metaDescription: "매달 일정 금액을 꾸준히 사는 적립식 투자(DCA)가 왜 마음 편한 방법인지, 장점과 한계를 정리했어요.",
+  metaDescription: "정액 적립의 수량·평균 단가를 가상 예시로 계산하고, 손실과 레버리지 위험이 남는 이유를 설명해요.",
   head: { title: "적립식 투자(DCA)의 원리", desc: "매달 같은 금액을 꾸준히", crumb: "가이드 · 적립식" },
 };
 const LOCALES_DATA: Record<Locale, { metaTitle: string; metaDescription: string; head: { title: string; desc: string; crumb: string } }> = {
@@ -32,85 +32,26 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
 function KoBody() {
   return (
     <>
-      <p>
-        적립식 투자는 영어로 Dollar-Cost Averaging, 줄여서 <strong>DCA</strong>라고 부릅니다. 핵심은
-        간단합니다. <strong>가격이 오르든 내리든 매달 정해진 날, 정해진 금액만큼 같은 종목을 계속
-        사는 것</strong>입니다. 목돈을 한 번에 넣는 거치식과 달리, 사는 시점을 여러 달로 나눕니다.
-        많은 사람이 매달 월급에서 일정액을 떼어 투자하기 때문에, 사실 의식하지 않아도 자연스럽게
-        적립식이 되는 경우가 많습니다.
-      </p>
-
-      <h2>평균 매입단가가 분산되는 원리</h2>
-      <p>
-        DCA의 가장 큰 특징은 <strong>매달 같은 &ldquo;금액&rdquo;을 쓴다는 점</strong>입니다. 같은
-        주식 수가 아니라 같은 돈을 씁니다. 그러면 가격이 쌀 때는 자동으로 더 많은 수량을, 비쌀 때는
-        더 적은 수량을 사게 됩니다. 결과적으로 내가 산 평균 단가가 한쪽 가격에 쏠리지 않고 여러
-        가격에 분산됩니다.
-      </p>
-      <h3>간단한 숫자 예시</h3>
-      <p>
-        매달 10만 원씩, 가격이 1주에 1만 원 → 5천 원 → 1만 원으로 출렁였다고 가정해 봅시다.
-      </p>
-      <ul>
-        <li>1개월: 1만 원짜리를 10만 원어치 → <strong>10주</strong></li>
-        <li>2개월: 5천 원짜리를 10만 원어치 → <strong>20주</strong></li>
-        <li>3개월: 다시 1만 원짜리를 10만 원어치 → <strong>10주</strong></li>
-      </ul>
-      <p>
-        총 30만 원으로 40주를 모았으니, 평균 매입단가는 30만 원 ÷ 40주 = <strong>주당 7,500원</strong>
-        입니다. 세 시점의 가격을 단순 평균한 8,333원보다 낮습니다. 쌀 때 더 많이 샀기 때문입니다.
-        이렇게 &ldquo;쌀 때 많이, 비쌀 때 적게&rdquo;가 저절로 일어나는 것이 DCA의 평균 단가 분산
-        효과입니다.
-      </p>
-
-      <h2>매수 타이밍 고민을 없애 준다</h2>
-      <p>
-        투자에서 가장 어려운 일 중 하나가 &ldquo;지금 사도 될까&rdquo;를 판단하는 것입니다. 바닥과
-        꼭대기를 맞히려다 오히려 기회를 놓치거나, 고점에 한꺼번에 들어가 마음고생을 하기도 합니다.
-        DCA는 이 고민 자체를 규칙으로 대체합니다. <strong>매달 같은 날, 같은 금액</strong>이라는
-        규칙만 지키면 되니, 시장이 오를지 내릴지 예측할 필요가 없습니다.
-      </p>
-
-      <h2>습관화와 자동화</h2>
-      <p>
-        규칙이 단순하면 자동화하기 쉽습니다. 증권사 자동매수나 적립식 주문을 걸어 두면, 급여가
-        들어오듯 매달 투자가 알아서 이어집니다. 의지력에 기대지 않고 기계적으로 반복되기 때문에,
-        시장이 무서울 때도 멈추지 않고 참여를 유지하기가 한결 쉽습니다. 장기 투자에서 &ldquo;계속하는
-        것&rdquo;은 생각보다 큰 무기입니다.
-      </p>
-
-      <h2>변동성이 큰 종목에서 특히 의미가 있다</h2>
-      <p>
-        가격이 크게 출렁이는 종목일수록 평균 단가 분산 효과가 더 또렷해집니다. 위 예시에서 가격이
-        1만 원과 5천 원을 오갔던 것처럼, 등락 폭이 클수록 쌀 때 많이 담는 효과가 커지기 때문입니다.
-        그래서 레버리지 ETF처럼 변동이 큰 상품을 다룰 때 적립식의 시점 분산이 더 체감됩니다. 다만
-        변동이 크다는 건 그만큼 위험도 크다는 뜻이라, DCA가 손실 자체를 막아 주지는 않습니다.
-        레버리지 특유의 위험은 <Link href="/guides/leverage-etf-risk">레버리지 ETF의 위험</Link>에서
-        따로 정리했어요.
-      </p>
-
-      <h2>한계도 분명합니다</h2>
-      <p>
-        DCA가 항상 정답은 아닙니다. 시장이 꾸준히 우상향한 구간에서는, 일찍 목돈을 전부 넣은
-        거치식이 더 오래 시장에 노출돼 수익이 더 큰 경우가 많습니다. 적립식은 돈이 천천히 들어가는
-        만큼 초반에는 시장에 덜 노출되기 때문입니다. 즉 DCA의 진짜 가치는 &ldquo;최고의 수익&rdquo;이
-        아니라 <strong>심리적 부담을 줄이고 꾸준히 참여하게 만드는 것</strong>에 가깝습니다. 두 방식의
-        차이와 상황별 선택 기준은 <Link href="/guides/dca-vs-lumpsum">적립식 vs 거치식</Link>에서 더
-        자세히 다뤘어요. 그리고 과거에 잘 통한 방식이 미래에도 반드시 통한다는 보장은 없습니다.
-      </p>
-
-      <h2>10-eok은 적립식으로 계산합니다</h2>
-      <p>
-        10-eok은 선택한 종목을 <strong>매달 지정한 날</strong>(휴장일이면 다음 거래일)에
-        <strong> 지정한 금액</strong>만큼, 그날의 실제 종가와 환율로 사 모았다고 가정합니다. 그렇게
-        쌓인 평가액이 처음으로 10억 원을 넘는 날을 찾아 &ldquo;며칠 걸렸는지&rdquo;를 보여 줍니다.
-        종목별 실제 결과나 내 조건에 맞춘 수치는 <Link href="/">계산기</Link>와 첫 화면의 종목
-        비교표에서 직접 확인해 보세요.
-      </p>
-
+      <p>적립식 투자는 정해진 일정에 같은 금액을 나눠 투자하는 방식이에요. 영어로 Dollar-Cost Averaging, 줄여서 DCA라고 불러요. 같은 수량을 사는 방식과 달리 가격이 낮을 때 더 많은 수량을, 높을 때 적은 수량을 사게 돼요.</p>
+      <h2>평균 매입단가는 어떻게 달라지나요?</h2>
+      <p>거래 비용과 세금을 제외한 가상 예시예요. 세 달 동안 매달 10만원씩 사고, 주가가 1만원 → 5,000원 → 1만원으로 움직였다고 볼게요.</p>
+      <ul><li>첫 달에는 10주를 사요.</li><li>둘째 달에는 20주를 사요.</li><li>셋째 달에는 10주를 사요.</li></ul>
+      <p>넣은 돈 30만원으로 40주를 사서 평균 매입단가는 7,500원이에요. 세 가격의 단순 평균인 약 8,333원보다 낮아요. 낮은 가격에서 더 많은 수량을 샀기 때문이에요. 세 번째 매수 직후 주가가 1만원이면 평가액은 40만원이에요. 이후 추가 매수 없이 주가가 5,000원으로 내리면 20만원이 돼요. 낮아진 평균 단가가 수익을 보장하지 않는다는 점도 같은 예시에서 볼 수 있어요.</p>
+      <h2>매수 시점을 나눠도 보유 자산은 함께 움직여요</h2>
+      <p>정액 매수 규칙은 매번 저점이나 고점을 예측해야 하는 결정을 줄여요. 하지만 어떤 자산을 살지, 얼마를 넣을지, 언제 자금이 필요할지까지 대신 결정하지는 않아요. 자동 주문이 있어도 잔액과 주문 조건에 따라 실제 매수 여부는 달라질 수 있어요.</p>
+      <p>적립을 오래 해 이미 쌓인 자산이 커지면 새로 넣는 돈보다 기존 자산의 가격 변화가 결과에 더 큰 영향을 줄 수 있어요. 한 달 적립액을 유지하더라도 큰 하락이 그동안의 납입액을 밑도는 평가액으로 이어질 수 있어요.</p>
+      <h2>변동성이 크면 적립식에 더 유리한가요?</h2>
+      <p>가격이 하락한 뒤 회복한 예시에서는 낮은 가격에서 산 수량이 회복에 기여해요. 그러나 가격이 계속 하락하거나 회복 전에 돈을 써야 하면 결론이 달라져요. 변동성이 크다는 사실만으로 정액 매수의 수익이 높아지는 것은 아니에요.</p>
+      <p>QLD·TQQQ 같은 상품은 적립해도 일일 배율 조정과 큰 가격 변동이 그대로 남아요. 매수 시점 분산은 레버리지 노출을 낮추는 장치가 아니에요. <Link href="/guides/leverage-etf-risk">레버리지 ETF의 위험</Link>에서 수치 예시로 구분해 볼 수 있어요.</p>
+      <h2>월급 적립과 목돈 분할은 다른 비교예요</h2>
+      <p>매달 소득이 생겨 투자하는 경우에는 미래 소득을 첫날에 모두 투자할 수 없어요. 이미 가진 목돈을 나눠 넣는 경우에는 아직 투자하지 않은 현금이 남아요. 이 둘을 구분해야 적립식과 <Link href="/guides/dca-vs-lumpsum">거치식의 차이</Link>를 공정하게 비교할 수 있어요.</p>
+      <p>상승 구간에서는 일찍 투입한 돈이 더 오래 상승에 참여할 수 있고, 초기 하락 구간에서는 나중에 투입한 돈이 낮은 가격에 살 수 있어요. 어느 방식이 앞서는지는 가격 흐름과 대기 자금의 수익, 비용에 따라 달라져요.</p>
+      <h2>10-eok의 적립 결과를 읽는 방법</h2>
+      <p>계산기에서는 매달·매주·거래일마다 사는 일정과 처음 넣을 목돈을 설정해요. 기본 결과는 실제 거래 자료의 마지막 날까지 한 번이라도 목표를 넘은 가장 최근 시작월을 찾고, 그 시작월부터 첫 도달일까지의 기간을 보여줘요. 가능한 모든 시작월 중 가장 짧은 기간이라는 뜻은 아니에요.</p>
+      <p>첫 도달 뒤 계속 샀을 때의 마지막 평가액은 별도로 표시해요. ETF 비교에서는 원래 계산의 기간·일정·납입액을 고정해요. 시작월과 종료일은 <Link href="/">계산기</Link> 결과의 계산 기준에서 확인할 수 있어요.</p>
       <Sources ids={["yahoo", "fredFx"]} />
-
-      <p className="note">본 내용은 일반적인 정보 제공이며 투자 권유나 자문이 아닙니다.</p>
+      <p>구조와 용어 참고: <a href="https://www.investor.gov/introduction-investing/investing-basics/glossary/dollar-cost-averaging" target="_blank" rel="noopener">SEC 정액 적립 정의</a></p>
+      <p className="note">과거 자료로 계산한 결과예요. 특정 종목을 추천하거나 미래 수익을 보장하지 않아요.</p>
     </>
   );
 }
@@ -124,7 +65,7 @@ export default async function Page({ params }: { params: Promise<{ lang: string 
   const Body = BODIES[locale];
   return (
     <ContentShell title={d.head.title} desc={d.head.desc} crumb={d.head.crumb}>
-      <JsonLd data={guideLd({ path: "/guides/dca", title: d.head.title, description: d.metaDescription, name: d.head.title })} />
+      <JsonLd data={guideLd({ lang: locale, dateModified: "2026-10-26", path: localeHref(locale, "/guides/dca"), title: d.head.title, description: d.metaDescription, name: d.head.title })} />
       <Body />
     </ContentShell>
   );

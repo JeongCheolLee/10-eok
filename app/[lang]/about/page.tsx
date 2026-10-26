@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { ContentShell } from "@/components/ContentShell";
-import { AUTHOR, CONTACT_EMAIL, authorName } from "@/lib/site";
+import { CONTACT_EMAIL, authorName } from "@/lib/site";
 import type { Locale } from "@/lib/i18n/locales";
 import { langAlternates, localeHref } from "@/lib/i18n/seo";
 
@@ -31,7 +31,7 @@ const HEAD: Record<Locale, Head> = {
 const META: Record<Locale, { title: string; description: string }> = {
   ko: {
     title: "소개 · 10-eok",
-    description: "10-eok은 '과거에 매달 모았다면 10억까지 얼마나 걸렸을까'를 실제 데이터로 보여주는 백테스트 서비스입니다. 만든 사람과 운영 방식을 소개합니다.",
+    description: "10-eok은 과거 ETF 가격과 환율로 목표까지 걸렸던 시간을 계산해요. 만든 사람과 계산·비교·저장 기능을 소개해요.",
   },
   en: {
     title: "About · 10-eok",
@@ -54,244 +54,136 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
   return { title: m.title, description: m.description, alternates: langAlternates(locale, "/about") };
 }
 
-function KoBody() {
+type AboutContent = {
+  intro: string;
+  useTitle: string;
+  steps: string[];
+  readingTitle: string;
+  reading: string;
+  comparison: string;
+  authorTitle: string;
+  author: string;
+  approach: string;
+  method: string;
+  feedbackTitle: string;
+  feedback: string;
+  contact: string;
+  disclaimer: string;
+};
+
+const CONTENT: Record<Locale, AboutContent> = {
+  ko: {
+    intro: "10-eok은 ETF를 같은 금액으로 꾸준히 모았다면 목표 금액까지 얼마나 걸렸을지 돌아보는 계산기예요. 고정 수익률을 가정하는 대신 과거 가격과 환율로 계산해요.",
+    useTitle: "이렇게 계산해요",
+    steps: [
+      "궁금한 ETF를 최대 5개 골라요. 종목마다 매회 넣을 돈과 매달·매주·거래일마다 중에서 모으는 주기를 정해요.",
+      "시작할 때 한 번 넣을 목돈이 있다면 함께 입력해요. 여러 ETF를 고르면 적립액 비중대로 목돈을 나눠 넣어요.",
+      "‘10억까지 계산하기’를 누르면 결과를 볼 수 있어요. 조건을 바꾸려면 결과에서 ‘조건 바꿔보기’를 눌러 다시 계산해요.",
+    ],
+    readingTitle: "결과에서 볼 수 있는 것",
+    reading: "처음 목표를 넘기까지 걸린 기간과 이후에도 계속 모았을 때의 마지막 평가액을 나눠 보여줘요. 기본 기간 계산은 목표를 한 번이라도 넘은 경우 중 가장 최근에 시작한 달을 찾아요. 모든 시작일 중 가장 짧은 기간을 찾는 계산은 아니에요.",
+    comparison: "결과에서는 같은 기간과 납입 조건으로 다른 ETF도 비교할 수 있어요. 기본 결과는 실제 거래 자료를 쓰고, 비교에서 상장 전 추정 자료를 쓴 결과는 따로 표시해요. 조건을 저장하면 이 브라우저에서 다시 열어 새로 불러온 자료로 계산할 수 있어요.",
+    authorTitle: "만든 사람",
+    author: "의 개인 프로젝트예요. 개발자이자 개인 투자자로서 ‘과거에 이렇게 모았다면 어땠을까?’를 직접 확인하고 싶어 만들었어요. 금융 자격을 가진 전문가는 아니며, 특정 상품을 권유하지 않아요.",
+    approach: "계산 로직은 공개된 함수로 작성하고 단위 테스트로 확인해요. 가격은 Yahoo Finance, 환율과 물가는 FRED 등의 공개 자료를 사용해요. 매일 자료 갱신을 시도하지만 휴장일이나 원자료의 갱신 지연으로 기준일이 다를 수 있어요. 결과에서 가격과 환율의 기준일을 확인할 수 있어요.",
+    method: "계산 방법과 한계 알아보기",
+    feedbackTitle: "오류를 발견했다면",
+    feedback: "계산 조건과 결과의 기준일을 함께 알려주면 확인하는 데 도움이 돼요. 계좌번호나 실제 거래 내역 같은 개인정보는 보낼 필요가 없어요.",
+    contact: "문의 페이지",
+    disclaimer: "과거 데이터로 계산한 참고용 결과예요. 특정 종목을 추천하지 않고, 미래 수익을 보장하지 않아요.",
+  },
+  en: {
+    intro: "10-eok looks back at how long regular ETF purchases would have taken to reach a target such as $1M. It uses historical prices and exchange rates rather than an assumed constant return.",
+    useTitle: "How to use it",
+    steps: [
+      "Choose up to five ETFs, set the amount for each purchase of each ETF, and select monthly, weekly or every trading day.",
+      "Add an optional lump sum at the historical start. With several ETFs, it is split in proportion to their regular contribution amounts.",
+      "Press Calculate to see the result. To try different inputs, choose Change conditions on the result and calculate again.",
+    ],
+    readingTitle: "What the result tells you",
+    reading: "The result separates the time to the first target crossing from the final value after continued purchases. The default time calculation finds the latest historical start month that reached the target at least once. It does not find the shortest duration across every possible start date.",
+    comparison: "You can compare other ETFs using the same period and contribution conditions. The main result uses actual trading history. Comparisons using estimated history before an ETF’s listing are shown separately. Save conditions to reopen them in this browser and recalculate with newly loaded data.",
+    authorTitle: "Who built this",
+    author: "built 10-eok as a personal project. As a developer and individual investor, I wanted to check what would have happened if I had invested back then. I am not a licensed financial professional, and the site does not recommend specific products.",
+    approach: "The calculation functions are public and checked with unit tests. Prices come from Yahoo Finance; exchange rates and inflation use public sources including FRED. The data pipeline runs daily, but market holidays and source delays can leave different reference dates. Check the price and exchange-rate dates in the result.",
+    method: "Read the calculation method and limitations",
+    feedbackTitle: "Report a problem",
+    feedback: "Include the calculation conditions and the result’s reference date so the issue can be checked. You do not need to send account numbers or personal transaction records.",
+    contact: "Contact page",
+    disclaimer: "Results are historical scenarios for information. They are not investment advice or a guarantee of future returns.",
+  },
+  ja: {
+    intro: "10-eokは、ETFを一定額ずつ積み立てていたら、1億円などの目標までどれくらいかかったかを振り返る計算機です。固定の利回りを仮定せず、過去の価格と為替を使います。",
+    useTitle: "使い方",
+    steps: [
+      "ETFを最大5銘柄選び、銘柄ごとの1回の購入額と、毎月・毎週・取引日ごとの購入頻度を決めます。",
+      "開始時に一度だけ投資する資金があれば入力します。複数のETFでは定期購入額の割合で配分します。",
+      "計算ボタンを押すと結果が表示されます。条件を変更する場合は、結果の「条件を変える」から戻って再計算します。",
+    ],
+    readingTitle: "結果から分かること",
+    reading: "初めて目標を超えるまでの期間と、その後も積み立てた場合の最終評価額を分けて表示します。通常の期間計算は、一度でも目標を超えた条件のうち、最も遅い開始月を探します。すべての開始日の中から最短期間を探す計算ではありません。",
+    comparison: "同じ期間と購入条件で、ほかのETFも比較できます。基本の結果は実際の取引履歴を使い、上場前の推定資料を使う比較は別に表示します。条件を保存すると、このブラウザーで開き直し、新しく読み込んだ資料で再計算できます。",
+    authorTitle: "作った人",
+    author: "の個人プロジェクトです。開発者・個人投資家として、過去に投資していたらどうなったかを確かめたくて作りました。金融資格を持つ専門家ではなく、特定の商品を勧めるものではありません。",
+    approach: "計算関数は公開され、単体テストで確認しています。価格はYahoo Finance、為替と物価はFREDなどの公開資料を使います。毎日更新を試みますが、休場日や資料の更新遅延により基準日が異なることがあります。結果で価格と為替の基準日を確認できます。",
+    method: "計算方法と限界を読む",
+    feedbackTitle: "問題を見つけたら",
+    feedback: "計算条件と結果の基準日を添えると、問題を確認しやすくなります。口座番号や個人の取引明細を送る必要はありません。",
+    contact: "お問い合わせページ",
+    disclaimer: "過去の条件による参考用の計算です。投資助言や将来の利益を保証するものではありません。",
+  },
+  de: {
+    intro: "10-eok zeigt im Rückblick, wie lange regelmäßige ETF-Käufe bis zu einem Ziel wie 1 Mio. € gebraucht hätten. Die Berechnung verwendet historische Kurse und Wechselkurse statt einer angenommenen konstanten Rendite.",
+    useTitle: "So verwendest du den Rechner",
+    steps: [
+      "Wähle bis zu fünf ETFs, den Betrag je Kauf und ETF sowie den Rhythmus: monatlich, wöchentlich oder an jedem Handelstag.",
+      "Ergänze bei Bedarf einen einmaligen Anfangsbetrag zum historischen Start. Bei mehreren ETFs wird er nach ihren regelmäßigen Kaufbeträgen aufgeteilt.",
+      "Drücke die Berechnungstaste, um das Ergebnis zu sehen. Über „Bedingungen ändern“ im Ergebnis kannst du Eingaben ändern und erneut rechnen.",
+    ],
+    readingTitle: "Was du im Ergebnis siehst",
+    reading: "Das Ergebnis trennt die Zeit bis zum ersten Erreichen des Ziels vom Endwert bei fortgesetzten Käufen. Die normale Zeitberechnung sucht den spätesten historischen Startmonat, mit dem das Ziel mindestens einmal erreicht wurde. Sie sucht nicht die kürzeste Dauer über alle möglichen Startdaten.",
+    comparison: "Andere ETFs lassen sich mit demselben Zeitraum und denselben Kaufbedingungen vergleichen. Das Hauptergebnis nutzt tatsächliche Handelsdaten. Vergleiche mit geschätzten Daten vor der Börsennotierung werden getrennt angezeigt. Gespeicherte Bedingungen kannst du in diesem Browser erneut öffnen und mit neu geladenen Daten berechnen.",
+    authorTitle: "Wer das gebaut hat",
+    author: "hat 10-eok als persönliches Projekt entwickelt. Als Entwickler und Privatanleger wollte ich prüfen, was passiert wäre, wenn ich damals investiert hätte. Ich bin kein zugelassener Finanzexperte; die Seite empfiehlt keine bestimmten Produkte.",
+    approach: "Die Berechnungsfunktionen sind öffentlich und durch Unit-Tests geprüft. Kurse stammen von Yahoo Finance, Wechselkurse und Inflation aus öffentlichen Quellen wie FRED. Die Daten werden täglich abzurufen versucht. Börsenfeiertage und Verzögerungen der Quellen können zu unterschiedlichen Stichtagen führen. Kurs- und Wechselkursdaten stehen im Ergebnis.",
+    method: "Berechnungsmethode und Grenzen lesen",
+    feedbackTitle: "Ein Problem melden",
+    feedback: "Nenne die Berechnungsbedingungen und den Stichtag des Ergebnisses, damit sich das Problem prüfen lässt. Kontonummern oder persönliche Transaktionsbelege sind dafür nicht nötig.",
+    contact: "Kontaktseite",
+    disclaimer: "Die Ergebnisse sind historische Szenarien zur Information. Sie sind keine Anlageberatung oder Garantie künftiger Erträge.",
+  },
+};
+
+function AboutBody({ locale }: { locale: Locale }) {
+  const c = CONTENT[locale];
+  const name = <strong>{authorName(locale)}</strong>;
   return (
     <>
-      <p>
-        <strong>10-eok</strong>은 "과거에 매달 일정 금액을 모았다면, 10억 원까지 얼마나 걸렸을까?"라는
-        궁금증을 <strong>실제 과거 데이터</strong>로 답해 주는 백테스트 서비스입니다.
-      </p>
-
-      <h2>무엇이 다른가</h2>
-      <ul>
-        <li><strong>역방향 질문.</strong> 대부분의 계산기는 "얼마가 될까"를 묻지만, 10-eok은 "내 목표(10억)까지 얼마나 걸리나"를 묻습니다.</li>
-        <li><strong>한국인의 현실 반영.</strong> 달러 자산을 원화로 사는 상황에서 빠지기 쉬운 환율 효과를, 매수·평가 시점의 실제 일별 환율로 반영합니다.</li>
-        <li><strong>진짜 데이터.</strong> 가정된 고정 수익률이 아니라 실제 일별 종가로 계산합니다.</li>
-      </ul>
-
-      <h2>어떻게 쓰나</h2>
-      <p>
-        종목과 매달 적립 금액, 매수일을 고르면 끝입니다. 그러면 10억에 도달하기까지 걸린 기간과 자산이
-        불어난 과정을 그래프로 보여줍니다. 금액이나 날짜를 바꾸면 즉시 다시 계산됩니다.
-      </p>
-
-      <h2>누가 만들었나</h2>
-      <p>
-        10-eok은 개발자이자 개인 투자자인 <strong>{AUTHOR}</strong>의 개인 프로젝트입니다. 금융사나
-        자문업체가 아니라, "과거에 이렇게 모았으면 어땠을까?"가 직접 궁금해서 실제 데이터로 검증해 보려고
-        만들었습니다. 그래서 결과를 부풀리기보다, 가정과 한계, 환율·세금 같은 현실 요소를 최대한 솔직하게
-        드러내는 데 초점을 뒀습니다. 저는 금융 자격을 가진 전문가가 아니며, 이 사이트는 특정 상품을 권유하지
-        않습니다.
-      </p>
-      <p>
-        계산 로직은 공개된 순수 함수로 작성하고 단위·골든 테스트로 검증합니다. 가격은{" "}
-        <a href="https://finance.yahoo.com" target="_blank" rel="noopener">Yahoo Finance</a>, 환율은{" "}
-        <a href="https://fred.stlouisfed.org/series/DEXKOUS" target="_blank" rel="noopener">미국 연방준비제도(FRED)</a>의 공개 데이터를 매일 자동으로 받아 반영합니다. 계산 방식의 전제와 단순화는{" "}
-        <a href="/how-it-works">계산 방법 &amp; FAQ</a>에서 투명하게 공개합니다.
-      </p>
-
-      <h2>앞으로</h2>
-      <p>
-        현재 QLD·TQQQ·QQQ·SPY·VOO·SCHD·VT·KODEX 200(코스피200) 여덟 종목을 지원하며, 종목 간 비교, 물가 상승률을 반영한
-        적립, 목표 기간을 정하면 필요한 월 적립액을 역산하는 기능 등을 더해 가고 있습니다. 오류 제보나 추가
-        종목 요청은 언제든 환영합니다.
-      </p>
-
-      <p className="note">
-        10-eok은 교육·정보 제공 도구이며 투자 권유나 자문이 아닙니다. 문의는{" "}
-        <a href="/contact">문의 페이지</a> 또는{" "}
-        <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>로 주세요.
-      </p>
+      <p>{c.intro}</p>
+      <h2>{c.useTitle}</h2>
+      <ol>{c.steps.map((step) => <li key={step}>{step}</li>)}</ol>
+      <h2>{c.readingTitle}</h2>
+      <p>{c.reading}</p>
+      <p>{c.comparison}</p>
+      <h2>{c.authorTitle}</h2>
+      <p>{locale === "ko" || locale === "ja" ? <>{name}{c.author}</> : <>{name} {c.author}</>}</p>
+      <p>{c.approach}</p>
+      <p><a href={localeHref(locale, "/how-it-works")}>{c.method}</a></p>
+      <h2>{c.feedbackTitle}</h2>
+      <p>{c.feedback}</p>
+      <p><a href={localeHref(locale, "/contact")}>{c.contact}</a> · <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a></p>
+      <p className="note">{c.disclaimer}</p>
     </>
   );
 }
-
-function EnBody() {
-  const name = authorName("en");
-  return (
-    <>
-      <p>
-        <strong>10-eok</strong> answers a simple question with <strong>real historical data</strong>:
-        "If you'd invested a fixed amount every month, how long would it have taken to reach $1M?"
-      </p>
-
-      <h2>What makes it different</h2>
-      <ul>
-        <li><strong>The question is reversed.</strong> Most calculators ask "how much will I have?" — 10-eok asks "how long until I hit my goal ($1M)?"</li>
-        <li><strong>Real daily prices.</strong> No assumed fixed return — every result is computed from actual historical daily closing prices.</li>
-        <li><strong>Transparent assumptions.</strong> Dividends, buy day, and taxes are all explained plainly, not buried in fine print.</li>
-      </ul>
-
-      <h2>How to use it</h2>
-      <p>
-        Pick a ticker, a monthly amount, and a buy day — that's it. You'll see how long it took to
-        reach $1M and a chart of how your balance grew along the way. Change the amount or date and
-        it recalculates instantly.
-      </p>
-
-      <h2>Who built this</h2>
-      <p>
-        10-eok is a personal project by <strong>{name}</strong>, a developer and individual investor.
-        It's not run by a financial firm or advisory service — I built it because I was genuinely
-        curious "what if I'd started investing back then?" and wanted to check with real data instead
-        of guessing. The focus is on being upfront about assumptions and limitations rather than
-        making the numbers look better than they are. I'm not a licensed financial professional, and
-        this site doesn't recommend any specific product.
-      </p>
-      <p>
-        The calculation logic is written as pure, tested functions with unit and golden tests. Prices
-        come from <a href="https://finance.yahoo.com" target="_blank" rel="noopener">Yahoo Finance</a>,
-        and economic data from the{" "}
-        <a href="https://fred.stlouisfed.org" target="_blank" rel="noopener">Federal Reserve Bank of St. Louis (FRED)</a>,
-        refreshed automatically every day. The exact assumptions and simplifications behind the
-        calculation are documented transparently on the{" "}
-        <a href={localeHref("en", "/how-it-works")}>How it works &amp; FAQ</a> page.
-      </p>
-
-      <h2>What's next</h2>
-      <p>
-        Currently supported tickers include QLD, TQQQ, QQQ, SPY, VOO, SCHD, and VT, with more on the
-        way — ticker comparisons, inflation-adjusted contributions, and reverse-calculating the
-        monthly amount needed for a target timeline. Bug reports and requests for new tickers are
-        always welcome.
-      </p>
-
-      <p className="note">
-        10-eok is an educational, informational tool — not investment advice or a solicitation.
-        Reach out via the{" "}
-        <a href={localeHref("en", "/contact")}>contact page</a> or{" "}
-        <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>.
-      </p>
-    </>
-  );
-}
-
-function JaBody() {
-  const name = authorName("ja");
-  return (
-    <>
-      <p>
-        <strong>10-eok</strong>は「毎月一定額を積み立てていたら、1億円までどれくらいかかったか?」という
-        疑問に<strong>実際の過去データ</strong>で答えるバックテストサービスです。
-      </p>
-
-      <h2>何が違うのか</h2>
-      <ul>
-        <li><strong>逆方向の質問。</strong> 多くの計算機は「いくらになるか」を問いますが、10-eokは「目標(1億円)まで何年かかるか」を問います。</li>
-        <li><strong>実際のドル/円為替。</strong> ドル資産を円で買う場合に見落としがちな為替の影響を、買付・評価時点の実際の日次レートで反映します。</li>
-        <li><strong>本物のデータ。</strong> 仮定の固定リターンではなく、実際の日次終値で計算します。</li>
-      </ul>
-
-      <h2>使い方</h2>
-      <p>
-        銘柄・毎月の積立額・買付日を選ぶだけです。1億円に到達するまでの期間と、資産が増えていく様子を
-        グラフで見られます。金額や日付を変えるとすぐに再計算されます。
-      </p>
-
-      <h2>誰が作ったか</h2>
-      <p>
-        10-eokは開発者であり個人投資家でもある<strong>{name}</strong>の個人プロジェクトです。金融会社や
-        アドバイザリー企業ではなく、「過去にこう積み立てていたらどうだったか」を自分で確かめたくて、
-        実際のデータで検証してみようと作りました。結果を良く見せることより、前提や限界、為替・税金と
-        いった現実的な要素をできるだけ正直に示すことを大切にしています。私は金融の資格を持つ専門家では
-        なく、このサイトは特定の商品を勧めるものではありません。
-      </p>
-      <p>
-        計算ロジックは公開された純粋関数として書かれ、単体テスト・golden テストで検証しています。
-        価格は<a href="https://finance.yahoo.com" target="_blank" rel="noopener">Yahoo Finance</a>、
-        為替・経済データは
-        <a href="https://fred.stlouisfed.org" target="_blank" rel="noopener">米セントルイス連邦準備銀行(FRED)</a>
-        の公開データを毎日自動取得しています。計算方法の前提と単純化については
-        <a href={localeHref("ja", "/how-it-works")}>計算方法 &amp; FAQ</a>で透明に公開しています。
-      </p>
-
-      <h2>今後</h2>
-      <p>
-        現在QLD・TQQQ・QQQ・SPY・VOO・SCHD・VTなどの銘柄に対応しており、銘柄間の比較、物価上昇を反映した
-        積立、目標期間から必要な毎月の積立額を逆算する機能などを追加していく予定です。不具合報告や
-        追加してほしい銘柄のご要望はいつでも歓迎します。
-      </p>
-
-      <p className="note">
-        10-eokは教育・情報提供のためのツールであり、投資勧誘や助言ではありません。お問い合わせは
-        <a href={localeHref("ja", "/contact")}>お問い合わせページ</a>または
-        <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>まで。
-      </p>
-    </>
-  );
-}
-
-function DeBody() {
-  const name = authorName("de");
-  return (
-    <>
-      <p>
-        <strong>10-eok</strong> beantwortet eine einfache Frage mit <strong>echten historischen Daten</strong>:
-        "Wenn du jeden Monat einen festen Betrag investiert hättest, wie lange hätte es bis 1 Mio. € gedauert?"
-      </p>
-
-      <h2>Was ist anders</h2>
-      <ul>
-        <li><strong>Die Frage ist umgedreht.</strong> Die meisten Rechner fragen "wie viel wird es?" — 10-eok fragt "wie lange bis zu meinem Ziel (1 Mio. €)?"</li>
-        <li><strong>Echter Euro/Dollar-Wechselkurs.</strong> Der Effekt der Währungsumrechnung beim Kauf von Dollar-Anlagen mit Euro wird mit den tatsächlichen Tageskursen berücksichtigt.</li>
-        <li><strong>Echte Daten.</strong> Keine angenommene feste Rendite — jedes Ergebnis basiert auf echten historischen Tagesschlusskursen.</li>
-      </ul>
-
-      <h2>So funktioniert's</h2>
-      <p>
-        Wähle einen ETF, einen monatlichen Betrag und einen Kauftag — das war's. Du siehst, wie lange
-        es bis 1 Mio. € gedauert hätte, und einen Chart, wie dein Vermögen dabei gewachsen ist. Änderst
-        du Betrag oder Datum, wird sofort neu berechnet.
-      </p>
-
-      <h2>Wer das gebaut hat</h2>
-      <p>
-        10-eok ist ein persönliches Projekt von <strong>{name}</strong>, einem Entwickler und
-        Privatanleger. Es steht keine Finanzfirma oder Beratung dahinter — ich habe es gebaut, weil
-        mich selbst interessiert hat "was, wenn ich damals angefangen hätte?", und ich das mit echten
-        Daten überprüfen wollte, statt zu raten. Der Fokus liegt darauf, Annahmen und Grenzen ehrlich
-        offenzulegen, statt die Zahlen besser aussehen zu lassen als sie sind. Ich bin kein
-        zugelassener Finanzexperte, und diese Seite empfiehlt kein bestimmtes Produkt.
-      </p>
-      <p>
-        Die Berechnungslogik ist als reine, getestete Funktionen geschrieben, mit Unit- und
-        Golden-Tests abgesichert. Kursdaten stammen von{" "}
-        <a href="https://finance.yahoo.com" target="_blank" rel="noopener">Yahoo Finance</a>, Wechselkurs-
-        und Wirtschaftsdaten von der{" "}
-        <a href="https://fred.stlouisfed.org" target="_blank" rel="noopener">Federal Reserve Bank of St. Louis (FRED)</a>,
-        täglich automatisch aktualisiert. Die genauen Annahmen und Vereinfachungen der Berechnung
-        stehen transparent auf der Seite{" "}
-        <a href={localeHref("de", "/how-it-works")}>So funktioniert's &amp; FAQ</a>.
-      </p>
-
-      <h2>Was als Nächstes kommt</h2>
-      <p>
-        Aktuell unterstützte ETFs sind unter anderem QLD, TQQQ, QQQ, SPY, VOO, SCHD und VT — weitere
-        Funktionen sind in Arbeit: ETF-Vergleiche, inflationsangepasste Sparraten, und die
-        Rückrechnung der nötigen Monatsrate für ein Zieljahr. Fehlermeldungen und Wünsche für neue
-        ETFs sind jederzeit willkommen.
-      </p>
-
-      <p className="note">
-        10-eok ist ein Bildungs- und Informationstool — keine Anlageberatung oder Empfehlung. Melde
-        dich über die{" "}
-        <a href={localeHref("de", "/contact")}>Kontaktseite</a> oder{" "}
-        <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>.
-      </p>
-    </>
-  );
-}
-
-const BODIES: Record<Locale, () => React.ReactElement> = { ko: KoBody, en: EnBody, ja: JaBody, de: DeBody };
 
 export default async function Page({ params }: { params: Promise<{ lang: string }> }) {
   const { lang } = await params;
-  const locale = (lang as Locale) in BODIES ? (lang as Locale) : "ko";
+  const locale = (lang as Locale) in CONTENT ? (lang as Locale) : "ko";
   const h = HEAD[locale];
-  const Body = BODIES[locale];
   return (
     <ContentShell title={h.title} desc={h.desc} crumb={h.crumb}>
-      <Body />
+      <AboutBody locale={locale} />
     </ContentShell>
   );
 }

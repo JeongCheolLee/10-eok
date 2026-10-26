@@ -49,7 +49,7 @@ const METHODS: Record<Locale, Method> = {
         title: "가격·환율·배당을 반영해요",
         paragraphs: [
           "매수 당시 가격과 환율로 소수점 단위의 ETF를 샀다고 계산해요. 평가할 때도 그날의 가격과 환율을 써요. 환율이 없는 날은 직전 값을 쓰고, 자산 통화와 표시 통화가 같으면 환전하지 않아요.",
-          "배당으로 다시 사는 조건은 배당과 액면분할을 반영한 수정주가로 계산해요. 이 옵션을 끄면 배당을 제외한 가격을 사용하며, 받은 배당을 현금으로 따로 더하지 않아요. 매매 수수료와 스프레드는 제외해요. 세금·물가 옵션을 켰다면 그 조건도 결과의 계산 기준에서 확인해요.",
+          "배당으로 다시 사는 조건은 배당과 액면분할을 반영한 수정주가로 계산해요. 이 옵션을 끄면 배당을 제외한 가격을 사용하며, 받은 배당을 현금으로 따로 더하지 않아요. 매매 수수료와 스프레드는 제외해요. 세금 옵션은 한국어 시장에서 제공하는 단순 계산이에요. 각 평가일에 모두 팔았을 때의 이익에 세금 가정을 적용해 평가액에서 빼요. 매년 매도하거나 배당세·다른 계좌의 손익까지 계산하지는 않아요. 물가 옵션은 적립액을 물가 지수에 맞춰 바꾸며, 평가액을 오늘의 구매력으로 환산하지는 않아요.",
         ],
       },
       {
@@ -75,7 +75,7 @@ const METHODS: Record<Locale, Method> = {
       },
       {
         q: "연평균은 무슨 뜻인가요?",
-        a: "계산 기간의 넣은 돈과 평가액으로 계산한 연복리 수익률이에요. 매년 같은 수익률이었다거나 앞으로 그만큼 늘어난다는 뜻은 아니에요.",
+        a: "계산 시작부터 마지막 평가일까지 ETF 가격이 얼마나 변했는지 1년 단위의 복리로 환산한 값이에요. 표시 통화의 환율과 배당 재투자 설정을 반영해요. 여러 ETF는 각 가격의 증가 배율을 적립액 비중으로 합친 뒤 연평균으로 바꿔요. 매수 시점별로 넣은 돈의 수익률은 아니며, 세금도 반영하지 않아요. 매년 같은 수익률이었다거나 미래에도 이어진다는 뜻은 아니에요.",
       },
     ],
     sourcesTitle: "데이터 출처",
@@ -117,7 +117,7 @@ const METHODS: Record<Locale, Method> = {
         title: "Use historical prices, exchange rates and dividends",
         paragraphs: [
           "Purchases allow fractional shares and use the price and exchange rate on the purchase date. Valuations use the rates for their valuation date. A missing exchange rate uses the previous available rate. No conversion is needed when the asset and display currencies match.",
-          "Dividend reinvestment uses adjusted prices that account for dividends and splits. With reinvestment off, the calculation uses prices excluding dividends and does not add dividend cash separately. Trading fees and spreads are excluded. Any enabled tax or inflation settings appear in the calculation details.",
+          "Dividend reinvestment uses adjusted prices that account for dividends and splits. With reinvestment off, the calculation uses prices excluding dividends and does not add dividend cash separately. Trading fees and spreads are excluded. The tax option in the Korean market view deducts a simplified estimate on gains as if all holdings were sold on each valuation date. It does not model annual sales, dividend taxes or other accounts. The inflation option adjusts contribution amounts with the price index; it does not convert the portfolio value to today’s purchasing power.",
         ],
       },
       {
@@ -143,7 +143,7 @@ const METHODS: Record<Locale, Method> = {
       },
       {
         q: "What does annualized return mean?",
-        a: "It is a compound annual growth rate calculated from contributions and value over the calculation period. It does not mean returns were identical each year or will continue at that rate.",
+        a: "It annualizes ETF price growth from the calculation start to the final valuation, including exchange-rate changes in the display currency and the selected dividend setting. For multiple ETFs, the price growth factors are combined in proportion to their regular contribution amounts before annualizing. It is not a return calculated from the amounts and dates of your contributions, and it does not deduct taxes. Returns were not necessarily the same each year and may not continue.",
       },
     ],
     sourcesTitle: "Data sources",
@@ -185,7 +185,7 @@ const METHODS: Record<Locale, Method> = {
         title: "過去の価格・為替・配当を使います",
         paragraphs: [
           "端株を購入できるものとして、購入日の価格と為替で計算します。評価額には評価日の価格と為替を使います。為替のない日は直前の値を使い、資産と表示の通貨が同じ場合は換算しません。",
-          "配当再投資では、配当と株式分割を反映した修正価格を使います。再投資をオフにすると配当を除いた価格を使い、配当金を現金として別に加算しません。売買手数料とスプレッドは含めません。有効な税金・物価設定も結果の計算前提で確認できます。",
+          "配当再投資では、配当と株式分割を反映した修正価格を使います。再投資をオフにすると配当を除いた価格を使い、配当金を現金として別に加算しません。売買手数料とスプレッドは含めません。韓国市場向けの税金オプションは、各評価日に全銘柄を売却したとみなした利益から、単純化した税額を差し引きます。毎年の売却、配当課税、ほかの口座は計算しません。物価オプションは積立額を物価指数に合わせて変えます。評価額を現在の購買力に換算するものではありません。",
         ],
       },
       {
@@ -211,7 +211,7 @@ const METHODS: Record<Locale, Method> = {
       },
       {
         q: "年平均とは何ですか？",
-        a: "計算期間の積立額と評価額から求めた年複利の収益率です。毎年同じ収益率だったことや、今後も同じ率で増えることを意味しません。",
+        a: "計算開始から最終評価日までのETF価格の変化を、1年あたりの複利の率に換算した値です。表示通貨の為替と配当再投資の設定を反映します。複数のETFでは、各価格の増加倍率を定期購入額の割合で合算してから年率に換算します。入金の金額と時期から求めた収益率ではなく、税金も差し引きません。毎年同じ率だったことや、今後も続くことを意味しません。",
       },
     ],
     sourcesTitle: "データの出典",
@@ -253,7 +253,7 @@ const METHODS: Record<Locale, Method> = {
         title: "Historische Kurse, Wechselkurse und Dividenden nutzen",
         paragraphs: [
           "Die Berechnung erlaubt Bruchteile von Anteilen und nutzt Kurs und Wechselkurs des Kauftags. Für Bewertungen gelten die Werte des Bewertungstags. Fehlt ein Wechselkurs, wird der letzte verfügbare verwendet. Stimmen Anlage- und Anzeigewährung überein, entfällt die Umrechnung.",
-          "Die Wiederanlage von Dividenden verwendet bereinigte Kurse einschließlich Dividenden und Aktiensplits. Ohne Wiederanlage werden Kurse ohne Dividenden verwendet; ausgezahlte Dividenden werden nicht zusätzlich als Bargeld verbucht. Handelsgebühren und Spreads bleiben unberücksichtigt. Aktivierte Steuer- oder Inflationseinstellungen stehen in den Berechnungsgrundlagen.",
+          "Die Wiederanlage von Dividenden verwendet bereinigte Kurse einschließlich Dividenden und Aktiensplits. Ohne Wiederanlage werden Kurse ohne Dividenden verwendet; ausgezahlte Dividenden werden nicht zusätzlich als Bargeld verbucht. Handelsgebühren und Spreads bleiben unberücksichtigt. Die Steueroption für den koreanischen Markt zieht eine vereinfachte Steuer auf Gewinne ab, als würden alle Anteile am jeweiligen Bewertungstag verkauft. Jährliche Verkäufe, Dividendensteuern und andere Depots werden nicht modelliert. Die Inflationsoption passt die Kaufbeträge an den Preisindex an; sie rechnet den Depotwert nicht in heutige Kaufkraft um.",
         ],
       },
       {
@@ -279,7 +279,7 @@ const METHODS: Record<Locale, Method> = {
       },
       {
         q: "Was bedeutet die jährliche Rendite?",
-        a: "Es ist eine aus Einzahlungen und Depotwert berechnete durchschnittliche jährliche Wachstumsrate über den Berechnungszeitraum. Sie bedeutet weder gleiche Erträge in jedem Jahr noch eine Fortsetzung dieser Rate.",
+        a: "Der Wert rechnet die ETF-Kursentwicklung vom Berechnungsstart bis zum letzten Bewertungstag in eine jährliche Wachstumsrate um. Wechselkurse der Anzeigewährung und die gewählte Dividendeneinstellung fließen ein. Bei mehreren ETFs werden ihre Wachstumsfaktoren nach den regelmäßigen Kaufbeträgen gewichtet und anschließend annualisiert. Es ist keine aus Höhe und Zeitpunkt deiner Einzahlungen berechnete Rendite; Steuern werden nicht abgezogen. Die Rate war nicht jedes Jahr gleich und muss sich nicht fortsetzen.",
       },
     ],
     sourcesTitle: "Datenquellen",

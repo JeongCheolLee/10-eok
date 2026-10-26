@@ -4,14 +4,14 @@ import { ContentShell } from "@/components/ContentShell";
 import { Sources } from "@/components/Sources";
 import { JsonLd, guideLd } from "@/components/JsonLd";
 import type { Locale } from "@/lib/i18n/locales";
-import { langAlternates } from "@/lib/i18n/seo";
+import { langAlternates, localeHref } from "@/lib/i18n/seo";
 import { DCA_VS_LUMPSUM_EN } from "@/lib/content/pages/en";
 import { DCA_VS_LUMPSUM_JA } from "@/lib/content/pages/ja";
 import { DCA_VS_LUMPSUM_DE } from "@/lib/content/pages/de";
 
 const KO = {
   metaTitle: "적립식 vs 거치식",
-  metaDescription: "목돈을 한 번에 넣을까, 나눠 넣을까 — 적립식과 거치식의 차이, 평균적으로 유리한 쪽과 상황별 선택 기준.",
+  metaDescription: "같은 예산의 가상 예시로 적립식과 거치식을 비교하고 대기 현금과 계산 조건의 차이를 짚어요.",
   head: { title: "적립식 vs 거치식", desc: "한 번에 넣을까, 나눠 넣을까", crumb: "가이드 · 적립 vs 거치" },
 };
 const LOCALES_DATA: Record<Locale, { metaTitle: string; metaDescription: string; head: { title: string; desc: string; crumb: string } }> = {
@@ -28,86 +28,25 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
 function KoBody() {
   return (
     <>
-      <p>
-        같은 돈을 같은 종목에 넣어도 <strong>언제 넣느냐</strong>에 따라 결과가 달라집니다. 크게 두 가지
-        방법이 있어요. <strong>거치식(lump-sum)</strong>은 가진 목돈을 한 번에 전부 넣는 방식이고,
-        <strong> 적립식(DCA)</strong>은 그 돈을 여러 달에 걸쳐 나눠 넣는 방식입니다. 둘 중 어느 쪽이
-        정답일까요? 짧게 답하면 &ldquo;평균적으로는 거치식이 유리했지만, 현실에서는 적립식이 합리적인
-        경우가 많다&rdquo;입니다. 왜 그런지 하나씩 풀어 볼게요.
-      </p>
-
-      <h2>평균적으로는 거치식이 유리합니다</h2>
-      <p>
-        주식시장은 짧게 보면 오르내림이 심하지만, 길게 보면 우상향한 구간이 많았습니다. 만약 시장이
-        장기적으로 오른다고 가정하면, 돈이 시장 안에 머무는 시간이 길수록 그만큼 더 많이 불어날
-        가능성이 높습니다. 거치식은 첫날부터 전액을 시장에 노출시키기 때문에, 같은 금액이라도
-        <strong> 시장에 머문 평균 시간이 더 깁니다.</strong> 반면 적립식은 마지막에 넣는 돈일수록
-        시장에 노출되는 기간이 짧아, 평균적으로 보면 노출 시간이 거치식보다 짧습니다.
-      </p>
-      <p>
-        그래서 &ldquo;들어갈 목돈이 이미 있고, 충분히 긴 기간 동안 우상향을 믿는다&rdquo;는 조건에서는
-        거치식의 <strong>기대수익이 더 높은 경우가 많습니다.</strong> 다만 이건 어디까지나 평균이자
-        과거 경향일 뿐, 특정 시점에 일어날 결과를 보장하지는 않습니다. 거치식의 가장 큰 약점은
-        <strong> 넣은 직후 시장이 크게 빠지는 경우</strong>인데, 이때 받는 충격은 적립식보다 훨씬
-        큽니다.
-      </p>
-
-      <h2>그런데 현실에서는 적립식이 합리적인 이유</h2>
-      <p>
-        통계적 평균이 거치식 손을 들어준다고 해서, 모두가 거치식을 택해야 하는 건 아닙니다. 실제
-        투자자 대부분은 다음 이유로 적립식을 택하고, 그 선택이 충분히 합리적입니다.
-      </p>
-      <ul>
-        <li><strong>애초에 목돈이 없습니다.</strong> 대부분은 매달 월급에서 일부를 떼어 투자합니다. 그러면 &ldquo;한 번에 넣고 싶어도 넣을 큰돈이 없는&rdquo; 상태라, 자연스럽게 적립식이 됩니다. 거치식 vs 적립식 논쟁은 사실 &ldquo;이미 큰 목돈이 있는 사람&rdquo;에게만 의미가 있어요.</li>
-        <li><strong>하락·고변동 구간에서 위험을 분산합니다.</strong> 가격이 크게 흔들리는 구간이라면, 한 번에 넣었다가 바로 고점에 물릴 위험이 있습니다. 나눠 사면 비쌀 때는 적게, 쌀 때는 많이 사게 돼 매수 단가가 한쪽으로 쏠리는 위험이 줄어듭니다. 특히 변동이 큰 상품일수록 이 효과가 체감됩니다.</li>
-        <li><strong>후회와 심리적 부담을 줄입니다.</strong> 목돈을 전부 넣은 다음 날 폭락하면, 수익률을 떠나 잠을 못 자고 투자를 중간에 포기하기 쉽습니다. 끝까지 버티지 못하면 아무리 좋은 전략도 의미가 없습니다. 적립식은 &ldquo;최악의 타이밍에 전부 물릴&rdquo; 가능성을 구조적으로 낮춰 줍니다.</li>
-      </ul>
-
-      <h2>핵심은 &ldquo;최고 수익&rdquo;이 아니라 &ldquo;후회 최소화&rdquo;</h2>
-      <p>
-        두 방식을 비교할 때 가장 쓸모 있는 틀은 &ldquo;어느 쪽이 더 많이 벌까?&rdquo;가 아니라
-        <strong> &ldquo;최고 수익을 노릴까, 후회를 줄일까?&rdquo;</strong>입니다. 거치식은 시장이 오르면
-        가장 크게 버는 &lsquo;기대수익 극대화&rsquo; 전략에 가깝고, 적립식은 어떤 결과가 나오든
-        &ldquo;그때 그렇게 할 수밖에 없었다&rdquo;고 받아들일 수 있는 &lsquo;후회 최소화&rsquo; 전략에
-        가깝습니다.
-      </p>
-      <p>
-        실제로 결정에 영향을 주는 건 숫자만이 아닙니다. 같은 손실이라도 &ldquo;한 번에 넣은 직후의
-        손실&rdquo;은 &ldquo;나눠 넣다 생긴 손실&rdquo;보다 훨씬 크게 느껴지고, 그 후회가 투자를
-        중단시키는 일이 잦습니다. 그래서 본인의 성향과 버틸 수 있는 변동 폭을 솔직히 따져 보는 것이,
-        평균 수익률 한 줄을 비교하는 것보다 중요할 때가 많습니다.
-      </p>
-
-      <h2>절충안: 목돈을 몇 달에 나눠 넣기</h2>
-      <p>
-        꼭 둘 중 하나만 골라야 하는 건 아닙니다. 큰 목돈이 있는데 한 번에 넣자니 불안하다면,
-        <strong> 정해진 기간에 걸쳐 나눠 넣는 분할 매수</strong>가 현실적인 절충입니다. 예를 들어 목돈을
-        3~12개월에 나눠 일정액씩 넣으면, 거치식의 &lsquo;일찍 노출&rsquo; 장점을 어느 정도 살리면서
-        적립식의 &lsquo;고점 일괄 매수 회피&rsquo; 효과도 함께 누릴 수 있습니다.
-      </p>
-      <p>
-        나누는 기간이 짧을수록 거치식에, 길수록 적립식에 가까워집니다. 중요한 건 시작하기 전에
-        <strong> 규칙을 미리 정하고 그대로 따르는 것</strong>이에요. &ldquo;떨어지면 더 넣고 오르면
-        멈추겠다&rdquo;는 식의 즉흥 판단은 결국 시점을 맞히려는 시도가 되고, 그건 누구에게나 어렵습니다.
-      </p>
-
-      <h2>나에게 맞는 쪽을 고르는 질문</h2>
-      <ul>
-        <li>지금 투자할 <strong>목돈이 이미 있는가?</strong> 없다면 사실상 적립식뿐입니다.</li>
-        <li>넣은 직후 큰 하락이 와도 <strong>팔지 않고 버틸 수 있는가?</strong> 자신 없다면 적립식이나 분할 매수가 편합니다.</li>
-        <li>변동이 큰 상품인가? 레버리지처럼 등락이 큰 상품일수록 시점 분산의 의미가 커집니다. 레버리지의 구조적 위험은 <Link href="/guides/leverage-etf-risk">레버리지 ETF의 위험</Link>에서 따로 다뤘어요.</li>
-      </ul>
-      <p>
-        10-eok은 <strong>매달 일정액을 넣는 적립식</strong>을 기준으로 계산합니다. 적립식이 왜 마음
-        편한 방법인지는 <Link href="/guides/dca">적립식 투자(DCA)의 원리</Link>에서 더 볼 수 있고,
-        실제 종목별 수치는 종목 비교표나 <Link href="/">계산기</Link>에서 직접 확인해 보세요. 과거에
-        어떤 방식이 유리했다고 해서 미래에도 같다는 보장은 없으니, 결과 자체보다 &ldquo;내가 끝까지
-        지킬 수 있는 방식인가&rdquo;를 기준으로 고르는 편이 좋습니다.
-      </p>
-
-      <Sources ids={["yahoo", "fredFx"]} />
-
-      <p className="note">본 내용은 일반적인 정보 제공이며 투자 권유나 자문이 아닙니다.</p>
+      <p>거치식은 가진 목돈을 한 번에 투자하고, 적립식은 돈을 여러 시점에 나눠 투자해요. 두 방식을 비교하려면 먼저 같은 날 같은 돈을 갖고 있었는지 확인해야 해요. 매달 새로 생긴 소득을 투자한 결과와 이미 있던 목돈을 첫날 투자한 결과는 출발 조건이 달라요.</p>
+      <h2>먼저 같은 예산으로 비교해요</h2>
+      <p>아래는 비용과 현금 이자를 제외한 가상 예시예요. 첫날에 30만원이 있고, 세 달 동안 주가가 1만원 → 5,000원 → 1만원으로 움직였다고 볼게요.</p>
+      <ul><li>거치식: 첫날 30주를 사요. 마지막 평가액은 30만원이에요.</li><li>분할 매수: 매달 10만원으로 10주·20주·10주를 사요. 마지막 40주의 평가액은 40만원이에요.</li></ul>
+      <p>중간에 크게 하락했다가 돌아왔기 때문에 이 경로에서는 나눠 산 결과가 높아요. 반대로 주가가 1만원 → 1만2,000원 → 1만5,000원으로 올랐다면 첫날 30주의 평가액은 45만원이에요. 매달 10만원씩 산 수량은 25주여서 37만5,000원이 돼요. 같은 예산이어도 가격 경로에 따라 우위가 바뀌어요.</p>
+      <h2>대기 현금도 비교의 일부예요</h2>
+      <p>목돈을 나눠 넣으면 아직 투자하지 않은 현금이 남아요. 현금에서 이자를 받았다면 전체 결과에 포함해야 해요. 반대로 거래 횟수가 늘면서 비용이 늘어날 수도 있어요. ETF 평가액만 비교하면 이 부분을 놓칠 수 있어요.</p>
+      <p>전액을 처음 넣으면 가격 상승에 참여하는 금액도 크지만, 직후 하락에 노출되는 금액도 커요. 나눠 넣으면 초반 노출은 적어져도 이후 매수가 끝난 자산은 같은 시장 위험을 받아요. 투자 완료 뒤에도 영구적으로 손실이 줄어드는 구조는 아니에요.</p>
+      <h2>매달 소득이 생기는 경우</h2>
+      <p>매달 10만원의 새 소득이 생긴다면 첫날 30만원 투자와 비교하는 것은 동일 예산 비교가 아니에요. 목돈을 먼저 빌려 투자한다면 차입 비용과 상환 위험이라는 별도 조건이 생겨요. 이 글의 가상 비교는 차입을 포함하지 않아요.</p>
+      <p>매달 투자하는 규칙은 반복 결정을 줄이는 데 도움이 될 수 있어요. 다만 심리적 부담과 실제 손실은 같은 개념이 아니에요. 규칙을 지킨 경우에도 자산 가격이 계속 내리면 손실은 커질 수 있어요.</p>
+      <h2>10-eok에서 목돈 조건을 볼 때</h2>
+      <p>계산기의 처음 넣는 목돈은 계산 시작 시점에 한 번 투입한 금액이에요. 지금까지의 계좌 잔고나 기존 보유 수량을 뜻하지 않아요. 정기 납입액에 목돈을 더한 조건으로 과거 결과를 계산해요.</p>
+      <p>목돈과 납입액을 바꿔 새 계산을 하면 목표에 도달한 가장 최근 시작월도 바뀔 수 있어요. 그러므로 별도로 계산한 두 도달 기간은 같은 기간의 거치식·적립식 실험이 아니에요. 이 사이트는 대기 현금 이자까지 합친 동일 예산의 두 전략 비교를 별도 제공하지 않아요.</p>
+      <h2>종목 차이를 보려면 기간을 고정해요</h2>
+      <p>결과에서 여는 ETF 비교는 원래 기간과 매수 일정, 넣은 돈을 고정해요. 이 비교가 답하는 질문은 같은 조건에서 다른 ETF였다면 얼마였는지예요. 어떤 매수 방식이 미래에 더 유리한지를 정하는 결과는 아니에요.</p>
+      <p>매수 시점별 수량이 달라지는 원리는 <Link href="/guides/dca">적립식 투자</Link>, 입력 조건의 과거 결과는 <Link href="/">계산기</Link>에서 이어서 볼 수 있어요.</p>
+      <p>구조와 용어 참고: <a href="https://syndication.finra.org/content/benefits-and-limitations-dollar-cost-averaging" target="_blank" rel="noopener">FINRA 정액 적립의 장점과 한계</a></p>
+      <p className="note">과거 자료로 계산한 결과예요. 특정 종목을 추천하거나 미래 수익을 보장하지 않아요.</p>
     </>
   );
 }
@@ -121,7 +60,7 @@ export default async function Page({ params }: { params: Promise<{ lang: string 
   const Body = BODIES[locale];
   return (
     <ContentShell title={d.head.title} desc={d.head.desc} crumb={d.head.crumb}>
-      <JsonLd data={guideLd({ path: "/guides/dca-vs-lumpsum", title: d.head.title, description: d.metaDescription, name: d.head.title })} />
+      <JsonLd data={guideLd({ lang: locale, dateModified: "2026-10-26", path: localeHref(locale, "/guides/dca-vs-lumpsum"), title: d.head.title, description: d.metaDescription, name: d.head.title })} />
       <Body />
     </ContentShell>
   );

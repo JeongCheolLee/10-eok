@@ -4,15 +4,15 @@ import { ContentShell } from "@/components/ContentShell";
 import { Sources } from "@/components/Sources";
 import { JsonLd, guideLd } from "@/components/JsonLd";
 import type { Locale } from "@/lib/i18n/locales";
-import { langAlternates } from "@/lib/i18n/seo";
+import { langAlternates, localeHref } from "@/lib/i18n/seo";
 import { ETF_BASICS_EN } from "@/lib/content/pages/en";
 import { ETF_BASICS_JA } from "@/lib/content/pages/ja";
 import { ETF_BASICS_DE } from "@/lib/content/pages/de";
 
 const KO = {
-  metaTitle: "ETF가 뭔가요? (초보자)",
-  metaDescription: "상장지수펀드(ETF)의 개념과 개별주식·펀드와의 차이, 초보자가 알아야 할 비용과 위험까지 쉽게 정리합니다.",
-  head: { title: "ETF가 뭔가요? (초보자)", desc: "주식처럼 사고파는 '여러 종목 한 바구니', ETF를 처음부터 이해하기", crumb: "가이드 · ETF 기초" },
+  metaTitle: "ETF가 뭔가요?",
+  metaDescription: "ETF의 구조와 지수형·액티브 차이, 운용보수 외 비용과 분산의 한계를 설명해요.",
+  head: { title: "ETF가 뭔가요?", desc: "주식처럼 사고파는 '여러 종목 한 바구니', ETF를 처음부터 이해하기", crumb: "가이드 · ETF 기초" },
 };
 const LOCALES_DATA: Record<Locale, { metaTitle: string; metaDescription: string; head: { title: string; desc: string; crumb: string } }> = {
   ko: KO, en: ETF_BASICS_EN, ja: ETF_BASICS_JA, de: ETF_BASICS_DE,
@@ -28,132 +28,25 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
 function KoBody() {
   return (
     <>
-      <h2>ETF, 한 문장으로</h2>
-      <p>
-        ETF는 영어 <em>Exchange Traded Fund</em>의 약자로, 우리말로는 &lsquo;상장지수펀드&rsquo;라고
-        부릅니다. 이름이 어렵게 느껴지지만 뜯어보면 단순합니다. &lsquo;상장&rsquo;은 주식처럼
-        거래소에 올라가 있어서 시장이 열린 동안 언제든 사고팔 수 있다는 뜻이고,
-        &lsquo;지수&rsquo;는 코스피200이나 S&amp;P500 같은 시장 지표를 따라간다는 뜻이며,
-        &lsquo;펀드&rsquo;는 여러 사람의 돈을 모아 여러 종목에 나눠 담는 그릇이라는 뜻입니다.
-        즉 ETF는 <strong>주식처럼 간편하게 거래되지만, 그 안에는 수십에서 수백 개의 종목이
-        한 바구니에 담겨 있는 상품</strong>입니다.
-      </p>
-      <p>
-        예를 들어 어떤 ETF 한 주를 사면, 그 한 주 안에 이미 여러 회사의 주식이 정해진 비율로
-        들어 있습니다. 종목 하나하나를 직접 골라 사는 수고 없이, 단 한 번의 매수로 시장 전체에
-        조금씩 투자하게 되는 셈입니다.
-      </p>
-
-      <h2>&lsquo;지수를 따라간다&rsquo;는 게 무슨 뜻일까</h2>
-      <p>
-        대부분의 ETF는 특정 <strong>지수(인덱스)</strong>를 그대로 따라가도록 설계됩니다. 지수란
-        시장의 상태를 숫자 하나로 요약한 지표입니다. 예컨대 코스피200은 한국 대형주 200개를,
-        S&amp;P500은 미국 대형주 500개를, 나스닥100은 나스닥 시장의 대표 기업 100개를 묶어
-        만든 지수입니다. 인덱스를 추종하는 ETF는 그 지수에 들어 있는 종목을, 지수가 정한 비중과
-        거의 똑같이 담습니다.
-      </p>
-      <p>
-        그래서 지수가 1% 오르면 그 지수를 따르는 ETF의 가격도 비용을 빼면 대체로 약 1% 오릅니다.
-        운용사가 임의로 &lsquo;좋아 보이는 종목&rsquo;을 고르는 게 아니라, 정해진 규칙대로 지수를
-        복제하는 것이 핵심입니다. 그래서 이런 상품을 &lsquo;패시브(passive, 수동)&rsquo; 투자라고
-        부릅니다. 어떤 지수를 따르느냐에 따라 성격이 크게 달라지므로, 지수 자체를 이해하는 것이
-        ETF 선택의 출발점입니다. 대표 지수의 차이는{" "}
-        <Link href="/guides/nasdaq100-vs-sp500">나스닥100과 S&amp;P500 비교</Link>에서
-        자세히 다룹니다.
-      </p>
-
-      <h2>분산 효과 — 계란을 한 바구니에 담지 않는다</h2>
-      <p>
-        ETF의 가장 큰 장점은 <strong>분산</strong>입니다. 개별 주식 한 종목에만 투자하면 그 회사가
-        실적이 나쁘거나 사고가 터졌을 때 손실을 고스란히 떠안습니다. 하지만 수백 개 종목이 담긴
-        ETF라면, 한 회사가 휘청여도 다른 회사들이 그 충격을 완화해 줍니다. 시장 전체가 망하지
-        않는 한 한 번에 0이 되는 위험은 크게 줄어드는 것이죠.
-      </p>
-      <p>
-        다만 분산이 &lsquo;손실이 없다&rsquo;는 뜻은 결코 아닙니다. 2008년이나 2020년처럼
-        시장 전체가 함께 떨어질 때는 분산된 ETF도 같이 하락합니다. 분산은 한 종목에 몰린 위험을
-        줄여 줄 뿐, 시장 전체의 위험(시스템 위험)까지 없애 주지는 못합니다. 이 점을 솔직히 아는
-        것이 초보자에게 가장 중요합니다.
-      </p>
-
-      <h2>비용과 괴리율 — 눈에 잘 안 보이는 숫자들</h2>
-      <p>
-        ETF도 펀드이므로 운용에 비용이 듭니다. 가장 중요한 숫자는{" "}
-        <strong>운용보수(총보수, TER)</strong>입니다. 이는 자산 대비 연간 몇 %를 운용·관리
-        비용으로 떼는지를 나타냅니다. 예를 들어 보수가 연 0.1%라면 1,000만 원을 1년 맡길 때 약
-        1만 원이 비용으로 나가는 셈입니다. 보수는 가격에 매일 조금씩 녹아 들어가므로 따로 청구되는
-        느낌은 없지만, 장기 투자에서는 작은 차이도 복리로 쌓여 큰 차이를 만듭니다. 같은 지수를
-        따르는 ETF라면 보수가 낮은 쪽이 유리합니다.
-      </p>
-      <ul>
-        <li>
-          <strong>괴리율</strong>: ETF의 시장 가격과 실제 순자산가치(NAV) 사이의 차이입니다.
-          이론상 둘은 같아야 하지만, 거래가 한산하면 잠깐 벌어질 수 있습니다. 괴리율이 크면
-          제값보다 비싸게 사거나 싸게 팔게 될 수 있습니다.
-        </li>
-        <li>
-          <strong>거래량(유동성)</strong>: 하루에 거래되는 양이 많을수록 원하는 가격에 사고팔기
-          쉽고, 사는 가격과 파는 가격의 간격(호가 스프레드)도 좁습니다. 거래가 거의 없는 ETF는
-          되팔 때 불리할 수 있으니 주의해야 합니다.
-        </li>
-        <li>
-          <strong>추적오차</strong>: ETF가 따라가기로 한 지수와 실제 수익률이 얼마나 어긋나는지를
-          뜻합니다. 작을수록 지수를 충실히 복제하는 것입니다.
-        </li>
-      </ul>
-
-      <h2>액티브 펀드와는 무엇이 다를까</h2>
-      <p>
-        전통적인 <strong>액티브 펀드</strong>는 펀드매니저가 직접 종목을 고르고 사고팔며 시장보다
-        높은 수익을 내려고 시도합니다. 대신 사람의 판단과 잦은 매매가 들어가므로 보수가 상대적으로
-        높고, 가격은 보통 하루에 한 번 정해지며, 환매(되찾기)에 시간이 걸리기도 합니다.
-      </p>
-      <p>
-        반면 지수를 추종하는 ETF는 정해진 규칙대로 시장을 그대로 따라가는 것이 목표라 보수가 낮고,
-        주식처럼 장중에 실시간으로 거래되며, 어떤 종목을 담고 있는지 매일 공개됩니다. &lsquo;시장을
-        이기려는 시도&rsquo; 대신 &lsquo;시장만큼만 따라가는&rsquo; 단순함과 낮은 비용이 ETF의 매력입니다.
-        물론 ETF 중에도 매니저가 적극적으로 운용하는 액티브 ETF가 있으니, 상품 설명서에서 어떤
-        방식인지 확인하는 습관이 필요합니다.
-      </p>
-
-      <h2>초보자가 첫 ETF를 고를 때 체크포인트</h2>
-      <ul>
-        <li>
-          <strong>무엇을 담고 있나</strong>: 어떤 지수·시장·자산을 추종하는지 먼저 봅니다.
-          국내 주식인지 미국 주식인지, 넓게 분산되어 있는지 특정 업종에 쏠려 있는지 확인하세요.
-        </li>
-        <li>
-          <strong>비용이 적당한가</strong>: 같은 지수라면 운용보수가 낮은 쪽이 장기적으로 유리합니다.
-        </li>
-        <li>
-          <strong>충분히 거래되나</strong>: 거래량과 순자산 규모가 너무 작은 상품은 피하는 편이
-          안전합니다.
-        </li>
-        <li>
-          <strong>레버리지·파생형은 아닌가</strong>: 이름에 &lsquo;2배&rsquo;, &lsquo;3배&rsquo;,
-          &lsquo;인버스&rsquo;가 붙은 ETF는 일반 ETF와 위험이 전혀 다릅니다. 매일 배수를 맞추는
-          구조 탓에 장기 보유 시 변동성에 깎이는 현상이 생길 수 있으니, 충분히 이해한 뒤 접근하세요.
-          자세한 위험은{" "}
-          <Link href="/guides/leverage-etf-risk">레버리지 ETF의 위험</Link>에서 다룹니다.
-        </li>
-        <li>
-          <strong>해외 ETF라면 환율과 세금</strong>: 미국 ETF는 원화·달러 환율의 영향을 받고,
-          양도차익에 세금이 붙습니다. 적립식으로 꾸준히 사는 전략은{" "}
-          <Link href="/guides/dca">분할매수(DCA)</Link>에서 정리했습니다.
-        </li>
-      </ul>
-      <p>
-        ETF의 개념을 잡았다면, 실제로 매달 일정 금액을 넣었을 때 자산이 어떻게 불어나는지 직접
-        시뮬레이션해 보는 것이 가장 빠른 공부입니다. 실제 과거 가격을 바탕으로 한 결과는{" "}
-        <Link href="/">계산기</Link>에서 종목별로 확인할 수 있습니다. 다만 과거 수익률이 미래를
-        보장하지는 않으니, 어디까지나 참고용으로 보시기 바랍니다.
-      </p>
-
+      <p>ETF는 거래소에서 주식처럼 사고파는 펀드예요. 한 주 안에 담긴 자산과 운용 규칙에 따라 위험과 수익 구조가 달라져요. ETF라는 이름만으로 시장 전체에 분산하거나 지수를 1배로 따라간다고 볼 수는 없어요.</p>
+      <h2>주식을 직접 사는 것과 무엇이 다른가요?</h2>
+      <p>개별 주식을 사면 그 기업의 이익과 위험에 직접 노출돼요. ETF를 사면 펀드가 보유한 자산의 묶음에 투자해요. 기업 하나가 부진한 영향을 다른 보유 자산이 일부 상쇄할 수 있지만, 자산들이 함께 하락하면 ETF도 손실을 볼 수 있어요.</p>
+      <p>예를 들어 SPY는 미국 대형주, SOXX는 반도체 업종, TLT는 장기 미국 국채에 노출돼요. 모두 ETF여도 비교해야 할 위험은 달라요. 담긴 종목 수가 많다는 사실보다 국가·업종·상위 자산 비중이 중요할 수 있어요.</p>
+      <h2>지수형과 액티브 ETF를 구분해요</h2>
+      <p>지수형 ETF는 정해진 기준 지수와 비슷한 성과를 목표로 해요. S&amp;P 500처럼 편입 기준과 비중 산정 규칙이 있는 지수를 따라가요. 모든 자산을 같은 비중으로 담는 것은 아니며, 현물을 보유하거나 일부 표본·파생상품을 이용하는 등 구현 방식도 다를 수 있어요.</p>
+      <p>액티브 ETF는 운용사의 종목 선택과 거래 판단을 활용해요. JEPI·JEPQ처럼 옵션 전략을 함께 쓰는 상품도 있어요. 레버리지 ETF는 하루 수익률의 배수를 목표로 하므로, 여러 날 수익률까지 같은 배수를 따르지는 않아요. 자세한 차이는 <Link href="/guides/leverage-etf-risk">레버리지 ETF의 위험</Link>에서 볼 수 있어요.</p>
+      <h2>운용보수 외에도 비용이 있어요</h2>
+      <p>운용보수는 펀드 자산에서 차감돼 가격에 반영돼요. 보수율·총비용 지표는 포함하는 비용 범위가 다를 수 있어 상품 설명서의 정의를 확인할 필요가 있어요. 가상으로 자산이 1,000만원에서 일정하고 연 비용이 0.1%라면 1년 비용은 1만원이에요. 실제 비용은 변하는 자산 규모와 보유 기간에 따라 달라져요.</p>
+      <p>투자자에게는 거래 수수료·환전 비용·매수와 매도 호가의 차이도 생겨요. 같은 지수를 따르는 상품의 보수가 낮아도 거래 가격과 세금이 다르면 최종 결과는 달라질 수 있어요. 이 사이트는 펀드 가격에 반영된 비용을 다시 차감하지 않으며, 투자자별 거래·환전 수수료를 재현하지 않아요.</p>
+      <h2>시장 가격과 자산 가치는 다를 수 있어요</h2>
+      <p>순자산가치는 펀드 자산에서 부채 등을 뺀 가치를 주당으로 나눈 값이에요. 거래소에서 사고파는 시장 가격과의 차이를 괴리라고 해요. 기초 시장의 휴장이나 가격 산정 시차, 수급 변화가 있을 때 차이가 커질 수 있어요.</p>
+      <p>거래량만으로 거래 비용을 단정할 수도 없어요. 기초자산의 유동성과 호가 공급 조건도 영향을 줘요. 지수와의 수익률 차이는 추적 차이, 그 차이의 변동 정도는 추적 오차로 구분해요. 비용·분배금 처리·표본 구성 등이 원인이 될 수 있어요.</p>
+      <h2>계산 결과에 들어가는 조건</h2>
+      <p>10-eok은 선택한 ETF의 과거 가격과 해당 시장의 환율로 정액 매수를 계산해요. 매달·매주·거래일마다 사는 일정과 처음 넣는 목돈을 설정할 수 있어요. 정액 매수에서 같은 돈으로 사는 수량은 매수일마다 달라져요.</p>
+      <p>ETF 설명은 상품 구조를, <Link href="/">계산기</Link>는 입력 조건의 과거 결과를 보여줘요. 높은 과거 평가액만으로 상품이 더 안전하거나 개인의 목적에 더 맞는다고 판단할 수는 없어요.</p>
       <Sources ids={["yahoo", "fredFx"]} />
-
-      <p className="note">
-        본 내용은 일반적인 정보 제공이며 투자 권유나 자문이 아닙니다.
-      </p>
+      <p>구조와 용어 참고: <a href="https://www.investor.gov/introduction-investing/general-resources/news-alerts/alerts-bulletins/investor-bulletins-24" target="_blank" rel="noopener">SEC ETF 구조·거래 비용 안내</a></p>
+      <p className="note">과거 자료로 계산한 결과예요. 특정 종목을 추천하거나 미래 수익을 보장하지 않아요.</p>
     </>
   );
 }
@@ -167,7 +60,7 @@ export default async function Page({ params }: { params: Promise<{ lang: string 
   const Body = BODIES[locale];
   return (
     <ContentShell title={d.head.title} desc={d.head.desc} crumb={d.head.crumb}>
-      <JsonLd data={guideLd({ path: "/guides/etf-basics", title: d.head.title, description: d.metaDescription, name: d.head.title })} />
+      <JsonLd data={guideLd({ lang: locale, dateModified: "2026-10-26", path: localeHref(locale, "/guides/etf-basics"), title: d.head.title, description: d.metaDescription, name: d.head.title })} />
       <Body />
     </ContentShell>
   );

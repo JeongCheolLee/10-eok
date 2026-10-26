@@ -21,17 +21,17 @@ const GUIDE_CONTENT: Record<Exclude<Locale, "ko">, Record<string, GuideContent>>
   de: { "etf-basics": ETF_BASICS_DE, qld: QLD_GUIDE_DE, dca: DCA_DE, "dca-vs-lumpsum": DCA_VS_LUMPSUM_DE, "leverage-etf-risk": LEVERAGE_ETF_RISK_DE, "compound-72": COMPOUND_72_DE, "nasdaq100-vs-sp500": NASDAQ100_VS_SP500_DE },
 };
 
-// ko는 기존 9종(ko 전용 가이드 포함) 하드코딩 배열 그대로 — 카드 문구 바이트 불변.
+// 한국어에는 원화 환율·한국 과세 가이드도 포함해요.
 const KO_GUIDES: Guide[] = [
-  { slug: "etf-basics", t: "ETF가 뭔가요? (초보자)", d: "상장지수펀드의 개념과 개별주식·펀드와의 차이를 처음부터 쉽게." },
-  { slug: "qld", t: "QLD란 무엇인가", d: "나스닥100을 하루 2배로 추종하는 레버리지 ETF, QLD를 기초부터 정리합니다." },
-  { slug: "dca", t: "적립식 투자(DCA)의 원리", d: "매달 일정 금액을 꾸준히 사는 방식이 왜 마음 편한 투자인지 설명합니다." },
-  { slug: "dca-vs-lumpsum", t: "적립식 vs 거치식", d: "한 번에 넣을까 나눠 넣을까 — 둘의 차이와 상황별 선택 기준." },
-  { slug: "leverage-etf-risk", t: "레버리지 ETF의 위험", d: "2배의 수익만큼 2배의 손실, 그리고 '변동성 끌림'이라는 숨은 함정." },
-  { slug: "fx-impact", t: "환율이 수익률에 미치는 영향", d: "원화로 달러 자산을 살 때, 환율이 어떻게 수익을 더하거나 깎는지." },
-  { slug: "overseas-tax", t: "해외주식·ETF 세금 기초", d: "양도소득세·배당소득세와 국내 상장 종목과의 차이." },
-  { slug: "compound-72", t: "복리와 72의 법칙", d: "돈이 돈을 버는 복리의 원리와, 두 배 되는 기간을 암산하는 법." },
-  { slug: "nasdaq100-vs-sp500", t: "나스닥100 vs S&P 500", d: "QQQ와 SPY, 구성·성격·변동성이 어떻게 다른지 비교." },
+  { slug: "etf-basics", t: "ETF가 뭔가요?", d: "지수형·액티브 구조, 비용과 분산의 한계를 설명해요." },
+  { slug: "qld", t: "QLD란 무엇인가", d: "일일 2배 목표와 보유 기간 수익률의 차이를 짚어요." },
+  { slug: "dca", t: "적립식 투자(DCA)의 원리", d: "매수 수량과 평균 단가를 계산하고 적립의 한계를 살펴봐요." },
+  { slug: "dca-vs-lumpsum", t: "적립식 vs 거치식", d: "같은 예산의 가상 예시로 비교하고 대기 현금과 조건 차이를 짚어요." },
+  { slug: "leverage-etf-risk", t: "레버리지 ETF의 위험", d: "일일 복리와 손실 회복률, 적립해도 남는 위험을 설명해요." },
+  { slug: "fx-impact", t: "환율이 수익률에 미치는 영향", d: "매수·평가 환율과 원화 수익률을 가상 예시로 계산해요." },
+  { slug: "overseas-tax", t: "해외주식·ETF 세금 기초", d: "상장 시장·기초자산별 과세와 계산기 세금 모형의 한계를 짚어요." },
+  { slug: "compound-72", t: "복리와 72의 법칙", d: "고정 수익률의 암산법과 적립식에 그대로 적용할 수 없는 이유예요." },
+  { slug: "nasdaq100-vs-sp500", t: "나스닥100 vs S&P 500", d: "편입 기준과 중복 보유, 같은 조건으로 비교하는 법을 설명해요." },
 ];
 
 type Copy = {
@@ -48,8 +48,8 @@ const COPY: Record<Locale, Copy> = {
     metaDescription: "QLD, 적립식 투자, 레버리지 ETF의 위험, 환율이 수익률에 미치는 영향을 쉽게 정리했어요.",
     head: { title: "투자 가이드", desc: "10-eok의 백테스트를 더 잘 이해하기 위한 배경 지식이에요.", crumb: "가이드" },
     etfSection: "종목별 적립식 백테스트",
-    etfCard: (label) => ({ t: `${label} 적립식 백테스트`, d: "매달 100만원씩 모았다면 10억까지 얼마나 — 실제 과거 데이터로." }),
-    note: "이 글들은 일반적인 정보 제공을 위한 것이며 투자 권유나 자문이 아닙니다.",
+    etfCard: (label) => ({ t: `${label} 적립식 백테스트`, d: "상품별 구조와 위험, 과거 적립 결과를 함께 살펴봐요." }),
+    note: "과거 자료로 계산한 결과예요. 특정 종목을 추천하거나 미래 수익을 보장하지 않아요.",
   },
   en: {
     metaTitle: "Investing guides · 10-eok",

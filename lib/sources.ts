@@ -12,6 +12,14 @@ export const SOURCES = {
     label: "원/달러 환율(일별, DEXKOUS): 미국 세인트루이스 연방준비은행(FRED)",
     href: "https://fred.stlouisfed.org/series/DEXKOUS",
   },
+  fredFxJpy: {
+    label: "DEXJPUS · FRED",
+    href: "https://fred.stlouisfed.org/series/DEXJPUS",
+  },
+  fredFxEur: {
+    label: "DEXUSEU · FRED",
+    href: "https://fred.stlouisfed.org/series/DEXUSEU",
+  },
   fredCpi: {
     label: "한국 소비자물가지수(월별, KORCPIALLMINMEI): FRED",
     href: "https://fred.stlouisfed.org/series/KORCPIALLMINMEI",
@@ -34,7 +42,7 @@ export const SOURCES = {
   },
   schwabSchd: {
     label: "SCHD 상품 개요(다우존스 미국 배당 100 추종): Charles Schwab",
-    href: "https://www.schwab.com/research/etfs/quotes/summary/schd",
+    href: "https://www.schwabassetmanagement.com/products/schd",
   },
   vanguardVt: {
     label: "VT 상품 개요(FTSE 글로벌 올캡·전 세계 주식): Vanguard",

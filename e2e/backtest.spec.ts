@@ -191,3 +191,25 @@ test('amount entered before choosing an ETF is retained and invalid drafts stay 
   await expect(amount).toHaveValue('');
   await expect(page.locator('.wc-calculate')).toBeDisabled();
 });
+
+for (const locale of ["ko", "en", "ja", "de"]) {
+  for (const ticker of ["qqq", "jepi"]) {
+    test(`${locale} ${ticker}: ETF article and linked calculation show the same result`, async ({ page }) => {
+      const prefix = locale === "ko" ? "" : `/${locale}`;
+      await page.goto(`${prefix}/etf/${ticker}`);
+      const example = page.getByTestId("etf-example");
+      const summary = await example.innerText();
+      const finalValue = await example.locator("b").innerText();
+      await page.getByTestId("etf-calculator-link").click();
+      await expect(page.locator(".wc-result")).toBeVisible();
+      const duration = page.locator(".wc-duration");
+      if (await duration.count()) {
+        expect(summary).toContain(await duration.getAttribute("aria-label"));
+        expect(summary).toContain(await page.locator(".wc-hero-caption").innerText());
+        await expect(page.locator(".wc-latest strong")).toHaveText(finalValue);
+      } else {
+        await expect(page.locator(".wc-value-hero")).toHaveText(finalValue);
+      }
+    });
+  }
+}

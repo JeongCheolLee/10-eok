@@ -6,71 +6,64 @@ import { notFound } from "next/navigation";
 import { ContentShell } from "@/components/ContentShell";
 import { JsonLd, articleLd, pageBreadcrumbLd } from "@/components/JsonLd";
 import { TICKERS, tickerName, tickerCurrency } from "@/lib/tickers";
-import { composeRows, type PxBundle, type FxBundle } from "@/lib/backtest/compose";
-import { runToToday } from "@/lib/backtest/simulate";
+import type { PxBundle, FxBundle } from "@/lib/backtest/compose";
+import { calculateWebPlan, composeWebRows, defaultWebPlan } from "@/lib/web-calculator";
+import { resultCopy } from "@/components/calculator/result-copy";
+import { etfArticleCopy } from "@/lib/i18n/etf-article";
 import { getEtfContent } from "@/lib/etfContent";
 import { getMarket, type Market } from "@/lib/i18n/markets";
 import { getFormatter } from "@/lib/i18n/format";
 import { getDict } from "@/lib/i18n/dict";
 import { langAlternates, localeHref } from "@/lib/i18n/seo";
 import type { Locale } from "@/lib/i18n/locales";
-import { Sources } from "@/components/Sources";
-import type { SourceId } from "@/lib/sources";
+import { SOURCES } from "@/lib/sources";
 
-// ko 전용(불변) — 현재 렌더 문구·순서·구조를 그대로 보존. 새 로케일은 RELATED_SLUGS/GUIDE_LABEL 사용.
-type KoBlurb = { line: string; guides: { href: string; label: string }[] };
+// 한국어 ETF별 관련 가이드. 설명 원문은 getEtfContent에서 가져온다.
+type KoBlurb = { guides: { href: string; label: string }[] };
 const BLURB_KO: Record<string, KoBlurb> = {
   QLD: {
-    line: "QLD는 미국 나스닥100 지수의 하루 수익률을 2배로 추종하는 레버리지 ETF입니다. 변동이 큰 만큼 적립식 효과도, 위험도 함께 커집니다.",
     guides: [
       { href: "/guides/qld", label: "QLD란 무엇인가" },
       { href: "/guides/leverage-etf-risk", label: "레버리지 ETF의 위험" },
     ],
   },
   TQQQ: {
-    line: "TQQQ는 나스닥100을 하루 3배로 추종하는 초고변동 레버리지 ETF입니다. 상승장에선 폭발적이지만 하락·횡보장에서는 손실과 변동성 끌림이 매우 큽니다.",
     guides: [
       { href: "/guides/leverage-etf-risk", label: "레버리지 ETF의 위험" },
       { href: "/guides/qld", label: "QLD·레버리지 기초" },
     ],
   },
   QQQ: {
-    line: "QQQ는 미국 기술주 중심의 나스닥100 지수를 1배로 추종하는 대표 ETF입니다. 레버리지 없이 지수를 그대로 담는 방식입니다.",
     guides: [
       { href: "/guides/etf-basics", label: "ETF가 뭔가요?" },
       { href: "/guides/dca", label: "적립식 투자의 원리" },
     ],
   },
   SPY: {
-    line: "SPY는 미국 대형주 500개로 구성된 S&P 500 지수를 추종하는, 세계에서 가장 오래되고 큰 ETF 중 하나입니다.",
     guides: [
       { href: "/guides/etf-basics", label: "ETF가 뭔가요?" },
       { href: "/guides/dca-vs-lumpsum", label: "적립식 vs 거치식" },
     ],
   },
   VOO: {
-    line: "VOO는 SPY와 같은 S&P 500 지수를 1배로 추종하는 뱅가드 ETF입니다. 담는 지수는 같고 운용사·보수가 다릅니다.",
     guides: [
       { href: "/guides/etf-basics", label: "ETF가 뭔가요?" },
       { href: "/guides/nasdaq100-vs-sp500", label: "나스닥100 vs S&P 500" },
     ],
   },
   SCHD: {
-    line: "SCHD는 배당을 꾸준히 잘 주는 미국 우량 기업 약 100곳을 담은 배당성장 ETF입니다. 성장주 지수와 성격이 다릅니다.",
     guides: [
       { href: "/guides/etf-basics", label: "ETF가 뭔가요?" },
       { href: "/guides/overseas-tax", label: "해외주식 세금" },
     ],
   },
   VT: {
-    line: "VT는 미국을 포함한 전 세계 주식 수천 종목을 한 번에 담는 뱅가드 ETF입니다. 분산의 폭이 가장 넓습니다.",
     guides: [
       { href: "/guides/etf-basics", label: "ETF가 뭔가요?" },
       { href: "/guides/fx-impact", label: "환율의 영향" },
     ],
   },
   "069500.KS": {
-    line: "KODEX 200은 한국 코스피200 지수를 추종하는 대표 국내 ETF입니다. 원화 자산이라 환율의 영향을 받지 않습니다.",
     guides: [
       { href: "/guides/etf-basics", label: "ETF가 뭔가요?" },
       { href: "/guides/dca", label: "적립식 투자의 원리" },
@@ -78,7 +71,7 @@ const BLURB_KO: Record<string, KoBlurb> = {
   },
 };
 function koBlurb(sym: string): KoBlurb {
-  return BLURB_KO[sym] ?? { line: `${tickerName(sym)} 적립식 백테스트 결과입니다.`, guides: [{ href: "/guides", label: "투자 가이드" }] };
+  return BLURB_KO[sym] ?? { guides: [{ href: "/guides", label: "투자 가이드" }] };
 }
 
 // en/ja/de(신규 로케일) 관련 가이드 — 가이드 7편 중 번역이 끝난 6편만 사용(overseas-tax·fx-impact는 ko 전용).
@@ -133,12 +126,13 @@ async function compute(symbol: string, market: Market) {
   const px = JSON.parse(await fs.readFile(path.join(dataDir, "px", `${symbol.toLowerCase()}.json`), "utf8")) as PxBundle;
   const isNative = tickerCurrency(symbol) === market.currency;
   const monthly = market.monthly.default * market.monthly.unit;
-  const target = market.goal.default * market.goal.unit;
-  const r = runToToday(composeRows(px, isNative ? null : fx), { monthly, buyDay: 1, target });
-  return { r, isNative };
+  const rows = composeWebRows(symbol, px, isNative ? null : fx);
+  const plan = { ...defaultWebPlan(market.locale), holdings: [{ ticker: symbol, amount: monthly }] };
+  const calculation = calculateWebPlan({ [symbol]: rows }, plan, market.locale);
+  return { calculation, fxSource: isNative ? null : fx?.source.split(" ")[0] };
 }
 
-/** ko는 기존 문자열 슬라이스 그대로(불변, 앞자리 0 유지: "2002년 01월"). 신규 로케일은 공용 포맷터. */
+/** 관련 설명에 사용하는 시작월 표기. */
 function startYmLabel(dateIso: string | undefined, locale: Locale, fmt: ReturnType<typeof getFormatter>): string {
   if (!dateIso) return "";
   if (locale === "ko") return dateIso.slice(0, 7).replace("-", "년 ") + "월";
@@ -162,7 +156,7 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
   const goalStr = fmt.milestone(market.goal.default * market.goal.unit);
   const title = d.etf.metaTitle(label, monthlyStr, goalStr);
   const description = d.etf.metaDesc(display(info.symbol), monthlyStr, goalStr);
-  const ogImg = `/api/og?l=${locale}&t=${info.symbol}&m=${market.monthly.default}&d=1&g=${market.goal.default}`;
+  const ogImg = `/api/og?preview=brand&l=${locale}&g=${market.goal.default}`;
   return {
     title,
     description,
@@ -182,7 +176,11 @@ export default async function EtfPage({ params }: { params: Promise<{ lang: stri
 
   const fmt = getFormatter(locale);
   const d = getDict(locale);
-  const { r, isNative } = await compute(info.symbol, market);
+  const { calculation, fxSource } = await compute(info.symbol, market);
+  const r = calculation.result;
+  const t = resultCopy[locale];
+  const c = etfArticleCopy[locale];
+  const endDate = r.series.at(-1)!.date;
   const sym = info.symbol;
   const lc = sym.toLowerCase();
   const label = tickerLabel(sym);
@@ -192,43 +190,60 @@ export default async function EtfPage({ params }: { params: Promise<{ lang: stri
   const startYm = startYmLabel(r.series[0]?.date, locale, fmt);
   const appHref = `${localeHref(locale, "/")}?t=${sym}&m=${market.monthly.default}&d=1&g=${market.goal.default}`;
   const title = d.etf.pageTitle(label);
-  const leadFallback = locale === "ko" ? koBlurb(sym).line : d.etf.fallbackBlurb(label);
-  const articleDesc = locale === "ko" ? koBlurb(sym).line : (content?.lead ?? d.etf.fallbackBlurb(label));
+  const leadFallback = d.etf.fallbackBlurb(label);
+  const articleDesc = content?.lead ?? leadFallback;
   const guides = locale === "ko" ? koBlurb(sym).guides : relatedGuides(sym, locale);
-  const sourceIds: SourceId[] = isNative ? ["yahoo"] : ["yahoo", "fredFx"];
-  if (sym === "QLD") sourceIds.push("prosharesQld");
-  if (sym === "TQQQ") sourceIds.push("prosharesTqqq");
-  if (sym === "VOO") sourceIds.push("vanguardVoo");
-  if (sym === "SCHD") sourceIds.push("schwabSchd");
-  if (sym === "VT") sourceIds.push("vanguardVt");
+  const issuerUrl: Record<string, string> = {
+    QLD: SOURCES.prosharesQld.href,
+    TQQQ: SOURCES.prosharesTqqq.href,
+    VOO: SOURCES.vanguardVoo.href,
+    SCHD: SOURCES.schwabSchd.href,
+    VT: SOURCES.vanguardVt.href,
+    QQQ: "https://www.invesco.com/qqq-etf/en/about.html",
+    SPY: "https://www.ssga.com/us/en/individual/etfs/state-street-spdr-sp-500-etf-trust-spy",
+    SOXX: "https://www.ishares.com/us/products/239705/ishares-phlx-semiconductor-etf",
+    VGT: "https://investor.vanguard.com/investment-products/etfs/profile/vgt",
+    VNQ: "https://advisors.vanguard.com/investments/products/vnq/vanguard-real-estate-etf",
+    GLD: "https://www.spdrgoldshares.com/usa/",
+    TLT: "https://www.ishares.com/us/products/239454/ishares-20-year-treasury-bond-etf",
+    AGG: "https://www.ishares.com/us/products/239458/ishares-core-total-us-bond-market-etf",
+    JEPI: "https://am.jpmorgan.com/content/dam/jpm-am-aem/americas/us/en/literature/fact-sheet/etfs/FS-JEPI.pdf",
+    JEPQ: "https://am.jpmorgan.com/content/dam/jpm-am-aem/americas/us/en/literature/fact-sheet/etfs/FS-JEPQ.pdf",
+    "069500.KS": "https://www.samsungfund.com/etf/product/view.do?id=2ETF01",
+  };
 
   return (
     <ContentShell title={title} desc={d.etf.pageDesc(monthlyStr, goalStr)} crumb={d.etf.crumb(label)}>
-      <JsonLd data={articleLd({ path: `/etf/${lc}`, title, description: articleDesc })} />
-      <JsonLd data={pageBreadcrumbLd(label, `/etf/${lc}`)} />
+      <JsonLd data={articleLd({ path: localeHref(locale, `/etf/${lc}`), title, description: articleDesc, lang: locale, dateModified: "2026-10-26" })} />
+      <JsonLd data={pageBreadcrumbLd(label, localeHref(locale, `/etf/${lc}`))} />
 
+      <p className="sub">{c.updated}</p>
       <p>{content?.lead ?? leadFallback}</p>
 
-      <div className="callout">
-        {r.reached ? (
+      <div className="callout etf-example" data-testid="etf-example">
+        <p className="sub">{c.example}</p>
+        <p>{c.condition(monthlyStr)}</p>
+        {calculation.reach ? (
           <>
-            <strong>{d.etf.reachedHeadline(monthlyStr, r.years, r.monthsRem, goalStr)}</strong>
-            <br />
-            {d.etf.reachedDetail(startYm, fmt.money(r.value), fmt.money(r.principal), fmt.pct(r.cagr))}
+            <strong>{t.first(goalStr)} {r.years}{t.years} {r.monthsRem}{t.months}</strong>
+            <p>{t.period(fmt.ym(calculation.calculationStart), fmt.ymd(calculation.reach.date))}</p>
           </>
         ) : (
           <>
-            <strong>{d.etf.notReachedHeadline(goalStr)}</strong>
-            <br />
-            {d.etf.notReachedDetail(fmt.money(r.value), fmt.money(r.principal), fmt.pct(r.cagr))}
+            <strong>{t.missed(goalStr)}</strong>
+            <p>{c.period(fmt.ymd(calculation.calculationStart), fmt.ymd(endDate))}</p>
           </>
         )}
-        <div className="sub">{d.etf.note(d.calc.day.nth(1), goalStr, isNative ? d.etf.priceBasisPlain : d.etf.priceBasisFx)}</div>
+        <p>{calculation.reach ? t.continued : t.end} <b>{fmt.money(r.value)}</b></p>
+        <p className="sub">{t.date(fmt.ymd(endDate))}{calculation.reach && r.value < market.goal.default * market.goal.unit ? ` · ${t.below(goalStr)}` : ""}</p>
+        <p className="sub">{t.principal} {fmt.money(r.principal)}</p>
+        <p className="sub">{c.assumptions}</p>
+        <p className="sub">{t.basisText}</p>
       </div>
 
       <p style={{ marginTop: 16 }}>
-        <Link href={appHref} className="btn-inline">
-          {d.etf.cta}
+        <Link href={appHref} className="btn-inline" data-testid="etf-calculator-link">
+          {c.cta}
         </Link>
       </p>
 
@@ -247,7 +262,7 @@ export default async function EtfPage({ params }: { params: Promise<{ lang: stri
           <p>{d.etf.fallbackBody(startYm)}</p>
         </>
       )}
-      <p>{d.etf.editHint}</p>
+      <p>{c.edit}</p>
 
       <h2>{d.etf.relatedHeading}</h2>
       <ul>
@@ -264,9 +279,16 @@ export default async function EtfPage({ params }: { params: Promise<{ lang: stri
         </li>
       </ul>
 
-      <Sources ids={sourceIds} />
+      <aside className="sources" aria-label={c.sources}>
+        <p className="sources-label">{c.sources}</p>
+        <ul>
+          <li><a href={`https://finance.yahoo.com/quote/${sym}/history/`} target="_blank" rel="noopener">{c.prices} · {sym}</a></li>
+          {fxSource && <li><a href={`https://fred.stlouisfed.org/series/${fxSource}`} target="_blank" rel="noopener">{c.fx} · {market.currency} · {fxSource}</a></li>}
+          {issuerUrl[sym] && <li><a href={issuerUrl[sym]} target="_blank" rel="noopener">{c.issuer} · {sym}</a></li>}
+        </ul>
+      </aside>
 
-      <p className="note">{d.etf.legalNote}</p>
+      <p className="note">{c.disclaimer}</p>
     </ContentShell>
   );
 }
