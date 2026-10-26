@@ -1,8 +1,8 @@
-// 앱인토스 배포 설정 (ait build → dist/ → 10eok.ait). appName은 콘솔 등록값과 같아야 하고 등록 후 변경 불가.
+// 앱인토스 배포 설정 (ait build → dist/ → 10-eok.ait). appName은 콘솔 등록값과 같아야 하고 등록 후 변경 불가.
 import { defineConfig } from "@apps-in-toss/web-framework/config";
 
 export default defineConfig({
-  appName: "10eok",
+  appName: "10-eok",
   brand: { primaryColor: "#02a262" },
   permissions: [],
   navigationBar: {

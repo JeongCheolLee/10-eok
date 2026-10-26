@@ -1,29 +1,28 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { Button, ListRow, Switch, Top } from "@toss/tds-mobile";
+import { Button, ListRow, Switch } from "@toss/tds-mobile";
 import { tickerTitle } from "@/lib/tickers";
-import { NavBar, Chart, AdSlot, Avatar } from "../components/ui";
+import { NavBar, Chart, AdSlot, Avatar, ChevronRight } from "../components/ui";
 import { loadRowsBy } from "../lib/data";
 import { analytics, shareResult } from "../lib/platform";
-import type { WatchAd } from "../App";
 import { calcPlan, commonEnd, TARGET, type Calc, type Plan, type RowsBy, shareQueryOf } from "../lib/plan";
 import { saveClock } from "../lib/clock";
-import { fmt, manLabel, ymKo, ymdKo, mdKo, durKo, freqAdverb, freqLabel, freqWord, holdingsTitle, eulReul, ieyo } from "../lib/fmt";
+import { fmt, manLabel, ymKo, ymdKo, mdKo, durKo, freqAdverb, freqWord, holdingsTitle, eulReul } from "../lib/fmt";
 import { CalculationBasis } from "../components/CalculationBasis";
-import { ContributionComparison } from "../components/ContributionComparison";
-import { prepareTimingAnalysis } from "../lib/timingAnalysis";
+import { RollingNumber } from "../components/RollingNumber";
 
-export function ResultScreen({ plan, setPlan, watchAd, back, goClock, showToast, onMenu, onClose }: {
-  plan: Plan; setPlan: (p: Plan) => void; watchAd: WatchAd; back: () => void; goClock: () => void; showToast: (m: string) => void; onMenu: () => void; onClose: () => void;
+export type ResultEntrance = "reveal" | "quick";
+
+export function ResultScreen({ plan, entrance = "quick", onCalculate, calculationLabel, busy, back, onEdit, goClock, goCompare, showToast, onMenu, onClose }: {
+  entrance?: ResultEntrance;
+  plan: Plan; onCalculate: (p: Plan) => void; calculationLabel: (p: Plan) => string; busy: boolean; back: () => void; onEdit: () => void; goClock: () => void; goCompare: () => void; showToast: (m: string) => void; onMenu: () => void; onClose: () => void;
 }) {
   const [rowsBy, setRowsBy] = useState<RowsBy | null>(null);
   const [err, setErr] = useState(false);
-  const [unlockedTimingKey, setUnlockedTimingKey] = useState<string | null>(null);
   const [retry, setRetry] = useState(0);
-  const timingKey = JSON.stringify(plan);
-  const timingOpen = unlockedTimingKey === timingKey;
   const [optsOpen, setOptsOpen] = useState(false);
+  const [reinvest, setReinvest] = useState(plan.reinvest);
+  useEffect(() => setReinvest(plan.reinvest), [plan.reinvest]);
   const [tip, setTip] = useState(false);
-  const [reachTip, setReachTip] = useState(false);
 
   const tickers = plan.holdings.map((h) => h.ticker);
   const tickersKey = tickers.join(",");
@@ -42,9 +41,6 @@ export function ResultScreen({ plan, setPlan, watchAd, back, goClock, showToast,
     try { return calcPlan(rowsBy, plan); } catch (e) { console.error(e); return "error"; }
   }, [rowsBy, plan]);
   const rows = rowsBy?.[plan.ticker] ?? null;
-  const timingAnalysis = useMemo(() => rows && calc && calc !== "error"
-    ? prepareTimingAnalysis(rows, plan, calc) : null, [rows, calc, plan]);
-  const timing = timingAnalysis?.status === "ready" ? timingAnalysis.result : null;
 
   if (err || calc === "error") {
     return (
@@ -65,6 +61,17 @@ export function ResultScreen({ plan, setPlan, watchAd, back, goClock, showToast,
         <div className="state"><div className="spinner" aria-hidden="true" /><div className="state-desc">계산 중…</div></div>
       </div>
     );
+  }
+
+  if (calc.result.series.length === 0) {
+    return <div className="screen">
+      <NavBar back={back} onMenu={onMenu} onClose={onClose} />
+      <div className="state">
+        <div className="state-title">이 날짜로 계산할 자료가 없어요</div>
+        <div className="state-desc">선택한 ETF의 가격 자료는 {ymdKo(commonEnd(rowsBy, plan))}까지예요. 시작일을 앞당겨 주세요.</div>
+        <Button size="large" onClick={onEdit}>시작일 바꾸기</Button>
+      </div>
+    </div>;
   }
 
   const r = calc.result;
@@ -91,7 +98,7 @@ export function ResultScreen({ plan, setPlan, watchAd, back, goClock, showToast,
 
   let lead: string, num: string, sub: ReactNode;
   if (calc.tracking) {
-    lead = "입력한 조건으로 계산한 내 돈";
+    lead = "입력한 조건으로 계산한 평가액";
     num = fmt.money(r.value);
     const state = r.value >= TARGET ? "10억을 넘었어요" : `10억까지 ${progressPct}%`;
     sub = <>{ymKo(start)}부터 {buyStr} 샀다고 계산했어요<br />{asOf} · {state} · 넣은 돈 {fmt.money(r.principal)}</>;
@@ -104,7 +111,7 @@ export function ResultScreen({ plan, setPlan, watchAd, back, goClock, showToast,
   } else if (reachedTime && calc.reach) {
     lead = "처음 10억을 넘기까지";
     num = durKo(r.years, r.monthsRem);
-    sub = <>{ymKo(start)}부터 사기 시작해<br />{ymdKo(calc.reach.date)}에 처음 넘었어요.</>;
+    sub = <>{ymKo(start)}부터 샀다면<br />{ymdKo(calc.reach.date)}에 처음 넘었어요.</>;
   } else {
     lead = "이 기간에는 10억을 넘지 않았어요";
     num = fmt.money(r.value);
@@ -117,20 +124,21 @@ export function ResultScreen({ plan, setPlan, watchAd, back, goClock, showToast,
 
   // 공유 문구는 앞뒤 설명 없이 전달되므로 문장 안에 과거 조건(시작 시점·기간·기준일)을 담는다.
   const shareTextOf = (): string => {
-    const tail = " — 주식으로 10억 부자되기";
+    const tail = "\n\n주식으로 10억 모으기";
+    const condition = `${eulReul(names)} ${adverb} ${multi ? "합계 " : ""}${fmt.amount(calc.monthlyWon)}씩 샀다면`;
+    const initial = plan.lump > 0 ? `\n처음 목돈 ${manLabel(plan.lump)}` : "";
     if (calc.tracking) {
-      const state = r.value >= TARGET ? "10억을 넘었어요" : `10억까지 ${progressPct}%예요`;
-      return `${ymKo(start)}부터 ${buyStr} 샀다면 ${ymdKo(end)} 기준 ${fmt.money(r.value)}, ${state}${tail}`;
+      return `꾸준히 모았다면 ${fmt.money(r.value)}\n${condition}${initial}\n${ymdKo(start)} 시작 · ${ymdKo(end)} 평가액${tail}`;
     }
     if (plan.mode === "amount") {
       return calc.reqMonthly === 0
-        ? `${ymKo(start)}에 ${eulReul(names)} ${manLabel(plan.lump)}어치 샀다면 ${ymdKo(end)}에 10억이 넘었어요${tail}`
-        : `${ymKo(start)}부터 ${calc.yearsUsed}년간 ${lumpStr}${adverb} ${eulReul(names)} ${fmt.amount(calc.reqMonthly ?? 0)}씩 샀다면 ${ymdKo(end)}에 10억이 됐어요${tail}`;
+        ? `처음 목돈만으로 10억을 넘었어요\n${ymKo(start)}에 ${eulReul(names)} ${manLabel(plan.lump)}어치 샀다면\n${ymdKo(end)} 기준${tail}`
+        : `지난 ${calc.yearsUsed}년, 10억까지 필요했던 금액\n${eulReul(names)} ${adverb} ${fmt.amount(calc.reqMonthly ?? 0)}씩 샀다면${initial}\n${ymKo(start)} 시작 · ${ymdKo(end)} 기준${tail}`;
     }
     if (reachedTime && calc.reach) {
-      return `${ymKo(start)}부터 ${buyStr} 샀다면 ${durKo(r.years, r.monthsRem)} 만인 ${ymdKo(calc.reach.date)}에 처음 10억을 넘었어요${tail}`;
+      return `10억을 처음 넘기까지 ${durKo(r.years, r.monthsRem)}\n${condition}${initial}\n${ymKo(start)} 시작 · ${ymdKo(calc.reach.date)} 첫 도달${tail}`;
     }
-    return `${ymKo(start)}부터 ${buyStr} 샀다면 ${ymdKo(end)} 기준 ${ieyo(fmt.money(r.value))}${tail}`;
+    return `이 기간 동안 모았다면 ${fmt.money(r.value)}\n${condition}${initial}\n${ymKo(start)} 시작 · ${ymdKo(end)} 기준, 10억 미도달${tail}`;
   };
 
   const share = async () => {
@@ -147,60 +155,62 @@ export function ResultScreen({ plan, setPlan, watchAd, back, goClock, showToast,
     showToast("계산을 저장했어요");
     goClock();
   };
-  const openTiming = () => {
-    if (timingAnalysis?.status !== "ready") return;
-    watchAd("timing", () => { setUnlockedTimingKey(timingKey); analytics.click("timing_unlocked"); }, { desc: "끝까지 보면 시작 시점별 결과가 열려요.", cta: "분석 확인하기" });
-  };
 
   return (
-    <div className="screen">
+    <div className={`screen result-screen result-${entrance}`}>
       <NavBar back={back} onMenu={onMenu} onClose={onClose} />
-      <Top
-        upperGap={16}
-        lowerGap={8}
-        subtitleTop={<Top.SubtitleParagraph size={15}>
-          {lead}{reachedTime && <button type="button" className="info reach-info" aria-label="기간 계산 방식 설명" aria-expanded={reachTip} aria-controls="reach-basis" onClick={() => setReachTip((value) => !value)}>ⓘ</button>}
-        </Top.SubtitleParagraph>}
-        title={<Top.TitleParagraph size={28}>{num}</Top.TitleParagraph>}
-        subtitleBottom={<Top.SubtitleParagraph size={15}>{sub}</Top.SubtitleParagraph>}
-      />
-      {reachedTime && <>
-        {reachTip && <div id="reach-basis" className="reach-basis tip">10억을 넘은 경우 중 가장 최근에 시작한 달을 찾았어요. 가장 짧게 걸린 기간을 뜻하지는 않아요.</div>}
-        <section className="result-conditions" aria-label="매수 조건">
-          <h2>이렇게 샀다면</h2>
-          <p className="result-etfs">{plan.holdings.map((holding) => tickerTitle(holding.ticker)).join(" · ")}</p>
-          <p>{plan.freq === "daily" ? "거래일마다" : freqLabel(plan)}, {multi ? `${tickers.length}개 ETF에 ` : ""}<strong>{multi ? "합계 " : ""}{fmt.amount(calc.monthlyWon)}씩</strong></p>
-          {plan.lump > 0 && <p className="result-lump">처음에 {manLabel(plan.lump)}으로 시작</p>}
-        </section>
-        <section className="result-current" aria-label="계속 샀을 때의 평가액">
-          <h2>이후에도 계속 샀다면</h2>
-          <p className="result-current-value">{fmt.money(r.value)}</p>
-          {r.value < TARGET && <p className="result-current-note">10억 아래로 내려왔어요.</p>}
-          <p className="result-current-date">{ymdKo(end)} 종가 기준</p>
-        </section>
-      </>}
-      <div className="share-top"><Button color="dark" variant="weak" size="medium" onClick={share}>결과 공유하기</Button></div>
+      <section className="result-hero" aria-label="계산 결과">
+        {reachedTime ? <>
+          <p className="result-scenario">{names}</p>
+          <p className="result-contribution">{plan.freq === "daily" ? "거래일마다" : freqWord(plan.freq)} <strong>{multi ? "합계 " : ""}{fmt.amount(calc.monthlyWon)}씩</strong> 샀다면</p>
+          {plan.lump > 0 && <p className="result-lump">{ymdKo(start)}에 {manLabel(plan.lump)}을 먼저 넣고 시작</p>}
+          <p className="result-label">처음 10억을 넘기까지</p>
+          <h1 className="result-number" aria-label={num}>
+            {r.years > 0 && <span className="duration-part"><RollingNumber value={r.years} animate={entrance === "reveal"} /><small>년</small></span>}{" "}
+            <span className="duration-part"><RollingNumber value={r.monthsRem} animate={entrance === "reveal"} /><small>개월</small></span>
+          </h1>
+        </> : <>
+          <p className="result-label">{lead}</p>
+          <h1 className={"result-number" + (amtMode ? " amount-number" : "")}>{num}</h1>
+        </>}
+        <p className="result-story">{sub}</p>
+      </section>
+      {reachedTime && <section className="result-current" aria-label="계속 모았을 때의 평가액">
+        <p>이후에도 계속 모았다면 <strong>{fmt.money(r.value)}</strong></p>
+        <p className="result-current-date">{ymdKo(end)} 기준{r.value < TARGET ? " · 다시 10억 아래로 내려왔어요." : ""}</p>
+      </section>}
       {(adjNote || !reachedTime) && <div className="data-notes">
         {adjNote && <p className="data-note">{adjNote}</p>}
         {!reachedTime && <p className="data-note">{mdKo(end)} 종가 기준 · 실제 거래 기간으로 계산했어요</p>}
       </div>}
 
-      <div className="card">
+      <div className="card result-chart">
         <div className="card-head">
           <span>평가액 변화</span>
           <span className="legend"><i className="dot brand" />평가액 <i className="dot grey" />넣은 돈</span>
         </div>
         <Chart series={r.series} target={TARGET} mark={calc.reach?.date} />
+        <p className="chart-help">그래프를 누르면 그때의 금액을 볼 수 있어요.</p>
         <div className="stats-label">{statsLabel}</div>
         <div className="stats">
           <div className="stat"><span className="stat-k">넣은 돈</span><span className="stat-v">{fmt.money(r.principal)}</span></div>
           <div className="stat"><span className="stat-k">평가액</span><span className="stat-v">{fmt.money(r.value)}</span></div>
           <div className="stat">
-            <span className="stat-k">연평균 <button type="button" className="info" aria-label="연평균 설명" aria-expanded={tip} onClick={() => setTip((v) => !v)}>ⓘ</button></span>
+            <span className="stat-k"><button type="button" className="info" aria-label="연평균 설명" aria-expanded={tip} aria-controls="annual-return-help" onClick={() => setTip((v) => !v)}>연평균 <span aria-hidden="true">ⓘ</span></button></span>
             <span className={"stat-v " + (r.cagr >= 0 ? "up" : "down")}>{fmt.pct(r.cagr)}</span>
           </div>
         </div>
-        {tip && <div className="tip">연평균 {fmt.pct(r.cagr)}는 평가액이 1년에 평균 {cagrPct}씩 {r.cagr >= 0 ? "늘었다는" : "줄었다는"} 뜻이에요. {names} 과거 가격으로 계산했어요.</div>}
+        {tip && <div id="annual-return-help" className="tip">연평균 {fmt.pct(r.cagr)}는 평가액이 1년에 평균 {cagrPct}씩 {r.cagr >= 0 ? "늘었다는" : "줄었다는"} 뜻이에요. {names} 과거 가격으로 계산했어요.</div>}
+      </div>
+
+      <div className="result-actions">
+        <div className="result-share">
+          <Button display="full" size="large" style={{ borderRadius: 14 }} onClick={share}>
+            <span className="result-share-label"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 15V3m-4 4 4-4 4 4M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6" /></svg>결과 공유하기</span>
+          </Button>
+        </div>
+        <Button display="full" size="large" color="dark" variant="weak" style={{ borderRadius: 14 }} onClick={onEdit}>조건 바꿔보기</Button>
+        <Button display="full" size="large" color="dark" variant="weak" style={{ borderRadius: 14 }} onClick={save}>계산 저장하기</Button>
       </div>
 
       {port && (
@@ -211,7 +221,7 @@ export function ResultScreen({ plan, setPlan, watchAd, back, goClock, showToast,
               <ListRow
                 key={h.ticker}
                 left={<Avatar symbol={h.ticker} />}
-                contents={<ListRow.Texts type="2RowTypeA" top={tickerTitle(h.ticker)} bottom={`${freqWord(plan.freq)} ${fmt.amount(h.amountWon)} · 넣은 돈 ${fmt.money(h.principal)}`} />}
+                contents={<ListRow.Texts type="2RowTypeA" top={tickerTitle(h.ticker)} bottom={<span className="holding-result-detail"><span>{freqWord(plan.freq)} {fmt.amount(h.amountWon)}</span><span>넣은 돈 {fmt.money(h.principal)}</span></span>} />}
                 right={<span className="right"><span className="row-title">{fmt.money(h.value)}</span><span className={"row-desc " + (h.cagr >= 0 ? "up" : "down")}>연평균 {fmt.pct(h.cagr)}</span></span>}
               />
             ))}
@@ -219,13 +229,12 @@ export function ResultScreen({ plan, setPlan, watchAd, back, goClock, showToast,
         </>
       )}
 
-      <CalculationBasis plan={plan} calc={calc} rowsBy={rowsBy} />
-      <ContributionComparison key={timingKey} plan={plan} calc={calc} rowsBy={rowsBy} />
+      <div className="list-head"><button type="button" className="text-btn" onClick={goCompare}>같은 조건으로 비교하기 <ChevronRight /></button></div>
 
       <ul className="tds-list">
         <ListRow
           contents={<ListRow.Texts type="2RowTypeA" top="계산 옵션" bottom={`배당 ${plan.reinvest ? "재투자" : "미반영"}`} />}
-          withArrow
+          right={<span className={"chev" + (optsOpen ? " open" : "")}><ChevronRight /></span>}
           onClick={() => setOptsOpen((v) => !v)}
           aria-expanded={optsOpen}
         />
@@ -233,47 +242,17 @@ export function ResultScreen({ plan, setPlan, watchAd, back, goClock, showToast,
           <>
             <ListRow
               contents={<ListRow.Texts type="2RowTypeA" top="배당 재투자" bottom="받은 배당으로 다시 사요" />}
-              right={<Switch checked={plan.reinvest} onChange={(_, c) => setPlan({ ...plan, reinvest: c })} aria-label="배당 재투자" />}
+              right={<Switch checked={reinvest} onChange={(_, c) => setReinvest(c)} aria-label="배당 재투자" />}
             />
+            {reinvest !== plan.reinvest && <li className="row"><div><p className="data-note">바꾼 배당 조건으로 다시 계산해요.</p><Button disabled={busy} onClick={() => onCalculate({ ...plan, reinvest })}>{busy ? "계산 중…" : calculationLabel({ ...plan, reinvest })}</Button></div></li>}
           </>
         )}
       </ul>
 
-      <div className="card brand-card">
-        <div className="card-title">이 계산을 저장할까요?</div>
-        <div className="card-desc">조건을 저장하면 다시 입력하지 않고 최근 자료로 계산한 결과를 확인할 수 있어요.</div>
-        <Button display="full" size="large" onClick={save}>계산 저장하기</Button>
-      </div>
-
-      <ul className="tds-list">
-        {!timingOpen && !multi && timingAnalysis?.status === "ready" ? (
-          <ListRow
-            contents={<ListRow.Texts type="2RowTypeA" top="시작 시점 비교하기" bottom="시작한 달에 따라 결과가 얼마나 달랐을까요" />}
-            right={<span className="pill brand">광고 보고 확인하기</span>}
-            onClick={openTiming}
-          />
-        ) : null}
-      </ul>
-      {!multi && timingAnalysis?.status === "unavailable" && <div className="card">
-        <div className="card-title">시작 시점 비교</div>
-        <p className="data-note">{timingAnalysis.reason === "calculation-error" ? "시작 시점별 결과를 계산하지 못했어요. 잠시 후 다시 시도해 주세요." : "이 기간으로 시작 시점을 비교할 과거 자료가 부족해요."}</p>
-      </div>}
-      {timingOpen && !multi && timingAnalysis?.status === "ready" && (
-        <div className="card">
-          <div className="card-title">시작 시점에 따른 결과</div>
-          <div className="card-desc">같은 조건으로 {timingAnalysis.durationMonths}개월씩 모으되, 시작 달만 바꿔 {timing?.samples ?? 0}번 계산했어요.</div>
-          {timing ? (
-            <div className="timing">
-              <div className="timing-row"><span className="k">가장 안 좋을 때</span><span className="v down">{fmt.money(timing.min)}</span><span className="d">{ymKo(timing.minStart)} 시작</span></div>
-              <div className="timing-row"><span className="k">중간</span><span className="v">{fmt.money(timing.median)}</span><span className="d">절반은 이보다 많았어요</span></div>
-              <div className="timing-row"><span className="k">가장 좋을 때</span><span className="v up">{fmt.money(timing.max)}</span><span className="d">{ymKo(timing.maxStart)} 시작</span></div>
-            </div>
-          ) : <div className="card-desc">이 기간으로 비교할 과거 자료가 부족해요.</div>}
-        </div>
-      )}
+      <CalculationBasis plan={plan} calc={calc} rowsBy={rowsBy} />
 
       <AdSlot />
-      <p className="disc">과거 데이터로 계산한 참고용 결과예요. 특정 종목을 추천하지 않고, 미래 수익을 보장하지 않아요. 가격 Yahoo Finance · 환율 FRED</p>
+      <p className="disc">과거 자료로 계산한 결과예요.<br />특정 종목을 추천하거나 미래 수익을 보장하지 않아요.</p>
     </div>
   );
 }

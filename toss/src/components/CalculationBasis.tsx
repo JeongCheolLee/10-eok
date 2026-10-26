@@ -3,6 +3,7 @@ import { getLoadedDataInfo } from "../lib/data";
 import { fmt, manLabel, freqLabel, freqWord, ymdKo } from "../lib/fmt";
 import { needsFx } from "../lib/dataInfo";
 import type { Calc, Plan, RowsBy } from "../lib/plan";
+import { ChevronRight } from "./ui";
 
 export function CalculationBasis({ plan, calc, rowsBy }: { plan: Plan; calc: Calc; rowsBy: RowsBy }) {
   const series = calc.result.series;
@@ -19,12 +20,12 @@ export function CalculationBasis({ plan, calc, rowsBy }: { plan: Plan; calc: Cal
     : amountMode
       ? "선택한 기간을 최근 가격 기준일에서 거슬러 계산했어요."
       : calc.reach
-        ? "10억을 넘은 경우 중 가장 최근에 시작한 달을 찾았어요. 결과의 기간은 시작한 때부터 처음 10억을 넘긴 때까지예요."
+        ? "10억을 넘긴 경우 중 가장 늦게 시작한 달을 찾았어요. 결과의 기간은 시작한 때부터 처음 10억을 넘긴 때까지예요. 최단 기간을 뜻하지는 않아요."
         : "실제 거래 자료가 있는 첫 달부터 계산했어요.";
 
   return (
     <details className="card calculation-basis">
-      <summary>계산 기준 보기</summary>
+      <summary>계산 기준 보기<span className="chev"><ChevronRight /></span></summary>
       <div className="basis-content">
         <dl className="basis-list">
           <div><dt>계산 기간</dt><dd>{start && end ? `${ymdKo(start)} ~ ${ymdKo(end)}` : "계산할 거래 내역이 없어요"}</dd></div>

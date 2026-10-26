@@ -43,9 +43,9 @@ export function freqWord(freq: "monthly" | "weekly" | "daily"): string {
   return freq === "daily" ? "매일" : freq === "weekly" ? "매주" : "매달";
 }
 
-/** 보유 종목 이름 나열: "QLD" · "QQQ·SCHD" */
+/** 보유 종목 이름 나열: "QLD" · "QQQ · SCHD". 종목 사이에서 자연스럽게 줄을 바꾼다. */
 export function holdingsTitle(p: { holdings: { ticker: string }[] }): string {
-  return p.holdings.map((h) => tickerTitle(h.ticker)).join("·");
+  return p.holdings.map((h) => tickerTitle(h.ticker)).join(" · ");
 }
 
 /** 마지막 글자를 소리 내 읽었을 때의 받침. 0 = 없음, 1 = ㄹ, 2 = 그 밖의 받침.

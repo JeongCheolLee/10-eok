@@ -1,10 +1,10 @@
 import { composeRows, type PxBundle, type FxBundle } from "@/lib/backtest/compose";
 import type { Row } from "@/lib/backtest/types";
-import { tickerCurrency } from "@/lib/tickers";
+import { tickerCurrency, tickerInfo } from "@/lib/tickers";
 import { DATA_BASE } from "./platform";
-import { actualHistoryRows, type LoadedDataInfo } from "./dataInfo";
+import { actualHistoryRows, realStartOf, type LoadedDataInfo } from "./dataInfo";
 
-const rowsCache = new Map<string, Promise<Row[]>>();
+const rowsCache = new Map<string, Promise<{ actual: Row[]; full: Row[] }>>();
 const infoCache = new Map<string, LoadedDataInfo>();
 let fxPromise: Promise<FxBundle> | null = null;
 
@@ -14,26 +14,42 @@ async function getJson<T>(path: string): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-/** 실제 거래 이력만 제공한다. 웹용 번들의 상장 전 추정치는 이 경계에서 제거한다. */
-export function loadRows(ticker: string): Promise<Row[]> {
+function loadHistory(ticker: string): Promise<{ actual: Row[]; full: Row[] }> {
   const key = ticker.toUpperCase();
   let p = rowsCache.get(key);
   if (!p) {
     p = (async () => {
       const px = await getJson<PxBundle>(`px/${key.toLowerCase()}.json`);
       const fx = tickerCurrency(key) === "KRW" ? null : await (fxPromise ??= getJson<FxBundle>("fx/krw.json"));
-      const rows = actualHistoryRows(key, composeRows(px, fx));
+      const full = composeRows(px, fx);
+      const rows = actualHistoryRows(key, full);
       const priceAsOf = rows[rows.length - 1].date;
       const fxAsOf = fx?.rows.reduce<string | null>((last, [date, rate]) => (
         date <= priceAsOf && Number.isFinite(rate) && rate > 0 && (!last || date > last) ? date : last
       ), null) ?? null;
       infoCache.set(key, { ticker: key, actualStart: rows[0].date, priceAsOf, fxAsOf });
-      return rows;
+      return { actual: rows, full };
     })();
     p.catch(() => { rowsCache.delete(key); fxPromise = null; });
     rowsCache.set(key, p);
   }
   return p;
+}
+
+/** 기본 결과·저장·공유에는 실제 거래 자료만 전달한다. */
+export async function loadRows(ticker: string): Promise<Row[]> {
+  return (await loadHistory(ticker)).actual;
+}
+
+export type ComparisonEstimate = { proxy: string; actualStart: string; convertedToKrw: boolean };
+/** 비교 화면에서만 명시적으로 추정 구간을 요청한다. 실제 이력 캐시와 섞지 않는다. */
+export async function loadComparisonHistory(ticker: string): Promise<{ rows: Row[]; estimate?: ComparisonEstimate }> {
+  const key = ticker.toUpperCase();
+  const history = await loadHistory(key);
+  const splice = tickerInfo(key).splice;
+  const actualStart = realStartOf(key);
+  if (!splice || !actualStart || history.full[0].date >= actualStart) return { rows: history.actual };
+  return { rows: history.full, estimate: { proxy: splice.proxy, actualStart, convertedToKrw: tickerCurrency(key) === "KRW" } };
 }
 
 /** loadRows가 끝난 종목의 계산 기준. 데이터가 아직 없으면 null. */

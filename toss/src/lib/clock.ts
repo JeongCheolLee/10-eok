@@ -1,23 +1,61 @@
+import { conditionKey } from "./conditionKey";
 import { storage } from "./platform";
-import { normalizePlan, type Plan } from "./plan";
+import { cleanHoldings, normalizePlan, type Plan } from "./plan";
 
-// v2(2026-10-22): plan.holdings 추가. 키는 그대로 두고 v1 저장본은 읽을 때 holdings=[{ticker, amount}]로 옮긴다.
+// 같은 키에서 v1/v2 한 건을 v3 목록으로 읽는다. 다음 저장 때 새 형식으로 기록한다.
 const KEY = "10eok-toss-clock-v1";
-export type SavedClock = { v: 2; plan: Plan; savedAt: string };
-type SavedV1 = { v: 1; plan: Omit<Plan, "holdings">; savedAt: string };
+export type SavedClock = { id: string; plan: Plan; savedAt: string };
+type SavedClocks = { v: 3; items: SavedClock[] };
 
-function parse(raw: string | null): SavedClock | null {
-  if (!raw) return null;
+function readItem(value: unknown, fallbackId?: string): SavedClock | null {
+  if (!value || typeof value !== "object") return null;
+  const item = value as Partial<SavedClock>;
+  if (!item.plan || typeof item.plan !== "object" || typeof item.savedAt !== "string") return null;
+  const raw = item.plan;
+  const holdings = Array.isArray(raw.holdings) ? raw.holdings : [{ ticker: raw.ticker, amount: raw.amount }];
+  if (!cleanHoldings(holdings).length) return null;
+  const id = typeof item.id === "string" && item.id ? item.id : fallbackId;
+  return id ? { id, plan: normalizePlan(raw), savedAt: item.savedAt } : null;
+}
+
+function parse(raw: string | null): SavedClock[] {
+  if (!raw) return [];
   try {
-    const j = JSON.parse(raw) as SavedClock | SavedV1;
-    if (!j || !j.plan || (j.v !== 1 && j.v !== 2)) return null;
-    return { v: 2, plan: normalizePlan(j.plan as Partial<Plan>), savedAt: j.savedAt };
-  } catch { return null; }
+    const value = JSON.parse(raw);
+    if (value?.v === 1 || value?.v === 2) {
+      const item = readItem(value, "legacy");
+      return item ? [item] : [];
+    }
+    if (value?.v !== 3 || !Array.isArray(value.items)) return [];
+    return value.items.flatMap((item: unknown) => { try { const parsed = readItem(item); return parsed ? [parsed] : []; } catch { return []; } });
+  } catch { return []; }
 }
-export async function loadSavedClock(): Promise<SavedClock | null> { return parse(await storage.get(KEY)); }
-/** 성공하면 true. 실패(용량·권한·SDK 오류)는 false — 호출자가 '저장했어요' 대신 실패를 알린다. */
-export async function saveClock(plan: Plan): Promise<boolean> {
-  return storage.set(KEY, JSON.stringify({ v: 2, plan: normalizePlan(plan), savedAt: new Date().toISOString() } satisfies SavedClock));
+
+export async function loadSavedClocks(): Promise<SavedClock[]> { return parse(await storage.get(KEY)); }
+
+// 빠른 연속 저장·삭제에서 read→write가 겹쳐 다른 항목을 잃지 않게 직렬화한다.
+let pending: Promise<unknown> = Promise.resolve();
+function mutate(run: () => Promise<boolean>): Promise<boolean> {
+  const next = pending.then(run, run);
+  pending = next.catch(() => false);
+  return next;
 }
-/** 성공하면 true. */
-export async function clearClock(): Promise<boolean> { return storage.remove(KEY); }
+function write(items: SavedClock[]): Promise<boolean> {
+  return storage.set(KEY, JSON.stringify({ v: 3, items } satisfies SavedClocks));
+}
+
+/** 같은 조건은 기존 ID를 유지해 맨 위로 갱신하고, 다른 조건은 추가한다. */
+export function saveClock(plan: Plan): Promise<boolean> {
+  if (!plan.holdings.length) return Promise.resolve(false);
+  return mutate(async () => {
+    const items = await loadSavedClocks();
+    const key = conditionKey(plan);
+    const same = items.find((item) => conditionKey(item.plan) === key);
+    const entry: SavedClock = { id: same?.id ?? crypto.randomUUID(), plan: normalizePlan(plan), savedAt: new Date().toISOString() };
+    return write([entry, ...items.filter((item) => conditionKey(item.plan) !== key)]);
+  });
+}
+
+export function removeSavedClock(id: string): Promise<boolean> {
+  return mutate(async () => write((await loadSavedClocks()).filter((item) => item.id !== id)));
+}

@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { TICKERS, tickerInfo, tickerMonogram, tickerTitle } from "@/lib/tickers";
-import { GROUPS, tickerGroup, tossSubtitle } from "../lib/groups";
+import { tickerInfo, tickerMonogram, tickerTitle } from "@/lib/tickers";
+import { GROUPS, TOSS_DISPLAY_TICKERS, tickerGroup, tossSubtitle } from "../lib/groups";
 import { attachBanner, inToss } from "../lib/platform";
 import { fmt, ymKo } from "../lib/fmt";
-import { DATA_START, realStartOf } from "../lib/dataInfo";
 
 /* ── 아이콘 (모노톤 스트로크) ── */
 const I = ({ d, fill }: { d: string; fill?: boolean }) => (
@@ -34,7 +33,7 @@ export function LogoMark({ size = 24 }: { size?: number }) {
   );
 }
 
-export function NavBar({ back, onMenu, onClose, title = "주식으로 10억 부자되기" }: { back?: () => void; onMenu: () => void; onClose: () => void; title?: string }) {
+export function NavBar({ back, onMenu, onClose, title = "주식으로 10억 모으기" }: { back?: () => void; onMenu: () => void; onClose: () => void; title?: string }) {
   if (inToss) return null; // 토스 앱이 네비게이션 바를 그린다 (apps-in-toss.config navigationBar)
   return (
     <header className="nav">
@@ -132,7 +131,7 @@ export function Chart({ series, target, mark, estUntil }: { series: Pt[]; target
       {yTicks.map((v) => (
         <g key={v}>
           <line x1={L} x2={W - R} y1={y(v)} y2={y(v)} stroke="var(--grey200)" strokeWidth="1" />
-          <text x={L - 6} y={y(v) + 3.5} textAnchor="end" fontSize="10" fill="var(--grey500)">{v === 0 ? "0" : `${v / 1e8}억`}</text>
+          <text x={L - 6} y={y(v) + 3.5} textAnchor="end" fontSize="10" fill="var(--text-secondary)">{v === 0 ? "0" : `${v / 1e8}억`}</text>
         </g>
       ))}
       {estX != null && estX > L && <rect className="est-band" x={L} y={T} width={estX - L} height={H - T - B} />}
@@ -150,12 +149,12 @@ export function Chart({ series, target, mark, estUntil }: { series: Pt[]; target
       {h ? (
         <g pointerEvents="none">
           <line x1={hx} x2={hx} y1={T} y2={H - B} stroke="var(--grey400)" strokeWidth="1" />
-          <circle cx={hx} cy={y(h.principal)} r="3.5" fill="var(--grey500)" stroke="#fff" strokeWidth="1.5" />
+          <circle cx={hx} cy={y(h.principal)} r="3.5" fill="var(--text-secondary)" stroke="#fff" strokeWidth="1.5" />
           <circle cx={hx} cy={y(h.value)} r="4.5" fill="var(--brand)" stroke="#fff" strokeWidth="2" />
         </g>
       ) : <circle cx={x(pts.length - 1)} cy={y(last.value)} r="4.5" fill="var(--brand)" stroke="#fff" strokeWidth="2" />}
       {xTicks.map((t) => (
-        <text key={t.yr} x={t.x} y={H - 7} textAnchor={t.anchor} fontSize="10" fill="var(--grey500)">{t.yr}</text>
+        <text key={t.yr} x={t.x} y={H - 7} textAnchor={t.anchor} fontSize="10" fill="var(--text-secondary)">{t.yr}</text>
       ))}
     </svg>
     {h && (
@@ -170,36 +169,51 @@ export function Chart({ series, target, mark, estUntil }: { series: Pt[]; target
 }
 
 /* ── 숫자 스테퍼 + 프리셋 칩 ── */
-export function Stepper({ id, label, value, unit, min, max, step, stepLabel, chips, chipLabel, onChange, accent }: {
-  id: string; label: string; value: number; unit: string; min: number; max: number; step: number; stepLabel?: string;
-  chips?: number[]; chipLabel?: (v: number) => string; onChange: (v: number) => void; accent?: boolean;
-}) {
+type NumericValidity = (id: string, valid: boolean) => void;
+function useNumericDraft(id: string, value: number, min: number, max: number, onChange: (value: number) => void, onValidityChange?: NumericValidity) {
   const [text, setText] = useState(String(value));
   useEffect(() => { setText(String(value)); }, [value]);
-  const clamp = (v: number) => Math.min(max, Math.max(min, v));
-  const commit = () => { const n = parseInt(text.replace(/[^0-9]/g, ""), 10); onChange(Number.isFinite(n) ? clamp(n) : value); };
+  const numeric = /^\d+$/.test(text) && Number.isSafeInteger(Number(text));
+  const valid = numeric && Number(text) >= min && Number(text) <= max;
+  useEffect(() => { onValidityChange?.(id, valid); }, [id, valid, onValidityChange]);
+  useEffect(() => () => { onValidityChange?.(id, true); }, [id, onValidityChange]);
+  const choose = (next: number) => {
+    const clamped = Math.min(max, Math.max(min, next));
+    setText(String(clamped));
+    onChange(clamped);
+  };
+  const commit = () => { if (numeric) choose(Number(text)); };
+  return { text, setText, valid, numeric, choose, commit };
+}
+
+export function Stepper({ id, label, value, unit, min, max, step, stepLabel, chips, chipLabel, onChange, accent, onValidityChange }: {
+  id: string; label: string; value: number; unit: string; min: number; max: number; step: number; stepLabel?: string;
+  chips?: number[]; chipLabel?: (v: number) => string; onChange: (v: number) => void; accent?: boolean; onValidityChange?: NumericValidity;
+}) {
+  const { text, setText, valid, numeric, choose, commit } = useNumericDraft(id, value, min, max, onChange, onValidityChange);
   return (
     <>
       <div className="row">
         <label htmlFor={id} className="field">
           <span className={"field-label" + (accent ? " brand" : "")}>{label}</span>
           <span className="field-value-wrap">
-            <input id={id} className="field-input" inputMode="numeric" value={text} onChange={(e) => setText(e.target.value)} onBlur={commit} onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }} style={{ width: `${Math.max(2, text.length + 0.5)}ch` }} />
+            <input id={id} className="field-input" inputMode="numeric" value={text} aria-invalid={!valid} aria-describedby={!valid ? `${id}-error` : undefined} onChange={(e) => setText(e.target.value)} onBlur={commit} onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }} style={{ width: `${Math.max(2, Math.min(8, text.length + 0.5))}ch` }} />
             <span className="unit">{unit}</span>
           </span>
         </label>
         <div className="stepper-col">
           <div className="stepper-btns">
-            <button type="button" className="stepper-btn" aria-label={`${label} ${stepLabel ?? ""} 줄이기`} onClick={() => onChange(clamp(value - step))}>−</button>
-            <button type="button" className="stepper-btn" aria-label={`${label} ${stepLabel ?? ""} 늘리기`} onClick={() => onChange(clamp(value + step))}>+</button>
+            <button type="button" className="stepper-btn" aria-label={`${label} ${stepLabel ?? ""} 줄이기`} onClick={() => choose(value - step)}>−</button>
+            <button type="button" className="stepper-btn" aria-label={`${label} ${stepLabel ?? ""} 늘리기`} onClick={() => choose(value + step)}>+</button>
           </div>
           {stepLabel && <span className="step-hint">{stepLabel}씩</span>}
         </div>
       </div>
+      {!valid && <p id={`${id}-error`} className="input-error" role="status">{numeric ? `${min.toLocaleString()}~${max.toLocaleString()}${unit}으로 입력해 주세요.` : unit === "년" ? "기간을 숫자로 입력해 주세요." : "금액을 숫자로 입력해 주세요."}</p>}
       {chips && (
         <div className="chips">
           {chips.map((c) => (
-            <button key={c} type="button" className="chip" aria-pressed={c === value} onClick={() => onChange(c)}>{chipLabel ? chipLabel(c) : `${c}${unit}`}</button>
+            <button key={c} type="button" className="chip" aria-pressed={valid && Number(text) === c} onClick={() => choose(c)}>{chipLabel ? chipLabel(c) : `${c}${unit}`}</button>
           ))}
         </div>
       )}
@@ -208,29 +222,27 @@ export function Stepper({ id, label, value, unit, min, max, step, stepLabel, chi
 }
 
 /* ── 분산 매수 종목 행: 아바타(누르면 종목 변경) · 이름 · 금액 입력 · −/+ · 빼기 ── */
-export function HoldingRow({ symbol, value, unit, min, max, step, share, onChange, onPick, onRemove }: {
+export function HoldingRow({ symbol, value, unit, min, max, step, share, onChange, onPick, onRemove, onValidityChange }: {
   symbol: string; value: number; unit: string; min: number; max: number; step: number; share?: number;
-  onChange: (v: number) => void; onPick: () => void; onRemove: () => void;
+  onChange: (v: number) => void; onPick: () => void; onRemove: () => void; onValidityChange?: NumericValidity;
 }) {
-  const [text, setText] = useState(String(value));
-  useEffect(() => { setText(String(value)); }, [value]);
-  const clamp = (v: number) => Math.min(max, Math.max(min, v));
-  const commit = () => { const n = parseInt(text.replace(/[^0-9]/g, ""), 10); onChange(Number.isFinite(n) ? clamp(n) : value); };
   const name = tickerTitle(symbol);
   const id = `h-${symbol}`;
+  const { text, setText, valid, numeric, choose, commit } = useNumericDraft(id, value, min, max, onChange, onValidityChange);
   return (
     <div className="row holding-row">
       <button type="button" className="holding-pick" aria-label={`${name} 종목 바꾸기`} aria-haspopup="dialog" onClick={onPick}><Avatar symbol={symbol} size={36} /></button>
       <label htmlFor={id} className="field">
         <span className="field-label">{name}{share != null && <span className="share"> · {Math.round(share * 100)}%</span>}</span>
         <span className="field-value-wrap">
-          <input id={id} className="field-input" inputMode="numeric" value={text} onChange={(e) => setText(e.target.value)} onBlur={commit} onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }} style={{ width: `${Math.max(2, text.length + 0.5)}ch` }} />
+          <input id={id} className="field-input" inputMode="numeric" value={text} aria-invalid={!valid} aria-describedby={!valid ? `${id}-error` : undefined} onChange={(e) => setText(e.target.value)} onBlur={commit} onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }} style={{ width: `${Math.max(2, Math.min(8, text.length + 0.5))}ch` }} />
           <span className="unit">{unit}</span>
         </span>
+        {!valid && <span id={`${id}-error`} className="numeric-error" role="status">{numeric ? `${min.toLocaleString()}~${max.toLocaleString()}${unit}으로 입력해 주세요.` : "금액을 숫자로 입력해 주세요."}</span>}
       </label>
       <div className="stepper-btns">
-        <button type="button" className="stepper-btn" aria-label={`${name} 금액 줄이기`} onClick={() => onChange(clamp(value - step))}>−</button>
-        <button type="button" className="stepper-btn" aria-label={`${name} 금액 늘리기`} onClick={() => onChange(clamp(value + step))}>+</button>
+        <button type="button" className="stepper-btn" aria-label={`${name} 금액 줄이기`} onClick={() => choose(value - step)}>−</button>
+        <button type="button" className="stepper-btn" aria-label={`${name} 금액 늘리기`} onClick={() => choose(value + step)}>+</button>
       </div>
       <button type="button" className="icon-btn holding-del" aria-label={`${name} 빼기`} onClick={onRemove}><XIcon /></button>
     </div>
@@ -252,18 +264,59 @@ export function SwitchRow({ id, title, desc, checked, onChange, disabled }: { id
 /** taken: 다른 행에서 이미 고른 종목(선택 불가) */
 export function TickerSheet({ current, taken = [], onPick, onClose }: { current: string; taken?: string[]; onPick: (t: string) => void; onClose: () => void }) {
   const [q, setQ] = useState("");
-  const ref = useRef<HTMLInputElement>(null);
-  useEffect(() => { ref.current?.focus(); }, []);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
+  // 목록부터 둘러볼 수 있도록 검색 입력 대신 대화상자에 포커스를 둔다.
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    // 시트 밖의 형제 영역을 키보드·보조 기술에서 제외한다.
+    const background: { element: HTMLElement; inert: boolean }[] = [];
+    let branch: HTMLElement | null = dialog.parentElement;
+    while (branch && branch !== document.body) {
+      for (const sibling of Array.from(branch.parentElement?.children ?? [])) {
+        if (sibling !== branch && sibling instanceof HTMLElement) {
+          background.push({ element: sibling, inert: sibling.inert });
+          sibling.inert = true;
+        }
+      }
+      branch = branch.parentElement;
+    }
+    dialog.focus({ preventScroll: true });
+    const keydown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") { event.preventDefault(); closeRef.current(); return; }
+      if (event.key !== "Tab") return;
+      const targets = Array.from(dialog.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([disabled]), select:not([disabled]), a[href], [tabindex="0"]')).filter((element) => element.getClientRects().length > 0);
+      const first = targets[0]; const last = targets[targets.length - 1];
+      if (!first) { event.preventDefault(); dialog.focus(); return; }
+      const active = document.activeElement;
+      if (event.shiftKey && (active === first || active === dialog)) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && active === last) { event.preventDefault(); first.focus(); }
+    };
+    dialog.addEventListener("keydown", keydown);
+    return () => {
+      dialog.removeEventListener("keydown", keydown);
+      document.body.style.overflow = previousOverflow;
+      for (const { element, inert } of background) element.inert = inert;
+      // 첫 선택 후에는 빈 선택 버튼이 사라질 수 있다.
+      const target = opener?.isConnected ? opener : document.querySelector<HTMLElement>('[aria-haspopup="dialog"]');
+      target?.focus({ preventScroll: true });
+    };
+  }, []);
   const ql = q.trim().toLowerCase();
-  const list = TICKERS.filter((t) => !ql || t.symbol.toLowerCase().includes(ql) || t.name.toLowerCase().includes(ql) || tossSubtitle(t.symbol).includes(ql));
+  const list = TOSS_DISPLAY_TICKERS.filter((t) => !ql || t.symbol.toLowerCase().includes(ql) || t.name.toLowerCase().includes(ql) || tossSubtitle(t.symbol).includes(ql));
   const groups = GROUPS.map((g) => ({ ...g, items: list.filter((t) => tickerGroup(t.symbol) === g.id) })).filter((g) => g.items.length > 0);
   return (
     <div className="sheet-backdrop" onClick={onClose}>
-      <div className="sheet" role="dialog" aria-modal="true" aria-label="종목 선택" onClick={(e) => e.stopPropagation()}>
+      <div ref={dialogRef} className="sheet" role="dialog" aria-modal="true" aria-label="종목 선택" tabIndex={-1} onClick={(e) => e.stopPropagation()}>
         <div className="sheet-handle" aria-hidden="true" />
         <div className="sheet-head">
-          <div className="sheet-title">어떤 종목을 모을까요?</div>
-          <input ref={ref} className="search" placeholder="종목 검색" value={q} onChange={(e) => setQ(e.target.value)} aria-label="종목 검색" />
+          <div className="sheet-title">어떤 ETF가 궁금하세요?</div>
+          <input className="search" placeholder="종목 검색" value={q} onChange={(e) => setQ(e.target.value)} aria-label="종목 검색" />
         </div>
         <div className="sheet-list">
           {groups.map((g) => (
@@ -275,14 +328,7 @@ export function TickerSheet({ current, taken = [], onPick, onClose }: { current:
               {g.items.map((t) => {
                 const isTaken = t.symbol !== current && taken.includes(t.symbol);
                 // 국내 상장 묶음 안에서는 부제 "국내 상장"이 겹치므로 이름(무엇을 담는지)만 둔다
-                const sub = g.id === "kr-listed" ? "" : tossSubtitle(t.symbol);
-                const real = t.splice ? realStartOf(t.symbol) : null;
-                const short = t.shortHistory ? DATA_START[t.symbol] : undefined;
-                const extra = [
-                  sub,
-                  real ? `${ymKo(real)}부터 계산할 수 있어요` : "",
-                  t.shortHistory ? (short ? `${ymKo(short)}부터 계산할 수 있어요` : "최근 몇 년만 계산할 수 있어요") : "",
-                ].filter(Boolean).join(" · ");
+                const extra = g.id === "kr-listed" ? "" : tossSubtitle(t.symbol);
                 return (
                 <button key={t.symbol} type="button" className="list-row list-btn" aria-pressed={t.symbol === current} disabled={isTaken} onClick={() => onPick(t.symbol)}>
                   <span className="avatar" style={{ background: t.color }}>{tickerMonogram(t.symbol)}</span>
@@ -355,7 +401,7 @@ export function AdSlot() {
     let on = true;
     let dispose: (() => void) | null = null;
     if (ref.current) {
-      attachBanner(ref.current).then((d) => { if (!on) { d?.(); return; } dispose = d; setLive(!!d); });
+      attachBanner(ref.current, (rendered) => { if (on) setLive(rendered); }).then((d) => { if (!on) { d?.(); return; } dispose = d; });
     }
     return () => { on = false; dispose?.(); };
   }, []);

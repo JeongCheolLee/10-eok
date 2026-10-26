@@ -21,7 +21,7 @@ export function realStartOf(ticker: string): string | null {
   return tickerInfo(key).splice ? REAL_START[key] ?? null : null;
 }
 
-/** 미니앱 계산은 실제 거래 이력만 쓴다. 새 접합 종목의 경계가 빠지면 추정치를 쓰는 대신 실패한다. */
+/** 기본 계산·저장 결과는 실제 거래 이력만 쓴다. 새 접합 종목의 경계가 빠지면 추정치를 쓰는 대신 실패한다. */
 export function actualHistoryRows<T extends { date: string }>(ticker: string, rows: T[]): T[] {
   const key = ticker.toUpperCase();
   const start = realStartOf(key);

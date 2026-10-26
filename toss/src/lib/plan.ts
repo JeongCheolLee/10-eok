@@ -14,7 +14,7 @@ export type Weekday = 1 | 2 | 3 | 4 | 5;
 export const MAX_HOLDINGS = 5;
 
 export type Plan = {
-  /** 분산 매수 종목(1~5). 화면·저장·공유의 기준값 */
+  /** 분산 매수 종목(계산·저장·공유는 1~5). 입력에서 아직 선택하지 않았을 때만 빈 배열. */
   holdings: Holding[];
   /** = holdings[0].ticker. 단일 종목 코드 호환용 파생값 — 직접 바꾸지 말고 withHoldings로 */
   ticker: string;
@@ -26,7 +26,7 @@ export type Plan = {
   freq: Freq;
   buyDay: number; // monthly: 1~28, 29 = 말일
   weekday: Weekday; // weekly: 1=월 … 5=금
-  /** 실제 적립 트래커: 켜면 startDate부터 실제로 모은 것으로 계산 */
+  /** 시작일 직접 지정: 켜면 startDate부터 같은 금액으로 샀다고 가정 */
   tracking: boolean;
   startDate: string; // "YYYY-MM-DD" | ""
   reinvest: boolean;
@@ -41,7 +41,7 @@ export const DEFAULT_PLAN: Plan = {
 };
 
 /** 주기별 프리셋 칩(만원) */
-export const AMOUNT_CHIPS: Record<Freq, number[]> = { monthly: [10, 50, 100, 200, 500], weekly: [5, 10, 25, 50, 100], daily: [1, 2, 5, 10, 20] };
+export const AMOUNT_CHIPS: Record<Freq, number[]> = { monthly: [10, 50, 100, 200], weekly: [5, 10, 25, 50, 100], daily: [1, 2, 5, 10, 20] };
 export const AMOUNT_MIN: Record<Freq, number> = { monthly: 10, weekly: 1, daily: 1 };
 export const AMOUNT_STEP: Record<Freq, number> = { monthly: 10, weekly: 5, daily: 1 };
 

@@ -59,3 +59,38 @@ describe("미니앱 실제 거래 이력 로더", () => {
     await expect(loadRows("JEPI")).resolves.toHaveLength(1);
   });
 });
+
+describe("comparison-only estimated history", () => {
+  it.each([true, false])("does not leak estimates into standard results regardless of load order: comparison first=%s", async (comparisonFirst) => {
+    vi.stubGlobal("fetch", mockBundles({
+      "/data/px/jepi.json": price("JEPI", [["2020-05-20", 90, 91], ["2020-05-21", 100, 101]]),
+      "/data/fx/krw.json": fx,
+    }));
+    const { loadRows, loadComparisonHistory, getLoadedDataInfo } = await import("./data");
+    if (!comparisonFirst) await loadRows("JEPI");
+    const history = await loadComparisonHistory("jepi");
+    expect(history.rows.map((r) => r.date)).toEqual(["2020-05-20", "2020-05-21"]);
+    expect(history.estimate).toEqual({ proxy: "^BXM", actualStart: "2020-05-21", convertedToKrw: false });
+    expect((await loadRows("JEPI")).map((r) => r.date)).toEqual(["2020-05-21"]);
+    expect(getLoadedDataInfo("JEPI")?.actualStart).toBe("2020-05-21");
+  });
+  it("does not apply FX twice to an already converted domestic proxy bundle", async () => {
+    const fetcher = mockBundles({
+      "/data/px/458730.ks.json": price("458730.KS", [["2023-06-19", 9000, 8990], ["2023-06-20", 10000, 10000]], "KRW"),
+    });
+    vi.stubGlobal("fetch", fetcher);
+    const { loadComparisonHistory } = await import("./data");
+    const history = await loadComparisonHistory("458730.KS");
+    expect(history.rows[0]).toMatchObject({ price: 9000, raw: 8990, fx: 1 });
+    expect(history.estimate).toEqual({ proxy: "SCHD", actualStart: "2023-06-20", convertedToKrw: true });
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+  it("does not label real-only bundles as estimated just because a proxy is configured", async () => {
+    vi.stubGlobal("fetch", mockBundles({
+      "/data/px/jepi.json": price("JEPI", [["2020-05-21", 100, 101]]),
+      "/data/fx/krw.json": fx,
+    }));
+    const { loadComparisonHistory } = await import("./data");
+    expect(await loadComparisonHistory("JEPI")).not.toHaveProperty("estimate");
+  });
+});

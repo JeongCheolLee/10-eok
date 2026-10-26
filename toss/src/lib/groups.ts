@@ -1,5 +1,5 @@
 // 미니앱 종목 묶음·세금 안내. lib/tickers.ts(계약)는 건드리지 않고, group이 빈 기존 16종은 여기서 매핑한다.
-import { tickerInfo, tickerSubtitle, tickerTax, type TickerInfo } from "@/lib/tickers";
+import { TICKERS, tickerInfo, tickerSubtitle, tickerTax, type TickerInfo } from "@/lib/tickers";
 
 export type Group = NonNullable<TickerInfo["group"]>;
 export type Tax = ReturnType<typeof tickerTax>;
@@ -26,6 +26,24 @@ const LEGACY: Record<string, Group> = {
 export function tickerGroup(symbol: string): Group {
   return tickerInfo(symbol).group ?? LEGACY[symbol] ?? (tickerTax(symbol) === "kr-foreign" ? "kr-listed" : "index");
 }
+
+/** Representative funds first: editorial familiarity order, not a measured popularity or performance ranking. */
+const DISPLAY_ORDER: Record<Group, readonly string[]> = {
+  index: ["SPY", "QQQ", "VOO", "QQQM", "SPYM", "DIA", "VT", "069500.KS"],
+  leverage: ["TQQQ", "SOXL", "QLD"],
+  dividend: ["SCHD", "JEPI", "JEPQ", "VYM", "DGRO"],
+  sector: ["SOXX", "VGT", "VNQ"],
+  "bond-gold": ["TLT", "GLD", "AGG"],
+  "kr-listed": ["360750.KS", "133690.KS", "458730.KS"],
+};
+export const TOSS_DISPLAY_TICKERS = GROUPS.flatMap(({ id }) => {
+  const rank = (symbol: string) => {
+    const index = DISPLAY_ORDER[id].indexOf(symbol);
+    return index < 0 ? Number.MAX_SAFE_INTEGER : index;
+  };
+  return TICKERS.filter((ticker) => tickerGroup(ticker.symbol) === id)
+    .sort((a, b) => rank(a.symbol) - rank(b.symbol));
+});
 
 /** 보조 표기. 국내 상장 해외 ETF는 "국내 상장"으로 구분(tickers.ts의 "한국 주식"은 오해 소지). */
 export function tossSubtitle(symbol: string): string {

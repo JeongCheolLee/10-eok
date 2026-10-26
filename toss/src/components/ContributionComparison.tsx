@@ -7,7 +7,10 @@ import "./ContributionComparison.css";
 export function ContributionComparison({ plan, rowsBy, calc }: { plan: Plan; rowsBy: RowsBy; calc: Calc }) {
   const id = useId();
   const [open, setOpen] = useState(false);
-  const [input, setInput] = useState(() => String(Number((Math.max(1, calc.monthlyWon / 10_000)).toFixed(4))));
+  const originalMan = calc.monthlyWon / 10_000;
+  const lowerMan = Math.max(1, Number((originalMan / 2).toFixed(4)));
+  const upperMan = Math.max(originalMan + 1, Number((originalMan * 1.5).toFixed(4)));
+  const [input, setInput] = useState(() => String(lowerMan === originalMan ? upperMan : lowerMan));
   const amountWon = input.trim() === "" ? NaN : Number(input) * 10_000;
   const valid = Number.isFinite(amountWon) && amountWon >= 10_000 && amountWon <= Number.MAX_SAFE_INTEGER;
   const hasWindow = calc.result.series.length > 0;
@@ -19,9 +22,9 @@ export function ContributionComparison({ plan, rowsBy, calc }: { plan: Plan; row
         금액 바꿔 비교하기 <span aria-hidden="true">{open ? "−" : "+"}</span>
       </button>
       {open && <div id={`${id}-body`} className="contribution-body">
-        <p className="contribution-note">금액만 바꿔 비교해요</p>
+        <p className="contribution-note">시작일과 기간은 그대로, 금액만 바꿔 봐요.</p>
         <p className="contribution-dates">{ymdKo(calc.result.series[0].date)}부터<br />{ymdKo(calc.result.series[calc.result.series.length - 1].date)}까지 같은 기간이에요</p>
-        <label className="contribution-label" htmlFor={`${id}-amount`}>{freqWord(plan.freq)} 넣을 돈을 바꿔 볼까요?</label>
+        <label className="contribution-label" htmlFor={`${id}-amount`}>비교할 금액</label>
         <div className="contribution-input">
           <input id={`${id}-amount`} type="number" inputMode="decimal" min="1" step="any" value={input} aria-invalid={!valid} aria-describedby={!valid ? `${id}-error` : undefined} onChange={(e) => setInput(e.target.value)} />
           <span>만원</span>

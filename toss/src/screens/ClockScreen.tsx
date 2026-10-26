@@ -1,121 +1,62 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@toss/tds-mobile";
 import { tickerTitle } from "@/lib/tickers";
 import { NavBar, ChevronRight } from "../components/ui";
-import { loadRowsBy } from "../lib/data";
-import { analytics, shareResult } from "../lib/platform";
-import { calcPlan, commonEnd, shareQueryOf, type Calc, type RowsBy } from "../lib/plan";
+import { analytics } from "../lib/platform";
+import { totalAmount } from "../lib/plan";
 import type { SavedClock } from "../lib/clock";
-import { fmt, manLabel, ymdKo, freqLabel, freqWord } from "../lib/fmt";
+import { manLabel, ymdKo, freqLabel, holdingsTitle } from "../lib/fmt";
 
-const disclaimer = <p className="disc">과거 데이터로 계산한 참고용 결과예요. 특정 종목을 추천하지 않고, 미래 수익을 보장하지 않아요.</p>;
-
-export function ClockScreen({ saved, goHome, goResult, goCompare, onEdit, onMenu, onClose, showToast }: {
-  saved: SavedClock | null; goHome: () => void; goResult: () => void; goCompare: () => void; onEdit: () => void; onMenu: () => void; onClose: () => void; showToast?: (m: string) => void;
+export function ClockScreen({ saved, goHome, goResult, onRemove, onMenu, onClose }: {
+  saved: SavedClock[]; goHome: () => void; goResult: (item: SavedClock) => void;
+  onRemove: (id: string) => Promise<void>; onMenu: () => void; onClose: () => void;
 }) {
-  const plan = saved?.plan ?? null;
-  const [rowsBy, setRowsBy] = useState<RowsBy | null>(null);
-  const [err, setErr] = useState(false);
-  const [retry, setRetry] = useState(0);
-  const tickersKey = plan ? plan.holdings.map((h) => h.ticker).join(",") : "";
-  useEffect(() => { analytics.screen("clock", { saved: !!saved }); }, [saved]);
-  useEffect(() => {
-    if (!tickersKey) return;
-    let on = true;
-    setRowsBy(null); setErr(false);
-    loadRowsBy(tickersKey.split(",")).then((r) => { if (on) setRowsBy(r); }).catch(() => { if (on) setErr(true); });
-    return () => { on = false; };
-  }, [tickersKey, retry]);
-  const calc: Calc | "error" | null = useMemo(() => {
-    if (!rowsBy || !plan) return null;
-    try { return calcPlan(rowsBy, plan); } catch (e) { console.error(e); return "error"; }
-  }, [rowsBy, plan]);
-  const heading = <div className="top-row"><span className="top-k">저장한 계산</span></div>;
+  const [editing, setEditing] = useState(false);
+  const [removing, setRemoving] = useState<string | null>(null);
+  useEffect(() => { analytics.screen("clock", { saved: saved.length > 0, count: saved.length }); }, [saved.length]);
+  const remove = async (id: string) => {
+    setRemoving(id);
+    try { await onRemove(id); } finally { setRemoving(null); }
+  };
 
-  if (!plan) {
-    return (
-      <div className="screen">
-        <NavBar onMenu={onMenu} onClose={onClose} />
-        {heading}
-        <div className="state">
-          <div className="state-title">아직 저장한 계산이 없어요</div>
-          <div className="state-desc">계산 결과에서 '계산 저장하기'를 누르면 여기서 새 가격으로 다시 볼 수 있어요.</div>
-          <Button size="large" onClick={goHome}>10억까지 계산하기</Button>
-        </div>
-        {disclaimer}
+  return <div className="screen">
+    <NavBar back={goHome} onMenu={onMenu} onClose={onClose} />
+    <header className="saved-heading">
+      <div className="saved-heading-row">
+        <h1>저장한 계산</h1>
+        {saved.length > 0 && <button type="button" className="text-btn" onClick={() => setEditing((value) => !value)} aria-pressed={editing}>{editing ? "완료" : "편집"}</button>}
       </div>
-    );
-  }
-  if (err || calc === "error") {
-    return (
-      <div className="screen">
-        <NavBar onMenu={onMenu} onClose={onClose} />
-        {heading}
-        <div className="state">
-          <div className="state-title">데이터를 불러오지 못했어요</div>
-          <div className="state-desc">잠시 후 다시 시도해 주세요</div>
-          <Button size="large" onClick={() => setRetry((n) => n + 1)}>다시 시도하기</Button>
-        </div>
-        {disclaimer}
-      </div>
-    );
-  }
-  if (!calc || !rowsBy) {
-    return (
-      <div className="screen">
-        <NavBar onMenu={onMenu} onClose={onClose} />
-        {heading}
-        <div className="state"><div className="spinner" aria-hidden="true" /><div className="state-desc">저장한 조건으로 계산 중…</div></div>
-        {disclaimer}
-      </div>
-    );
-  }
-  const result = calc.result;
-  const start = result.series[0]?.date ?? "";
-  const end = commonEnd(rowsBy, plan);
-  const names = plan.holdings.map((h, i) => {
-    const amountWon = calc.reqMonthly === null ? h.amount * 10_000 : calc.portfolio?.holdings[i]?.amountWon ?? calc.monthlyWon;
-    return `${tickerTitle(h.ticker)} ${fmt.amount(amountWon)}`;
-  }).join(" · ");
-
-  return (
-    <div className="screen">
-      <NavBar onMenu={onMenu} onClose={onClose} />
-      {heading}
-      <div className="card brand-card">
-        <div className="clock-lead">최근 종가로 계산한 평가액</div>
-        <div className="clock-num">{fmt.money(result.value)}</div>
-        <div className="clock-sub">{ymdKo(end)} 종가 기준</div>
-        <div className="stats">
-          <div className="stat"><span className="stat-k">넣은 돈</span><span className="stat-v">{fmt.money(result.principal)}</span></div>
-        </div>
-        <div className="clock-note">새 가격이 들어오면 저장한 조건으로 다시 계산해요.</div>
-      </div>
-
-      <div className="card">
-        <div className="card-title">저장한 조건</div>
-        <div className="card-desc">{freqWord(plan.freq)} {names}</div>
-        <div className="card-desc">{freqLabel(plan)} · 처음에 {plan.lump > 0 ? manLabel(plan.lump) : "0원"}</div>
-        <div className="card-desc">{start ? `${ymdKo(start)}부터 계산했어요.` : "데이터가 있는 기간으로 계산했어요."}</div>
-        {calc.reqMonthly !== null && <div className="clock-note">저장한 {plan.years}년 조건으로 필요한 금액을 다시 계산해요.</div>}
-        <div className="clock-note">{plan.reinvest ? "받은 배당으로 다시 사요." : "배당은 계산에 넣지 않아요."}</div>
-      </div>
-
-      <div className="btn-row">
-        <Button color="dark" variant="weak" display="full" size="large" onClick={onEdit}>조건 바꾸기</Button>
-        <Button display="full" size="large" onClick={goResult}>결과 보기</Button>
-      </div>
-      <div className="share-top"><Button color="dark" variant="weak" size="medium" onClick={async () => {
-        analytics.click("share", { from: "clock", holdings: plan.holdings.length });
-        const text = `${start ? `${ymdKo(start)}부터 ` : ""}${freqWord(plan.freq)} ${names}씩 샀다면 ${ymdKo(end)} 종가 기준 ${fmt.money(result.value)}이에요. 넣은 돈은 ${fmt.money(result.principal)}이에요 — 주식으로 10억 부자되기`;
-        const res = await shareResult(text, shareQueryOf(plan));
-        if (res === "copied") showToast?.("조건을 복사했어요 · 토스에서는 공유 링크로 열려요");
-        if (res === "failed") showToast?.("지금은 공유할 수 없어요");
-      }}>이 조건 공유하기</Button></div>
-      <div className="list-head">
-        <button type="button" className="text-btn" onClick={goCompare}>다른 ETF와 비교하기 <ChevronRight /></button>
-      </div>
-      {disclaimer}
-    </div>
-  );
+      {saved.length > 0 && <p>{editing ? "삭제할 계산을 골라 주세요." : "조건을 누르면 그래프와 자세한 결과를 볼 수 있어요."}</p>}
+    </header>
+    {saved.length === 0 ? <div className="state">
+      <div className="state-title">아직 저장한 계산이 없어요</div>
+      <div className="state-desc">계산 결과에서 ‘계산 저장하기’를 누르면 조건별로 모아볼 수 있어요.</div>
+      <Button size="large" onClick={goHome}>10억까지 계산하기</Button>
+    </div> : <>
+      <ul className="saved-calculations">
+        {saved.map((item) => {
+          const { plan } = item;
+          const names = holdingsTitle(plan);
+          const amountMode = plan.mode === "amount" && !plan.tracking;
+          const schedule = plan.freq === "daily" ? "거래일마다" : freqLabel(plan);
+          const Card = editing ? "div" : "button";
+          return <li key={item.id} className="saved-calculation">
+            <Card type={editing ? undefined : "button"} className={"saved-calculation-open" + (editing ? " editing" : "")} onClick={editing ? undefined : () => goResult(item)}>
+              <span className="saved-calculation-title"><strong>{names}</strong>{editing
+                ? <button type="button" className="saved-calculation-delete" disabled={removing !== null} aria-label={`${names} 저장한 계산 삭제하기`} onClick={() => void remove(item.id)}>{removing === item.id ? "삭제 중…" : "삭제"}</button>
+                : <ChevronRight />}</span>
+              <span className="saved-calculation-amount">{amountMode ? `지난 ${plan.years}년 · ${schedule} 필요한 금액` : `${schedule} · ${plan.holdings.length > 1 ? "합계 " : ""}${manLabel(totalAmount(plan))}씩`}</span>
+              {plan.holdings.length > 1 && <span className="saved-calculation-detail">{plan.holdings.map((h) => `${tickerTitle(h.ticker)} ${manLabel(h.amount)}`).join(" · ")}</span>}
+              <span className="saved-calculation-detail">{plan.lump > 0 ? `처음 목돈 ${manLabel(plan.lump)}` : "목돈 없이"} · {plan.reinvest ? "배당 재투자" : "배당 미반영"}</span>
+              {plan.tracking && <span className="saved-calculation-detail">{ymdKo(plan.startDate)}부터 계산</span>}
+              <span className="saved-calculation-date">{ymdKo(item.savedAt.slice(0, 10))} 저장</span>
+            </Card>
+          </li>;
+        })}
+      </ul>
+      <div className="saved-new"><Button display="full" size="large" color="dark" variant="weak" style={{ borderRadius: 14 }} onClick={goHome}>새로 계산하기</Button></div>
+      <p className="saved-footnote">저장한 조건은 이 기기에 보관해요.<br />결과는 확인할 때 최신 가격 자료로 다시 계산해요.</p>
+    </>}
+    <p className="disc">과거 자료로 계산한 결과예요.<br />특정 종목을 추천하거나 미래 수익을 보장하지 않아요.</p>
+  </div>;
 }
