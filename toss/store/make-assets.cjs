@@ -99,7 +99,7 @@ const settled = (page) => page.waitForFunction(() => !document.body.innerText.in
       <p style="margin:22px 0 0;font-size:22px;line-height:1.5;color:${SUB}">궁금한 ETF와 모을 금액을 골라요.<br>내 조건으로 과거의 결과를 확인해요.</p>
       <p style="margin:26px 0 0;font-size:16px;line-height:1.5;color:${SUB}">과거 자료로 계산한 결과예요.<br>특정 종목을 추천하거나 미래 수익을 보장하지 않아요.</p></div>
     ${fittedPhone("home", 300, 880, 50, 640, 8)}${fittedPhone("picker", 310, 1230, 110, 580, 8)}</body></html>`;
-  // 로고: store/logo.svg(돈주머니 $, 2026-10-22 사용자 선택). 600×600 불투명·각진 모서리.
+  // 로고: store/logo.svg(숫자 10, 2026-10-26 사용자 선택). 600×600 불투명·각진 모서리.
   const logo = `<!doctype html><html><body style="margin:0;width:600px;height:600px">${fs.readFileSync(path.join(OUT, "logo.svg"), "utf8")}</body></html>`;
 
   const render = async (html, w, h, file) => {

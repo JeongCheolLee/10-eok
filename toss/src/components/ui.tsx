@@ -18,17 +18,14 @@ export const ArrowDown = () => <svg width="14" height="14" viewBox="0 0 24 24" f
 export const ArrowUp = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7" /></svg>;
 
 /* ── 네비게이션 바 (토스 SDK가 그리는 영역의 프로토타입. 실제 앱에선 granite.config navigationBar) ── */
-/** 앱 로고(돈주머니 $). store/logo.svg·public/favicon.svg와 같은 그림. 토스 안에서는 콘솔에 올린 로고를 토스 네비바가 그린다. */
+/** 앱 로고(숫자 10). 웹 파비콘·store/logo.svg와 같은 형태. 토스 네비바는 콘솔에 등록한 로고를 사용한다. */
 export function LogoMark({ size = 24 }: { size?: number }) {
   return (
-    <svg className="nav-logo" width={size} height={size} viewBox="0 0 600 600" aria-hidden="true">
-      <rect width="600" height="600" fill="#02a262" />
-      <path d="M224 119H376L340 204H260Z" fill="#ffe394" />
-      <path d="M250 205C216 246 140 300 140 384C140 455 203 481 300 481C397 481 460 455 460 384C460 300 384 246 350 205Z" fill="#f5b700" />
-      <path d="M350 205C384 246 460 300 460 384C460 455 397 481 300 481C368 460 398 425 398 374C398 310 366 251 331 205Z" fill="#d5960e" />
-      <path d="M249 211H351" fill="none" stroke="#123c2d" strokeWidth="28" strokeLinecap="round" />
-      <circle cx="300" cy="353" r="72" fill="#fff0bc" />
-      <path d="M300 300V406M327 325C320 314 309 310 297 310C281 310 270 319 270 332C270 362 330 344 330 374C330 388 317 397 300 397C285 397 273 391 267 380" fill="none" stroke="#9a6a05" strokeWidth="15" strokeLinecap="round" strokeLinejoin="round" />
+    <svg className="nav-logo" width={size} height={size} viewBox="0 0 128 128" aria-hidden="true">
+      <rect width="128" height="128" rx="30" fill="#00A56B" />
+      <path d="M25 45L40 34H48V94H34V52L25 58Z" fill="white" />
+      <rect x="61" y="34" width="42" height="60" rx="21" fill="white" />
+      <rect x="75" y="47" width="14" height="34" rx="7" fill="#00A56B" />
     </svg>
   );
 }
