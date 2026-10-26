@@ -461,6 +461,8 @@
   outline-offset: 3px;
 }
 .wc-picker {
+  /* Restore dialog centering after the global margin reset. */
+  margin: auto;
   padding: 0;
   border: 0;
   border-radius: 24px;

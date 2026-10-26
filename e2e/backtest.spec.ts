@@ -6,6 +6,47 @@ test.beforeEach(async ({ page }) => {
   );
 });
 
+for (const width of [320, 390, 768, 1280]) {
+  test(`ETF picker stays positioned and usable at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    for (const [locale, choose] of [
+      ["ko", "ETF 선택하기"],
+      ["en", "Choose an ETF"],
+      ["ja", "ETFを選ぶ"],
+      ["de", "ETF auswählen"],
+    ]) {
+      await page.goto(locale === "ko" ? "/" : `/${locale}`);
+      const trigger = page.getByRole("button", { name: choose, exact: true });
+      await trigger.click();
+      const dialog = page.getByRole("dialog");
+      await expect(dialog).toBeVisible();
+      const box = (await dialog.boundingBox())!;
+      const viewportWidth = await page.evaluate(() => document.documentElement.clientWidth);
+      expect(Math.abs(box.x + box.width / 2 - viewportWidth / 2)).toBeLessThanOrEqual(1);
+      if (width > 480) {
+        expect(Math.abs(box.y + box.height / 2 - 450)).toBeLessThanOrEqual(1);
+      } else {
+        expect(Math.abs(box.y + box.height - 900)).toBeLessThanOrEqual(1);
+      }
+      const search = dialog.locator("input");
+      await expect(search).not.toBeFocused();
+      await search.fill("no-such-etf");
+      await expect(dialog.locator(".wc-no-results")).toBeVisible();
+      const filteredBox = (await dialog.boundingBox())!;
+      expect(filteredBox).toEqual(box);
+      await search.fill("SPY");
+      await expect(dialog.getByRole("button", { name: /SPY/ })).toBeVisible();
+      await page.keyboard.press("Escape");
+      await expect(dialog).not.toBeVisible();
+      await expect(trigger).toBeFocused();
+      await trigger.click();
+      await page.mouse.click(width / 2, 5);
+      await expect(dialog).not.toBeVisible();
+      await expect(trigger).toBeFocused();
+    }
+  });
+}
+
 for (const [locale, choose, monthly, target] of [
   ["ko", "ETF 선택하기", "100", "10억"],
   ["en", "Choose an ETF", "700", "$1M"],

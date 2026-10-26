@@ -217,6 +217,12 @@ function TickerDialog({
         if (event.target === dialog.current) onClose();
       }}
       onKeyDown={(event) => {
+        if (event.key === "Escape") {
+          event.preventDefault();
+          event.stopPropagation();
+          onClose();
+          return;
+        }
         if (event.key !== "Tab") return;
         const items = dialog.current?.querySelectorAll<HTMLElement>(
           "button:not(:disabled), input",
