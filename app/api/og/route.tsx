@@ -56,7 +56,7 @@ export async function GET(req: Request) {
   const lumpStr = lump > 0 ? copy.lumpLabel(fmt.unitAmount(lump, market.lump.unitLabel)) : "";
 
   const tickerOk = market.tickers.includes(t) && Number.isFinite(d) && d >= 1 && d <= 31;
-  const valid = tickerOk && (mode === "amount" ? true : Number.isFinite(m) && m >= 1);
+  const valid = url.searchParams.get("preview") !== "brand" && tickerOk && (mode === "amount" ? true : Number.isFinite(m) && m >= 1);
   const ref = locale === "ko" ? `${tickerName(t)}(${t})` : t;
 
   let lead = copy.defaultLead;
@@ -114,15 +114,15 @@ export async function GET(req: Request) {
 
   return new ImageResponse(
     (
-      <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", justifyContent: "center", background: "#121212", color: "#fff", padding: "72px 80px", fontFamily }}>
+      <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", justifyContent: "center", background: "#f5fbf8", color: "#191f28", padding: "72px 80px", fontFamily }}>
         <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 40 }}>
-          <div style={{ width: 34, height: 34, borderRadius: 17, background: "#1ed760", display: "flex" }} />
+          <div style={{ width: 34, height: 34, borderRadius: 17, background: "#008b59", display: "flex" }} />
           <div style={{ fontSize: 30, fontWeight: 700 }}>10-eok</div>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 56, height: 56, borderRadius: 28, background: color, color: "#fff", fontSize: t.length >= 4 ? 18 : 22, fontWeight: 700, marginLeft: 18 }}>{t}</div>
+          {valid && <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 56, height: 56, borderRadius: 28, background: color, color: "#fff", fontSize: t.length >= 4 ? 18 : 22, fontWeight: 700, marginLeft: 18 }}>{t}</div>}
         </div>
-        <div style={{ fontSize: 34, color: "#1ed760", fontWeight: 700, marginBottom: 14 }}>{lead}</div>
+        <div style={{ fontSize: 34, color: "#008b59", fontWeight: 700, marginBottom: 14 }}>{lead}</div>
         <div style={{ fontSize: 116, fontWeight: 700, letterSpacing: "-0.03em", lineHeight: 1.05 }}>{big}</div>
-        <div style={{ fontSize: 30, color: "#b3b3b3", marginTop: 26 }}>{sub}</div>
+        <div style={{ fontSize: 30, color: "#6b7684", marginTop: 26 }}>{sub}</div>
       </div>
     ),
     { width: 1200, height: 630, fonts },

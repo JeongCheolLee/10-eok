@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { StorageNotice } from "@/components/calculator/StorageNotice";
 import { ContentShell } from "@/components/ContentShell";
 import type { Locale } from "@/lib/i18n/locales";
 import { langAlternates } from "@/lib/i18n/seo";
@@ -30,6 +31,7 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
 function KoBody() {
   return (
     <>
+      <p className="note">이 문서는 웹 계산기 개인정보처리방침이에요. 토스 미니앱은 <a href="/miniapp/privacy">‘주식으로 10억 모으기’ 개인정보처리방침</a>을 확인해 주세요.</p>
       <p>
         10-eok(이하 "서비스")은 이용자의 개인정보를 중요하게 생각합니다. 본 방침은 서비스가 어떤 정보를
         어떻게 다루는지 설명합니다.
@@ -86,8 +88,9 @@ export default async function Page({ params }: { params: Promise<{ lang: string 
   const h = HEAD[locale];
   const Body = BODIES[locale];
   return (
-    <ContentShell title={h.title} desc={h.desc} crumb={h.crumb}>
+    <ContentShell title={h.title} desc={({ko:"최종 업데이트: 2026-10-26",en:"Updated: October 26, 2026",ja:"最終更新: 2026年10月26日",de:"Aktualisiert: 26. Oktober 2026"})[locale]} crumb={h.crumb}>
       <Body />
+      <StorageNotice locale={locale} />
     </ContentShell>
   );
 }

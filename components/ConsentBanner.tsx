@@ -67,7 +67,7 @@ export function ConsentBanner({ locale }: { locale: Locale }) {
         zIndex: 60,
         background: "var(--surface)",
         borderTop: "1px solid var(--line)",
-        boxShadow: "0 -2px 16px rgba(0,0,0,0.35)",
+        boxShadow: "0 -2px 16px rgba(25,31,40,0.08)",
         fontSize: 14,
       }}
     >
@@ -111,7 +111,7 @@ export function ConsentBanner({ locale }: { locale: Locale }) {
             onClick={() => decide("granted")}
             style={{
               background: "var(--accent)",
-              color: "#000",
+              color: "#fff",
               border: 0,
               borderRadius: 500,
               fontWeight: 700,

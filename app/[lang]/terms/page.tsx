@@ -30,6 +30,7 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
 function KoBody() {
   return (
     <>
+      <p className="note">이 문서는 웹 계산기 이용약관이에요. 토스 미니앱은 <a href="/miniapp/terms">‘주식으로 10억 모으기’ 이용약관</a>을 확인해 주세요.</p>
       <h2>1. 서비스의 성격</h2>
       <p>
         10-eok(이하 "서비스")은 실제 과거 시장 데이터를 이용한 백테스트 결과를 보여주는 <strong>정보

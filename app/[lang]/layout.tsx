@@ -65,9 +65,9 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
       locale: ogLocale,
       title: m.title,
       description: m.desc,
-      images: [{ url: `/api/og?l=${lang}`, width: 1200, height: 630 }],
+      images: [{ url: `/api/og?preview=brand&l=${lang}`, width: 1200, height: 630 }],
     },
-    twitter: { card: "summary_large_image", title: "10-eok", description: m.desc, images: [`/api/og?l=${lang}`] },
+    twitter: { card: "summary_large_image", title: "10-eok", description: m.desc, images: [`/api/og?preview=brand&l=${lang}`] },
     other: {
       "google-adsense-account": ADSENSE_CLIENT,
       "naver-site-verification": NAVER_SITE_VERIFICATION,

@@ -1,70 +1,152 @@
-import { test, expect, type Locator } from "@playwright/test";
-import { TICKERS } from "../lib/tickers";
+import { test, expect } from "@playwright/test";
 
-// hero 숫자는 데이터 로드 시 0→목표로 카운트업 애니메이션(useAnimatedNumber)이 돈다.
-// 애니메이션 도중 값을 읽으면 안정값이 아니므로, 연속 두 번 같은 값이 나올 때까지 기다려 안정값을 읽는다.
-async function settledText(locator: Locator): Promise<string> {
-  let prev = "";
-  await expect
-    .poll(
-      async () => {
-        const cur = (await locator.innerText()).trim();
-        const stable = cur !== "" && cur === prev;
-        prev = cur;
-        return stable;
-      },
-      { timeout: 15_000, intervals: [250] }
-    )
-    .toBe(true);
-  return prev;
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() =>
+    localStorage.setItem("10eok-consent-v1", "denied"),
+  );
+});
+
+for (const [locale, choose, monthly, target] of [
+  ["ko", "ETF 선택하기", "100", "10억"],
+  ["en", "Choose an ETF", "700", "$1M"],
+  ["ja", "ETFを選ぶ", "10", "1億"],
+  ["de", "ETF auswählen", "600", "1 Mio. €"],
+]) {
+  test(`${locale}: mobile selection, validation, result and shared reload`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    const errors: string[] = [];
+    page.on("pageerror", (error) => errors.push(error.message));
+    await page.goto(locale === "ko" ? "/" : `/${locale}`);
+    await expect(page.locator(".wc-target-line")).toContainText(target);
+    await expect(page.locator(".wc-calculate")).toBeDisabled();
+    await page.getByRole("button", { name: choose, exact: true }).click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toBeVisible();
+    await expect(dialog.locator("input")).not.toBeFocused();
+    const before = await dialog.locator("input").boundingBox();
+    await dialog.locator("input").fill("SPY");
+    const after = await dialog.locator("input").boundingBox();
+    expect(after?.width).toBe(before?.width);
+    await dialog.getByRole("button", { name: /SPY/ }).click();
+    const amount = page.locator('[id="wc-amount-first"]');
+    await expect(amount).toHaveValue(monthly);
+    await amount.fill("");
+    await expect(page.locator(".wc-calculate")).toBeDisabled();
+    await amount.fill(monthly);
+    await page.locator(".wc-calculate").click();
+    await expect(page.locator(".wc-result")).toBeVisible();
+    await expect(page.locator(".wc-chart")).toBeVisible();
+    const duration = await page
+      .locator(".wc-duration")
+      .getAttribute("aria-label");
+    await page.reload();
+    await expect(page.locator(".wc-duration")).toHaveAttribute(
+      "aria-label",
+      duration!,
+    );
+    await expect(page.locator(".wc-app")).toHaveAttribute(
+      "data-screen",
+      "result",
+    );
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+    expect(errors).toEqual([]);
+  });
 }
 
-// 핵심 플로: 인트로 → 단일 화면 폼 입력 → 결과 리빌 → 칩 수정 시 재계산.
-test("입력 폼 → 결과 → 칩 수정 재계산", async ({ page }) => {
-  await page.goto("/");
-
-  // 인트로 (BacktestApp의 Intro): CTA "계산 시작하기"
-  await page.getByRole("button", { name: "계산 시작하기" }).click();
-
-  // 폼은 단계형 챗이 아니라 모든 필드를 한 화면에 보여준다(Form). 기본 모드=기간이 궁금.
-  await expect(page.getByText("어떤 종목을 모을까요?")).toBeVisible();
-  await page.getByRole("button", { name: "10억까지 계산하기" }).click();
-
-  // 결과: hero(년/개월) + 통계 표시 (로딩 900ms + 데이터 로드 후)
-  const heroNum = page.locator(".hero .num");
-  await expect(heroNum).toBeVisible({ timeout: 15_000 });
-  await expect(heroNum).toContainText("년");
-  await expect(page.getByText("최종 금액", { exact: true })).toBeVisible();
-
-  const before = await settledText(heroNum);
-
-  // 칩 수정: "매달" 칩을 눌러 드롭다운을 열고, 스테퍼 +로 적립액을 올리면 도달 기간이 바뀐다.
-  await page.locator(".chip", { hasText: "매달" }).click();
-  await expect(page.locator(".chip-dropdown")).toBeVisible();
-  const plus = page.locator(".chip-dropdown .stepper button").last();
-  for (let i = 0; i < 5; i++) await plus.click();
-
-  // 매달 금액이 늘면 도달 기간(hero)이 짧아져 달라져야 함
-  const after = await settledText(heroNum);
-  expect(after).not.toBe(before);
+test("saved conditions survive reload, open full detail and delete in edit mode", async ({
+  page,
+}) => {
+  await page.goto("/?t=SPY&m=100&d=1&g=10");
+  await expect(page.locator(".wc-result")).toBeVisible();
+  await page
+    .getByRole("button", { name: "계산 저장하기", exact: true })
+    .click();
+  await page.getByRole("button", { name: "저장한 계산", exact: true }).click();
+  await expect(page.locator(".wc-saved-card")).toHaveCount(1);
+  await page.reload();
+  await expect(page.locator(".wc-saved-card")).toHaveCount(1);
+  await page.locator(".wc-saved-open").click();
+  await expect(page.locator(".wc-chart")).toBeVisible();
+  await page
+    .getByRole("button", { name: "계산 저장하기", exact: true })
+    .click();
+  await page.getByRole("button", { name: "저장한 계산", exact: true }).click();
+  await expect(page.locator(".wc-saved-card")).toHaveCount(1);
+  await page.getByRole("button", { name: "편집", exact: true }).click();
+  await page.getByRole("button", { name: "SPY 삭제", exact: true }).click();
+  await expect(page.locator(".wc-saved-card")).toHaveCount(0);
+  await page.reload();
+  await expect(page.locator(".wc-empty")).toBeVisible();
 });
 
-test("종목 비교 페이지가 종목별 결과 표를 보여준다", async ({ page }) => {
-  await page.goto("/compare");
-  await expect(page.getByRole("heading", { name: /10억까지 비교/ })).toBeVisible({ timeout: 15_000 });
-  // 표는 번들이 있는 종목마다 한 행(tr). 현재 전 종목 번들이 존재하므로 웹 종목(미니앱 전용 webHidden 제외) 수와 일치.
-  await expect(page.locator("table.cmp tbody tr")).toHaveCount(TICKERS.filter((t) => !t.webHidden).length);
+test("comparison preserves the original period and groups estimates separately", async ({
+  page,
+}) => {
+  await page.goto("/?t=SPY&m=100&d=1&g=10#compare");
+  await expect(
+    page.getByRole("heading", { name: "실제 거래 자료로 계산한 결과" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "추정 자료를 포함한 결과" }),
+  ).toBeVisible();
+  await expect(page.getByText("추정 포함", { exact: true })).toBeVisible();
+  await expect(page.getByRole("combobox")).toHaveValue("desc");
+  await page.getByRole("combobox").selectOption("asc");
+  await expect(page.getByRole("combobox")).toHaveValue("asc");
 });
 
-test("물가연동 토글이 결과를 바꾼다", async ({ page }) => {
-  // 딥링크로 초기값을 주면 인트로/폼을 건너뛰고 바로 결과 화면으로 진입한다.
+test("legacy inflation and amount links retain their settings", async ({
+  page,
+}) => {
   await page.goto("/?t=QLD&m=50&d=1&g=10");
-  const heroNum = page.locator(".hero .num");
-  await expect(heroNum).toBeVisible({ timeout: 15_000 });
-  const before = await settledText(heroNum);
-
-  await page.locator(".opt").filter({ hasText: "물가만큼 매년 인상" }).click();
-
-  const after = await settledText(heroNum);
+  await expect(page.locator(".wc-duration")).toBeVisible();
+  const before = await page.locator(".wc-duration").getAttribute("aria-label");
+  await page.goto("/?t=QLD&m=50&d=1&g=10&infl=1");
+  await expect(page.locator(".wc-duration")).toBeVisible();
+  const after = await page.locator(".wc-duration").getAttribute("aria-label");
   expect(after).not.toBe(before);
+  await page.goto("/en?t=SPY&mode=amt&y=10&d=1&g=10");
+  await expect(page.locator(".wc-value-hero")).toBeVisible();
+  await expect(page.locator(".wc-result-hero")).toContainText(
+    "Contribution needed each time",
+  );
+  await expect(page.locator(".wc-stats")).toContainText("$1M");
+});
+
+test('a start after the data ends shows guidance instead of an empty result', async ({ page }) => {
+  await page.goto('/?t=SPY&m=100&d=1&s=2099-01-01');
+  await expect(page.locator('.wc-app').getByRole('alert')).toContainText('거래 자료가 없어요');
+  await expect(page.locator('.wc-input')).toBeVisible();
+  await expect(page.locator('.wc-app')).not.toHaveAttribute('data-screen', 'result');
+});
+
+test('explicit result route wins over a comparison page entry', async ({ page }) => {
+  await page.goto('/compare?t=SPY&m=100&d=1#result');
+  await expect(page.locator('.wc-app')).toHaveAttribute('data-screen', 'result');
+  await page.getByRole('button', { name: '같은 조건으로 비교하기', exact: true }).click();
+  await expect(page.locator('.wc-app')).toHaveAttribute('data-screen', 'compare');
+  await page.goBack();
+  await expect(page.locator('.wc-app')).toHaveAttribute('data-screen', 'result');
+});
+
+test('amount entered before choosing an ETF is retained and invalid drafts stay blocked', async ({ page }) => {
+  await page.goto('/');
+  const amount = page.locator('[id="wc-amount-first"]');
+  await amount.fill('175');
+  await page.getByRole('button', { name: 'ETF 선택하기', exact: true }).click();
+  await page.getByRole('dialog').getByRole('button', { name: /SPY/ }).click();
+  await expect(amount).toHaveValue('175');
+  await expect(page.locator('.wc-calculate')).toBeEnabled();
+  await page.reload();
+  await amount.fill('');
+  await page.getByRole('button', { name: 'ETF 선택하기', exact: true }).click();
+  await page.getByRole('dialog').getByRole('button', { name: /SPY/ }).click();
+  await expect(amount).toHaveValue('');
+  await expect(page.locator('.wc-calculate')).toBeDisabled();
 });

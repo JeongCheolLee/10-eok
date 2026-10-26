@@ -1,17 +1,17 @@
-/* 10-eok — Spotify 다크 + 형광 그린. 토큰·컴포넌트는 DESIGN.md 기준. */
+/* 10-eok — white surfaces and green emphasis, aligned with the miniapp. */
 :root {
-  --bg: #121212;
-  --surface: #181818;
-  --surface-2: #1f1f1f;
-  --ink: #ffffff;
-  --muted: #b3b3b3;
-  --muted-2: #9a9a9a;     /* 면책·캡션 등 보조 텍스트 (WCAG AA 통과하는 최소 밝기) */
-  --line: #2a2a2a;
-  --line-2: #4a4a4a;      /* 차트 목표선 등 보조 라인 */
-  --accent: #1ed760;      /* 형광 그린 — 강조/긍정/CTA */
-  --accent-alt: #1db954;
-  --neg: #f3727f;         /* 손실/에러 (DESIGN.md §2) */
-  --warn: #ffa42b;
+  --bg: #ffffff;
+  --surface: #f7f8fa;
+  --surface-2: #f2f4f6;
+  --ink: #191f28;
+  --muted: #6b7684;
+  --muted-2: #8b95a1;     /* 보조 캡션 */
+  --line: #e5e8eb;
+  --line-2: #b0b8c1;      /* 차트 목표선 등 보조 라인 */
+  --accent: #00a56b;      /* 초록 — 강조·CTA */
+  --accent-alt: #008a59;
+  --neg: #e74356;         /* 손실/에러 (DESIGN.md §2) */
+  --warn: #a65e00;
   /* 컨테이너 폭 토큰 */
   --w-app: 460px;         /* 계산기(모바일 우선) */
   --w-read: 720px;        /* 본문/가이드 읽기 폭 */
@@ -139,12 +139,12 @@ button { font-family: inherit; cursor: pointer; }
 .prose .desc { color: var(--muted); font-size: var(--fs-body); line-height: 1.6; margin-bottom: 28px; }
 .prose h2 { font-size: var(--fs-section); font-weight: 700; margin: 28px 0 10px; }
 .prose h3 { font-size: 16px; font-weight: 700; margin: 20px 0 6px; color: var(--muted); }
-.prose p { font-size: var(--fs-body); line-height: 1.75; color: #d8d8d8; margin: 10px 0; }
+.prose p { font-size: var(--fs-body); line-height: 1.75; color: #4e5968; margin: 10px 0; }
 .prose ul, .prose ol { margin: 10px 0; padding-left: 20px; }
-.prose li { font-size: var(--fs-body); line-height: 1.7; color: #d8d8d8; margin: 6px 0; }
+.prose li { font-size: var(--fs-body); line-height: 1.7; color: #4e5968; margin: 6px 0; }
 .prose a { color: var(--accent); text-decoration: none; }
 .prose a:hover { text-decoration: underline; }
-.prose strong { color: #fff; }
+.prose strong { color: var(--ink); }
 /* 정보 콜아웃: 초록 좌측 보더(AI-slop·DESIGN.md '산만한 장식 금지') 대신 표면+얇은 보더로 담백하게 */
 .prose .note { background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; margin: 16px 0; font-size: 14px; color: var(--muted); line-height: 1.6; }
 /* 데이터·출처 인용 블록 (E-E-A-T). 상단 얇은 구분선 + 작은 라벨 + muted 링크 목록. */
@@ -156,7 +156,7 @@ button { font-family: inherit; cursor: pointer; }
 .sources a:hover { color: var(--ink); }
 .cardlinks { display: grid; gap: 10px; margin: 16px 0; }
 .cardlink { display: block; background: var(--surface); border-radius: 10px; padding: 16px; text-decoration: none; }
-.cardlink .t { color: #fff; font-weight: 700; font-size: 16px; }
+.cardlink .t { color: var(--ink); font-weight: 700; font-size: 16px; }
 .cardlink .d { color: var(--muted); font-size: 14px; margin-top: 4px; line-height: 1.5; }
 
 /* 강조 콜아웃(종목 페이지 결과 박스 등) — 토큰 기반 재사용 클래스. 인라인 하드코딩 hex 대체 */
@@ -348,7 +348,11 @@ details.yr[open] .caret { transform: rotate(90deg); }
 .cmp-sym { color: var(--accent); font-weight: 700; text-decoration: none; }
 .cmp-sym:hover { text-decoration: underline; }
 .cmp-sub { display: block; color: var(--muted); font-size: 12px; margin-top: 3px; font-weight: 400; }
-.cmp td strong { color: #fff; white-space: nowrap; }
+.cmp td strong { color: var(--ink); white-space: nowrap; }
 .cmp-cagr { font-variant-numeric: tabular-nums; color: var(--accent); font-weight: 700; white-space: nowrap; }
 .cmp-miss { color: var(--muted); font-size: 13px; }
 .prose .cmp-note { font-size: 13px; color: var(--muted); }
+
+/* Website shell shared by calculator and editorial routes. */
+.site-header .inner{padding-top:18px;padding-bottom:18px;flex-wrap:wrap}.site-header .brand-link{font-size:19px}.site-header nav a:hover,.site-footer a:hover,.lang-btn:hover,.lang-item:hover{color:var(--ink)}.lang-item:hover{background:var(--surface-2)}.lang-menu{box-shadow:0 8px 28px #191f2814}.btn-inline,.prose a.btn-inline{color:white}.home-editorial{background:#f7f8fa;margin-top:20px}.home-editorial .content{padding-top:20px;padding-bottom:40px}.home-guide-links{display:flex;flex-wrap:wrap;gap:12px 24px;margin-top:22px}.site-footer{background:white}.site-footer .disc{color:#6b7684}
+@media(max-width:640px){.site-header .inner{gap:12px}.site-header nav{order:3;width:100%;flex-wrap:nowrap;overflow-x:auto;gap:20px;padding-bottom:3px}.site-header nav a{font-size:13px}.site-header .lang{margin-left:auto}.site-header .brand-link{font-size:18px}.home-editorial .prose h2{font-size:22px}}
