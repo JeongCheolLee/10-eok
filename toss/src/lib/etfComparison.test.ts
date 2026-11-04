@@ -99,7 +99,7 @@ describe("estimated comparison provenance", () => {
     expect(result).not.toHaveProperty("estimate");
   });
   it("does not extrapolate beyond the proxy coverage or stale ending data", () => {
-    expect(compareEtf(base, window, "QQQM", rows.slice(20), estimate).status).toBe("unavailable");
+    expect(compareEtf(base, window, "QQQM", rows.slice(20), estimate)).toMatchObject({ status: "unavailable", dataStart: rows[20].date, actualStart: "2022-01-01" });
     expect(compareEtf(base, window, "QQQM", rows.slice(0, -1), estimate).status).toBe("unavailable");
   });
   it("caps the estimated range when the entire compared period predates listing", () => {

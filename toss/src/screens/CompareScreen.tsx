@@ -5,15 +5,15 @@ import { GROUPS, TOSS_DISPLAY_TICKERS, tickerGroup, tossSubtitle } from "../lib/
 import { NavBar, Avatar } from "../components/ui";
 import { loadComparisonHistory, loadRowsBy } from "../lib/data";
 import { analytics } from "../lib/platform";
-import { calcPlan, type Plan } from "../lib/plan";
+import { calcPlan, singlePlan, type Plan } from "../lib/plan";
 import { compareEtf, comparisonWindow, type ComparisonWindow, type EtfComparison } from "../lib/etfComparison";
 import { fmt, freqWord, manLabel, ymdKo } from "../lib/fmt";
 
 const groups = [...GROUPS.filter((g) => g.id !== "leverage"), ...GROUPS.filter((g) => g.id === "leverage")];
-type State = { status: "loading" | "error" | "empty" } | { status: "ready"; window: ComparisonWindow; rows: EtfComparison[] };
+type State = { status: "loading" | "error" | "empty" } | { status: "ready"; window: ComparisonWindow; rows: EtfComparison[]; pending: number };
 type SortOrder = "value-asc" | "value-desc" | "type";
 
-export function CompareScreen({ plan, back, onMenu, onClose }: { plan: Plan; back: () => void; onMenu: () => void; onClose: () => void }) {
+export function CompareScreen({ plan, back, onEditPlan, onMenu, onClose }: { plan: Plan; back: () => void; onEditPlan: (plan: Plan) => void; onMenu: () => void; onClose: () => void }) {
   const [state, setState] = useState<State>({ status: "loading" });
   const [retry, setRetry] = useState(0);
   const [sortOrder, setSortOrder] = useState<SortOrder>("value-desc");
@@ -27,17 +27,20 @@ export function CompareScreen({ plan, back, onMenu, onClose }: { plan: Plan; bac
         const baselineRows = await loadRowsBy(plan.holdings.map((h) => h.ticker));
         const window = comparisonWindow(plan, baselineRows, calcPlan(baselineRows, plan));
         if (!window) { if (active) setState({ status: "empty" }); return; }
-        const rows = await Promise.all(TOSS_DISPLAY_TICKERS.map(async ({ symbol }): Promise<EtfComparison> => {
-          try { const history = await loadComparisonHistory(symbol); return compareEtf(plan, window, symbol, history.rows, history.estimate); }
-          catch { return { symbol, status: "error" }; }
+        if (active) setState({ status: "ready", window, rows: [], pending: TOSS_DISPLAY_TICKERS.length });
+        await Promise.all(TOSS_DISPLAY_TICKERS.map(async ({ symbol }) => {
+          let row: EtfComparison;
+          try { const history = await loadComparisonHistory(symbol); row = compareEtf(plan, window, symbol, history.rows, history.estimate); }
+          catch { row = { symbol, status: "error" }; }
+          if (active) setState((previous) => previous.status === "ready"
+            ? { ...previous, rows: [...previous.rows, row], pending: previous.pending - 1 } : previous);
         }));
-        if (active) setState({ status: "ready", window, rows });
       } catch { if (active) setState({ status: "error" }); }
     })();
     return () => { active = false; };
   }, [key, retry]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const available = state.status === "ready" ? state.rows.filter((row): row is Extract<EtfComparison, { status: "available" }> => row.status === "available") : [];
+  const available = state.status === "ready" ? [...state.rows].sort((a, b) => TOSS_DISPLAY_TICKERS.findIndex((t) => t.symbol === a.symbol) - TOSS_DISPLAY_TICKERS.findIndex((t) => t.symbol === b.symbol)).filter((row): row is Extract<EtfComparison, { status: "available" }> => row.status === "available") : [];
   const sortValues = (rows: typeof available) => [...rows].sort((a, b) => sortOrder === "value-desc" ? b.value - a.value : a.value - b.value);
   const actual = available.filter((row) => !row.estimate);
   const estimated = available.filter((row) => row.estimate);
@@ -46,7 +49,7 @@ export function CompareScreen({ plan, back, onMenu, onClose }: { plan: Plan; bac
       ? groups.map((group) => ({ ...group, rows: actual.filter((row) => tickerGroup(row.symbol) === group.id) }))
       : [{ id: "values", label: "실제 거래 자료로 계산한 결과", rows: sortValues(actual) }]),
     { id: "estimated", label: "추정 자료를 포함한 결과", rows: sortOrder === "type" ? groups.flatMap((group) => estimated.filter((row) => tickerGroup(row.symbol) === group.id)) : sortValues(estimated) },
-    { id: "unavailable", label: "비교할 자료가 부족한 ETF", rows: state.rows.filter((row) => row.status !== "available") },
+    { id: "unavailable", label: "비교 결과를 표시할 수 없는 ETF", rows: state.rows.filter((row) => row.status !== "available") },
   ];
 
   return <div className="screen compare-screen">
@@ -67,6 +70,7 @@ export function CompareScreen({ plan, back, onMenu, onClose }: { plan: Plan; bac
         <p>{plan.holdings.map((h) => tickerTitle(h.ticker)).join(" · ")}의 평가액 <b>{fmt.money(state.window.value)}</b></p>
         {plan.holdings.length > 1 && <p>합계 금액을 ETF 하나에 넣었다고 계산해요.</p>}
       </section>
+      {state.pending > 0 && <p className="comparison-caption" role="status">{TOSS_DISPLAY_TICKERS.length - state.pending}/{TOSS_DISPLAY_TICKERS.length}개 확인했어요. 나머지 ETF를 불러오는 중이에요.</p>}
       <div className="comparison-sort">
         <label htmlFor="comparison-sort">보기 순서</label>
         <select id="comparison-sort" value={sortOrder} onChange={(event) => setSortOrder(event.target.value as SortOrder)}>
@@ -91,11 +95,24 @@ export function CompareScreen({ plan, back, onMenu, onClose }: { plan: Plan; bac
                 <p>보수·배당·운용 방식의 차이는 반영하지 못해요.</p>
               </div>}
               {row.valuationDate !== state.window.end && <p className="comparison-date">{ymdKo(row.valuationDate)} 종가 기준</p>}
-            </> : <p className="comparison-unavailable">{row.status === "error" ? "데이터를 불러오지 못했어요" : `이 기간을 채울 거래 자료나 추정 자료가 부족해요. 보유 자료: ${ymdKo(row.dataStart)} ~ ${ymdKo(row.dataEnd)}`}</p>}
+            </> : row.status === "error" ? <p className="comparison-unavailable">데이터를 불러오지 못했어요</p> : <div className="comparison-unavailable">
+              <dl><div><dt>마지막 평가액</dt><dd aria-label="비교 불가">—</dd></div></dl>
+              <p className="comparison-unavailable-title">이 기간은 비교할 수 없어요</p>
+              <p>{row.dataStart > state.window.coverageStart
+                ? `${ymdKo(row.dataStart)}부터 자료가 있어요. 비교 시작일까지 채울 자료가 없어요.`
+                : row.dataEnd < state.window.end
+                  ? `${ymdKo(row.dataEnd)}까지 자료가 있어요. 비교 종료일까지 채울 자료가 없어요.`
+                  : "이 기간에는 계산할 거래 자료가 없어요."}</p>
+              <p>확인한 자료: {ymdKo(row.dataStart)} ~ {ymdKo(row.dataEnd)}</p>
+              <Button display="full" color="dark" variant="weak" style={{ borderRadius: 12 }} onClick={() => {
+                onEditPlan(singlePlan({ ...plan, mode: "time", tracking: true, startDate: row.actualStart }, row.symbol, Math.max(1, Math.round(state.window.amountWon / 10_000))));
+              }}>자료가 있는 기간으로 계산하기</Button>
+              <p>실제 거래 시작일로 바꿔요. 다음 화면에서 조건을 확인해 주세요.</p>
+            </div>}
           </li>)}</ul>
         </section>;
       })}
-      {state.rows.some((row) => row.status === "error") && <div className="btn-row"><Button color="dark" variant="weak" onClick={() => setRetry((n) => n + 1)}>다시 시도하기</Button></div>}
+      {state.pending === 0 && state.rows.some((row) => row.status === "error") && <div className="btn-row"><Button color="dark" variant="weak" onClick={() => setRetry((n) => n + 1)}>다시 시도하기</Button></div>}
       <p className="disc">{plan.reinvest ? "받은 배당으로 같은 ETF를 다시 샀다고 계산했어요." : "배당은 계산에 넣지 않았어요."}<br />세금·수수료는 계산에 넣지 않았어요.</p>
     </>}
     <p className="disc">과거 자료로 계산한 결과예요.<br />특정 종목을 추천하거나 미래 수익을 보장하지 않아요.</p>

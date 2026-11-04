@@ -41,14 +41,23 @@ type Params = Record<string, string | number | boolean | undefined>;
 /** 콘솔 분석 > 이벤트. 토스 밖에서는 콘솔 출력만. */
 export const analytics = {
   screen(log_name: string, params: Params = {}): void {
-    if (inToss) { try { void ait.Analytics.screen({ log_name, ...params }); } catch { /* noop */ } return; }
+    if (inToss) { try { void Promise.resolve(ait.Analytics.screen({ log_name, ...params })).catch(() => {}); } catch { /* noop */ } return; }
     console.log("[analytics.screen]", log_name, params);
   },
   click(log_name: string, params: Params = {}): void {
-    if (inToss) { try { void ait.Analytics.click({ log_name, ...params }); } catch { /* noop */ } return; }
+    if (inToss) { try { void Promise.resolve(ait.Analytics.click({ log_name, ...params })).catch(() => {}); } catch { /* noop */ } return; }
     console.log("[analytics.click]", log_name, params);
   },
 };
+
+/** Optional growth action: it must never block saving or navigation. */
+export async function requestAppReview(): Promise<void> {
+  if (!inToss) return;
+  try {
+    if (!ait.requestReview.isSupported()) return;
+    await ait.requestReview();
+  } catch { /* Reviews are optional and SDK-controlled. */ }
+}
 
 async function copyText(text: string): Promise<boolean> {
   try { await navigator.clipboard.writeText(text); return true; } catch { return false; }
@@ -110,7 +119,7 @@ export function entryPath(): string {
 /* ── 광고 ── 콘솔에서 발급한 운영 ID는 출시 번들에서만. 개발·QR 테스트는 테스트 ID. */
 export const AD_BANNER_ID = import.meta.env.VITE_AD_BANNER_ID ?? "ait-ad-test-banner-id";
 export const AD_REWARDED_ID = import.meta.env.VITE_AD_REWARDED_ID ?? "ait-ad-test-rewarded-id";
-// 2026-10-19 공지: 신규 전면·리워드 지면 사용 보류. 정상화 뒤 명시적 설정+ID로만 재개한다.
+// 운영자가 지면을 확인한 뒤 명시적 설정+ID로 활성화한다. 비활성화하면 계산은 무료다.
 export const REWARDED_ADS_ENABLED = import.meta.env.VITE_REWARDED_ADS_ENABLED === "true"
   && !!import.meta.env.VITE_AD_REWARDED_ID?.trim();
 export const adsSupported: boolean = (() => {
@@ -153,26 +162,51 @@ export function createRewarded(): Rewarded | null {
   if (!REWARDED_ADS_ENABLED || !inToss) return null;
   try { if (!ait.loadFullScreenAd.isSupported()) return null; } catch { return null; }
   let loaded = false;
+  let disposed = false;
+  let loadingVersion = 0;
+  let showingVersion = 0;
   let unsubLoad: (() => void) | null = null;
   let unsubShow: (() => void) | null = null;
   const load = () => {
+    if (disposed) return;
+    const version = ++loadingVersion;
     loaded = false;
     unsubLoad?.();
-    unsubLoad = ait.loadFullScreenAd({ options: { adGroupId: AD_REWARDED_ID }, onEvent: (e) => { if (e.type === "loaded") loaded = true; }, onError: () => { loaded = false; } });
+    try {
+      unsubLoad = ait.loadFullScreenAd({
+        options: { adGroupId: AD_REWARDED_ID },
+        onEvent: (e) => { if (!disposed && version === loadingVersion && e.type === "loaded") loaded = true; },
+        onError: () => { if (version === loadingVersion) loaded = false; },
+      });
+    } catch { loaded = false; }
   };
   const show: Rewarded["show"] = (h) => {
+    if (disposed) return;
     if (!loaded) { h.onError(); load(); return; }
+    loaded = false;
+    const version = ++showingVersion;
     let rewarded = false;
+    let ended = false;
+    const active = () => !disposed && !ended && version === showingVersion;
+    const end = (failed: boolean) => {
+      if (!active()) return;
+      ended = true;
+      if (!rewarded) { if (failed) h.onError(); else h.onDismiss(); }
+      load();
+    };
     unsubShow?.();
-    unsubShow = ait.showFullScreenAd({
-      options: { adGroupId: AD_REWARDED_ID },
-      onEvent: (e) => {
-        if (e.type === "userEarnedReward") { rewarded = true; h.onReward(); }
-        if (e.type === "dismissed") { if (!rewarded) h.onDismiss(); load(); }
-        if (e.type === "failedToShow") { h.onError(); load(); }
-      },
-      onError: () => { h.onError(); load(); },
-    });
+    try {
+      unsubShow = ait.showFullScreenAd({
+        options: { adGroupId: AD_REWARDED_ID },
+        onEvent: (e) => {
+          if (!active()) return;
+          if (e.type === "userEarnedReward" && !rewarded) { rewarded = true; h.onReward(); }
+          if (e.type === "dismissed") end(false);
+          if (e.type === "failedToShow") end(true);
+        },
+        onError: () => end(true),
+      });
+    } catch { end(true); }
   };
-  return { load, show, dispose: () => { unsubLoad?.(); unsubShow?.(); } };
+  return { load, show, dispose: () => { disposed = true; loaded = false; unsubLoad?.(); unsubShow?.(); } };
 }

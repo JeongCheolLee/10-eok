@@ -2,9 +2,11 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Button, ListRow, Switch } from "@toss/tds-mobile";
 import { tickerTitle } from "@/lib/tickers";
 import { NavBar, Chart, AdSlot, Avatar, ChevronRight } from "../components/ui";
-import { loadRowsBy } from "../lib/data";
+import { loadRowsBy, getLoadedDataInfo } from "../lib/data";
 import { analytics, shareResult } from "../lib/platform";
 import { calcPlan, commonEnd, TARGET, type Calc, type Plan, type RowsBy, shareQueryOf } from "../lib/plan";
+import { dataDatesOf } from "../lib/savedData";
+import { requestReviewAfterSave } from "../lib/review";
 import { saveClock } from "../lib/clock";
 import { fmt, manLabel, ymKo, ymdKo, mdKo, durKo, freqAdverb, freqWord, holdingsTitle, eulReul } from "../lib/fmt";
 import { CalculationBasis } from "../components/CalculationBasis";
@@ -13,9 +15,9 @@ import { makeResultCard, resultShareText } from "../lib/resultShare";
 
 export type ResultEntrance = "reveal" | "quick";
 
-export function ResultScreen({ plan, entrance = "quick", onCalculate, calculationLabel, busy, back, onEdit, goClock, goCompare, showToast, onMenu, onClose }: {
+export function ResultScreen({ plan, entrance = "quick", onCalculate, calculationLabel, calculationNote, busy, back, onEdit, goClock, goCompare, showToast, onMenu, onClose }: {
   entrance?: ResultEntrance;
-  plan: Plan; onCalculate: (p: Plan) => void; calculationLabel: (p: Plan) => string; busy: boolean; back: () => void; onEdit: () => void; goClock: () => void; goCompare: () => void; showToast: (m: string) => void; onMenu: () => void; onClose: () => void;
+  plan: Plan; onCalculate: (p: Plan) => void; calculationLabel: (p: Plan) => string; calculationNote: (p: Plan) => string; busy: boolean; back: () => void; onEdit: () => void; goClock: () => void; goCompare: () => void; showToast: (m: string) => void; onMenu: () => void; onClose: () => void;
 }) {
   const [rowsBy, setRowsBy] = useState<RowsBy | null>(null);
   const [err, setErr] = useState(false);
@@ -43,6 +45,11 @@ export function ResultScreen({ plan, entrance = "quick", onCalculate, calculatio
     try { return calcPlan(rowsBy, plan); } catch (e) { console.error(e); return "error"; }
   }, [rowsBy, plan]);
   const rows = rowsBy?.[plan.ticker] ?? null;
+  useEffect(() => {
+    if (err || calc === "error") analytics.click("calculation_error", { stage: "result", reason: err ? "load" : "calculate" });
+    else if (calc && calc.result.series.length > 0) analytics.click("result_ready", { ticker: plan.ticker, mode: plan.mode });
+  }, [calc, err, plan.ticker, plan.mode]);
+
 
   if (err || calc === "error") {
     return (
@@ -89,6 +96,8 @@ export function ResultScreen({ plan, entrance = "quick", onCalculate, calculatio
   const limited = port?.limitedBy ? port.holdings.find((h) => h.ticker === port.limitedBy) : undefined;
   const progressPct = Math.round((r.value / TARGET) * 100);
   const reachedTime = !calc.tracking && plan.mode === "time" && r.reached && !!calc.reach;
+  const unreachedTime = !calc.tracking && plan.mode === "time" && !reachedTime;
+  const historyStart = tickers.map((ticker) => rowsBy[ticker][0].date).sort().at(-1)!;
 
   // 데이터가 모자라 고른 조건을 바꿔 계산했으면 한 줄로(분산 매수 limitedBy 안내와 같은 문장 꼴)
   const adj = calc.adjusted;
@@ -137,11 +146,14 @@ export function ResultScreen({ plan, entrance = "quick", onCalculate, calculatio
   };
   const save = async () => {
     let ok = false;
-    try { const res: unknown = await saveClock(plan); ok = res !== false; } catch { ok = false; }
+    try { const infos = plan.holdings.map((h) => getLoadedDataInfo(h.ticker));
+      const dates = infos.every((info) => info !== null) ? dataDatesOf(infos) : undefined;
+      const res: unknown = await saveClock(plan, dates); ok = res !== false; } catch { ok = false; }
     if (!ok) { showToast("저장하지 못했어요. 다시 시도해 주세요"); return; }
     analytics.click("save_clock", { ticker: plan.ticker, holdings: tickers.length });
     showToast("계산을 저장했어요");
     goClock();
+    requestReviewAfterSave();
   };
 
   return (
@@ -159,6 +171,12 @@ export function ResultScreen({ plan, entrance = "quick", onCalculate, calculatio
           </h1>
         </> : <>
           <p className="result-label">{lead}</p>
+          {unreachedTime && <div className="result-history-note">
+            <p>{ymdKo(historyStart)}부터 {ymdKo(end)}까지의 실제 거래 자료로 계산했어요.</p>
+            {multi && <p>선택한 ETF 모두에 자료가 있는 기간이에요.</p>}
+            <p>그 이전부터 모았다면 어땠을지는 이 자료로 알 수 없어요.</p>
+          </div>}
+          {unreachedTime && <p className="result-value-label">마지막 평가액</p>}
           <h1 className={"result-number" + (amtMode ? " amount-number" : "")}>{num}</h1>
         </>}
         <p className="result-story">{sub}</p>
@@ -167,7 +185,7 @@ export function ResultScreen({ plan, entrance = "quick", onCalculate, calculatio
         <p>이후에도 계속 모았다면 <strong>{fmt.money(r.value)}</strong></p>
         <p className="result-current-date">{ymdKo(end)} 기준{r.value < TARGET ? " · 다시 10억 아래로 내려왔어요." : ""}</p>
       </section>}
-      {(adjNote || !reachedTime) && <div className="data-notes">
+      {!unreachedTime && (adjNote || !reachedTime) && <div className="data-notes">
         {adjNote && <p className="data-note">{adjNote}</p>}
         {!reachedTime && <p className="data-note">{mdKo(end)} 종가 기준 · 실제 거래 기간으로 계산했어요</p>}
       </div>}
@@ -232,7 +250,7 @@ export function ResultScreen({ plan, entrance = "quick", onCalculate, calculatio
               contents={<ListRow.Texts type="2RowTypeA" top="배당 재투자" bottom="받은 배당으로 다시 사요" />}
               right={<Switch checked={reinvest} onChange={(_, c) => setReinvest(c)} aria-label="배당 재투자" />}
             />
-            {reinvest !== plan.reinvest && <li className="row"><div><p className="data-note">바꾼 배당 조건으로 다시 계산해요.</p><Button disabled={busy} onClick={() => onCalculate({ ...plan, reinvest })}>{busy ? "계산 중…" : calculationLabel({ ...plan, reinvest })}</Button></div></li>}
+            {reinvest !== plan.reinvest && <li className="row"><div><p className="data-note">바꾼 배당 조건으로 다시 계산해요.</p><p className="data-note">{calculationNote({ ...plan, reinvest })}</p><Button disabled={busy} onClick={() => onCalculate({ ...plan, reinvest })}>{busy ? "계산 중…" : calculationLabel({ ...plan, reinvest })}</Button></div></li>}
           </>
         )}
       </ul>

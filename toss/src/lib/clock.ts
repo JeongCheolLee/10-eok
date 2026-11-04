@@ -1,10 +1,11 @@
+import { readDataDates, type SavedDataDates } from "./savedData";
 import { conditionKey } from "./conditionKey";
 import { storage } from "./platform";
 import { cleanHoldings, normalizePlan, type Plan } from "./plan";
 
 // 같은 키에서 v1/v2 한 건을 v3 목록으로 읽는다. 다음 저장 때 새 형식으로 기록한다.
 const KEY = "10eok-toss-clock-v1";
-export type SavedClock = { id: string; plan: Plan; savedAt: string };
+export type SavedClock = { id: string; plan: Plan; savedAt: string; dataDates?: SavedDataDates };
 type SavedClocks = { v: 3; items: SavedClock[] };
 
 function readItem(value: unknown, fallbackId?: string): SavedClock | null {
@@ -15,7 +16,9 @@ function readItem(value: unknown, fallbackId?: string): SavedClock | null {
   const holdings = Array.isArray(raw.holdings) ? raw.holdings : [{ ticker: raw.ticker, amount: raw.amount }];
   if (!cleanHoldings(holdings).length) return null;
   const id = typeof item.id === "string" && item.id ? item.id : fallbackId;
-  return id ? { id, plan: normalizePlan(raw), savedAt: item.savedAt } : null;
+  const plan = normalizePlan(raw);
+  const dataDates = readDataDates(item.dataDates, plan.holdings.map((h) => h.ticker));
+  return id ? { id, plan, savedAt: item.savedAt, ...(dataDates ? { dataDates } : {}) } : null;
 }
 
 function parse(raw: string | null): SavedClock[] {
@@ -45,13 +48,14 @@ function write(items: SavedClock[]): Promise<boolean> {
 }
 
 /** 같은 조건은 기존 ID를 유지해 맨 위로 갱신하고, 다른 조건은 추가한다. */
-export function saveClock(plan: Plan): Promise<boolean> {
+export function saveClock(plan: Plan, dataDates?: SavedDataDates): Promise<boolean> {
   if (!plan.holdings.length) return Promise.resolve(false);
   return mutate(async () => {
     const items = await loadSavedClocks();
     const key = conditionKey(plan);
     const same = items.find((item) => conditionKey(item.plan) === key);
-    const entry: SavedClock = { id: same?.id ?? crypto.randomUUID(), plan: normalizePlan(plan), savedAt: new Date().toISOString() };
+    const validDates = readDataDates(dataDates, plan.holdings.map((h) => h.ticker));
+    const entry: SavedClock = { id: same?.id ?? crypto.randomUUID(), plan: normalizePlan(plan), savedAt: new Date().toISOString(), ...(validDates ? { dataDates: validDates } : {}) };
     return write([entry, ...items.filter((item) => conditionKey(item.plan) !== key)]);
   });
 }

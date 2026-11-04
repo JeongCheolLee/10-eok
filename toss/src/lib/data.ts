@@ -1,36 +1,47 @@
 import { composeRows, type PxBundle, type FxBundle } from "@/lib/backtest/compose";
 import type { Row } from "@/lib/backtest/types";
 import { tickerCurrency, tickerInfo } from "@/lib/tickers";
+import { requestJson } from "./request";
 import { DATA_BASE } from "./platform";
 import { actualHistoryRows, realStartOf, type LoadedDataInfo } from "./dataInfo";
 
-const rowsCache = new Map<string, Promise<{ actual: Row[]; full: Row[] }>>();
+const rowsCache = new Map<string, Promise<{ actual: Row[]; full: Row[]; info: LoadedDataInfo }>>();
 const infoCache = new Map<string, LoadedDataInfo>();
 let fxPromise: Promise<FxBundle> | null = null;
 
-async function getJson<T>(path: string): Promise<T> {
-  const res = await fetch(`${DATA_BASE}/${path}`);
-  if (!res.ok) throw new Error(`${path} ${res.status}`);
-  return res.json() as Promise<T>;
+const CACHE_MS = 5 * 60_000;
+let cacheAt = Date.now();
+let generation = 0;
+function refreshExpiredCache() {
+  if (Date.now() - cacheAt < CACHE_MS) return;
+  generation += 1;
+  cacheAt = Date.now();
+  rowsCache.clear(); infoCache.clear(); fxPromise = null;
 }
+const getJson = <T>(path: string) => requestJson<T>(`${DATA_BASE}/${path}`);
 
-function loadHistory(ticker: string): Promise<{ actual: Row[]; full: Row[] }> {
+function loadHistory(ticker: string): Promise<{ actual: Row[]; full: Row[]; info: LoadedDataInfo }> {
+  refreshExpiredCache();
+  const requestGeneration = generation;
   const key = ticker.toUpperCase();
   let p = rowsCache.get(key);
   if (!p) {
     p = (async () => {
-      const px = await getJson<PxBundle>(`px/${key.toLowerCase()}.json`);
-      const fx = tickerCurrency(key) === "KRW" ? null : await (fxPromise ??= getJson<FxBundle>("fx/krw.json"));
+      const [px, fx] = await Promise.all([
+        getJson<PxBundle>(`px/${key.toLowerCase()}.json`),
+        tickerCurrency(key) === "KRW" ? null : (fxPromise ??= getJson<FxBundle>("fx/krw.json")),
+      ]);
       const full = composeRows(px, fx);
       const rows = actualHistoryRows(key, full);
       const priceAsOf = rows[rows.length - 1].date;
       const fxAsOf = fx?.rows.reduce<string | null>((last, [date, rate]) => (
         date <= priceAsOf && Number.isFinite(rate) && rate > 0 && (!last || date > last) ? date : last
       ), null) ?? null;
-      infoCache.set(key, { ticker: key, actualStart: rows[0].date, priceAsOf, fxAsOf });
-      return { actual: rows, full };
+      const info = { ticker: key, actualStart: rows[0].date, priceAsOf, fxAsOf };
+      if (requestGeneration === generation) infoCache.set(key, info);
+      return { actual: rows, full, info };
     })();
-    p.catch(() => { rowsCache.delete(key); fxPromise = null; });
+    p.catch(() => { if (requestGeneration === generation) { rowsCache.delete(key); fxPromise = null; } });
     rowsCache.set(key, p);
   }
   return p;
@@ -58,8 +69,7 @@ export function getLoadedDataInfo(ticker: string): LoadedDataInfo | null {
 }
 
 export async function loadDataInfo(ticker: string): Promise<LoadedDataInfo> {
-  await loadRows(ticker);
-  return getLoadedDataInfo(ticker)!;
+  return (await loadHistory(ticker)).info;
 }
 
 /** 여러 종목을 한 번에(Promise.all). 하나라도 실패하면 reject. */

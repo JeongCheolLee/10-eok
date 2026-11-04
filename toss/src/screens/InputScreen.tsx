@@ -218,7 +218,7 @@ export function InputScreen({ plan, setPlan, onSubmit, adRequired, accessNote, b
       <div className="spacer" />
       <div className="cta-bar">
         {accessNote && <p className="calculation-access-note" role="status">{accessNote}</p>}
-        <Button display="full" size="xlarge" style={{ borderRadius: 16 }} disabled={!canSubmit || busy} onClick={onSubmit}>{busy ? "계산 중…" : adRequired ? "광고 보고 계산하기" : cta}</Button>
+        <Button display="full" size="xlarge" style={{ borderRadius: 16 }} disabled={!canSubmit || busy} onClick={onSubmit}>{busy ? "계산 중…" : adRequired ? "광고 보고 무제한 계산" : cta}</Button>
       </div>
       {sheet != null && <TickerSheet current={sheet >= 0 ? hs[sheet]?.ticker ?? "" : ""} taken={hs.map((h) => h.ticker)} onPick={pick} onClose={() => setSheet(null)} />}
     </div>

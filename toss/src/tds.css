@@ -375,8 +375,16 @@ input[type="date"].select { font-size: 18px; min-height: 29px; }
 .comparison-etf dd { margin: 2px 0 0; font-size: 19px; line-height: 1.4; font-weight: 700; color: var(--grey900); font-variant-numeric: tabular-nums; }
 .comparison-etf dl > div + div dd { font-size: 16px; font-weight: 500; color: var(--grey700); }
 .comparison-unavailable, .comparison-date { margin: 12px 0 0 48px; color: var(--text-secondary); font-size: 12px; }
+.comparison-unavailable p { margin: 8px 0; word-break: keep-all; overflow-wrap: anywhere; }
+.comparison-unavailable .comparison-unavailable-title { color: var(--grey800); font-size: 14px; font-weight: 600; }
+.comparison-unavailable dl { margin: 0; }
+.comparison-unavailable button { margin-top: 4px; white-space: normal; height: auto; min-height: 44px; }
+.result-history-note { margin: 12px 0 20px; color: var(--text-secondary); font-size: 14px; line-height: 1.6; word-break: keep-all; }
+.result-history-note p { margin: 4px 0; }
+.result-value-label { margin: 0 0 4px; color: var(--text-secondary); font-size: 14px; }
 
 /* 저장한 계산: 조건별 목록 → 기존 결과 상세 */
+.saved-screen { min-height: 100vh; min-height: 100dvh; }
 .saved-heading { padding: 24px 24px 0; }
 .saved-heading-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .saved-heading h1 { margin: 0; font-size: 26px; letter-spacing: -0.03em; }
@@ -398,7 +406,7 @@ input[type="date"].select { font-size: 18px; min-height: 29px; }
 .saved-calculation-delete { flex: 0 0 auto; min-width: 64px; min-height: 44px; padding: 8px 12px; border: 0; border-radius: 10px; background: #fff0f1; color: #b52b3a; font-size: 14px; font-weight: 600; }
 .saved-calculation-delete:active { background: #ffe1e5; }
 .saved-calculation-delete:disabled { opacity: .5; cursor: default; }
-.saved-new { margin: 20px 24px 0; }
+.saved-screen .saved-cta { margin-top: auto; z-index: 10; background: #fff; border-top: 1px solid var(--grey100); }
 .saved-footnote { margin: 16px 24px 0; font-size: 12px; line-height: 1.6; color: var(--text-secondary); }
 
 .calculation-access-note { margin: 0 0 10px; color: var(--text-secondary); text-align: center; font-size: 13px; line-height: 1.5; word-break: keep-all; }
@@ -444,3 +452,5 @@ input[type="date"].select { font-size: 18px; min-height: 29px; }
 .legal-document p { margin: 12px 0; }
 .legal-document .legal-meta { color: var(--text-secondary); font-size: 13px; }
 .legal-document a { color: #00875b; text-decoration: underline; text-underline-offset: 3px; }
+
+.saved-data-badge { display: inline-block; align-self: flex-start; width: fit-content; padding: 4px 8px; border-radius: 6px; color: var(--primary, #00865a); background: #effaf5; font-size: 12px; font-weight: 600; }

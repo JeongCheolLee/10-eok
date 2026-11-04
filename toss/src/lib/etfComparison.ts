@@ -10,7 +10,7 @@ export type ComparisonWindow = {
 };
 export type EtfComparison =
   | { symbol: string; status: "available"; value: number; principal: number; valuationDate: string; estimate?: ComparisonEstimate & { from: string; to: string } }
-  | { symbol: string; status: "unavailable"; dataStart: string; dataEnd: string }
+  | { symbol: string; status: "unavailable"; dataStart: string; dataEnd: string; actualStart: string }
   | { symbol: string; status: "error" };
 
 /** The schedule anchor can precede the original ETF's first trading day in its first month. */
@@ -29,7 +29,7 @@ export function compareEtf(plan: Plan, window: ComparisonWindow, symbol: string,
   const last = rows.at(-1)?.date;
   if (!first || !last) return { symbol, status: "error" };
   if (first > window.coverageStart || last < window.end) {
-    return { symbol, status: "unavailable", dataStart: first, dataEnd: last };
+    return { symbol, status: "unavailable", dataStart: first, dataEnd: last, actualStart: estimate?.actualStart ?? first };
   }
   const kind = tickerTax(symbol);
   const taxRule = plan.tax ? kind === "us" ? US_TAX_RULE : kind === "kr-foreign" ? KR_FOREIGN_TAX_RULE : undefined : undefined;
@@ -46,7 +46,7 @@ export function compareEtf(plan: Plan, window: ComparisonWindow, symbol: string,
     startDate: window.anchor, endDate: window.end, target: Number.MAX_SAFE_INTEGER,
   });
   const valuationDate = result.series.at(-1)?.date;
-  if (!valuationDate) return { symbol, status: "unavailable", dataStart: first, dataEnd: last };
+  if (!valuationDate) return { symbol, status: "unavailable", dataStart: first, dataEnd: last, actualStart: estimate?.actualStart ?? first };
   const estimateEnd = estimate ? coveredRows.filter((row) => row.date < estimate.actualStart && row.date <= valuationDate).at(-1)?.date : undefined;
   const from = result.series[0].date;
   const usedEstimate = estimate && estimateEnd && from <= estimateEnd

@@ -94,3 +94,23 @@ describe("comparison-only estimated history", () => {
     expect(await loadComparisonHistory("JEPI")).not.toHaveProperty("estimate");
   });
 });
+
+it("refreshes expired data and does not let a late old response overwrite current metadata", async () => {
+  let now = 1_800_000_000_000;
+  const clock = vi.spyOn(Date, "now").mockImplementation(() => now);
+  let resolveOld!: (response: unknown) => void;
+  const newer = price("458730.KS", [["2023-06-20", 10000, 10000], ["2023-06-21", 11000, 11000]], "KRW");
+  const fetcher = vi.fn().mockImplementationOnce(() => new Promise((resolve) => { resolveOld = resolve; }))
+    .mockResolvedValue({ ok: true, json: async () => newer });
+  vi.stubGlobal("fetch", fetcher);
+  try {
+    const { loadDataInfo, getLoadedDataInfo } = await import("./data");
+    const old = loadDataInfo("458730.KS");
+    now += 5 * 60_000 + 1;
+    expect((await loadDataInfo("458730.KS")).priceAsOf).toBe("2023-06-21");
+    resolveOld({ ok: true, json: async () => price("458730.KS", [["2023-06-20", 10000, 10000]], "KRW") });
+    expect((await old).priceAsOf).toBe("2023-06-20");
+    expect(getLoadedDataInfo("458730.KS")?.priceAsOf).toBe("2023-06-21");
+    expect(fetcher).toHaveBeenCalledTimes(2);
+  } finally { clock.mockRestore(); }
+});

@@ -71,3 +71,38 @@ describe("rewarded ad lifecycle", () => {
     expect(sdk.load).not.toHaveBeenCalled();
   });
 });
+
+
+describe("reward callback isolation", () => {
+  it("ignores duplicate and late events after cancellation", async () => {
+    const { createRewarded } = await import("./platform");
+    const ad = createRewarded()!; const h = handlers();
+    ad.load(); sdk.load.mock.calls[0][0].onEvent({ type: "loaded" });
+    ad.show(h); const events = sdk.show.mock.calls[0][0];
+    events.onEvent({ type: "dismissed" }); events.onEvent({ type: "userEarnedReward" }); events.onError();
+    expect(h.onDismiss).toHaveBeenCalledOnce();
+    expect(h.onReward).not.toHaveBeenCalled(); expect(h.onError).not.toHaveBeenCalled();
+  });
+  it("grants only once even when reward is repeated or followed by an error", async () => {
+    const { createRewarded } = await import("./platform");
+    const ad = createRewarded()!; const h = handlers();
+    ad.load(); sdk.load.mock.calls[0][0].onEvent({ type: "loaded" });
+    ad.show(h); const events = sdk.show.mock.calls[0][0];
+    events.onEvent({ type: "userEarnedReward" }); events.onEvent({ type: "userEarnedReward" }); events.onError();
+    expect(h.onReward).toHaveBeenCalledOnce(); expect(h.onError).not.toHaveBeenCalled();
+  });
+  it("falls back on a thrown SDK call and ignores events after disposal", async () => {
+    const { createRewarded } = await import("./platform");
+    const ad = createRewarded()!; const h = handlers();
+    sdk.load.mockImplementationOnce(() => { throw Error("load"); });
+    expect(() => ad.load()).not.toThrow();
+    ad.show(h); expect(h.onError).toHaveBeenCalledOnce();
+    sdk.load.mock.calls[1][0].onEvent({ type: "loaded" });
+    sdk.show.mockImplementationOnce(() => { throw Error("show"); });
+    ad.show(h); expect(h.onError).toHaveBeenCalledTimes(2);
+    sdk.load.mock.calls[2][0].onEvent({ type: "loaded" });
+    ad.show(h); const events = sdk.show.mock.calls[1][0]; ad.dispose();
+    events.onEvent({ type: "userEarnedReward" }); events.onError();
+    expect(h.onReward).not.toHaveBeenCalled(); expect(h.onError).toHaveBeenCalledTimes(2);
+  });
+});

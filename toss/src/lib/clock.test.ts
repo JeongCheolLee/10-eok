@@ -78,3 +78,16 @@ describe("saved calculations", () => {
     expect((await loadSavedClocks()).map((item) => item.id)).toEqual(["ok"]);
   });
 });
+
+it("preserves valid data dates across saves and strips incomplete metadata on read", async () => {
+  const dates = { SPY: { price: "2026-11-02", fx: "2026-10-30" } };
+  await saveClock(DEFAULT_PLAN, dates);
+  expect((await loadSavedClocks())[0].dataDates).toEqual(dates);
+  const id = (await loadSavedClocks())[0].id;
+  await saveClock(DEFAULT_PLAN, { SPY: { price: "2026-11-03", fx: "2026-11-02" } });
+  expect((await loadSavedClocks())[0]).toMatchObject({ id, dataDates: { SPY: { price: "2026-11-03" } } });
+  const raw = JSON.parse(mock.raw!); raw.items[0].dataDates.SPY.price = "broken";
+  mock.raw = JSON.stringify(raw);
+  expect((await loadSavedClocks())[0].dataDates).toBeUndefined();
+  expect((await loadSavedClocks())[0].id).toBe(id);
+});

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { browserCalculationAccess } from "./lib/calculationAccess";
+import { createCalculationAccess, loadCalculationAccess, untilKoreanMidnight } from "./lib/calculationAccess";
+import { recordCompletedCalculation } from "./lib/review";
 import { loadRowsBy } from "./lib/data";
 import { calcPlan } from "./lib/plan";
 import { InputScreen } from "./screens/InputScreen";
@@ -10,7 +11,7 @@ import { LegalScreen } from "./screens/LegalScreen";
 import { AdGate, Menu, Toast } from "./components/ui";
 import { DEFAULT_PLAN, cleanHoldings, withHoldings, type Plan } from "./lib/plan";
 import { loadSavedClocks, removeSavedClock, type SavedClock } from "./lib/clock";
-import { analytics, closeApp, createRewarded, entryPath, entryQuery, inToss, REWARDED_ADS_ENABLED, type Rewarded } from "./lib/platform";
+import { analytics, closeApp, createRewarded, entryPath, entryQuery, inToss, storage, REWARDED_ADS_ENABLED, type Rewarded } from "./lib/platform";
 
 type Screen = "home" | "result" | "clock" | "compare" | "terms" | "privacy";
 const SCREENS: Screen[] = ["home", "result", "clock", "compare", "terms", "privacy"];
@@ -44,7 +45,7 @@ function planFromQuery(q: URLSearchParams): Plan | null {
 }
 
 export function App() {
-  const [access] = useState(browserCalculationAccess);
+  const [access, setAccess] = useState(createCalculationAccess);
   const [, updateAccess] = useState(0);
   const [busy, setBusy] = useState(false);
   const submitting = useRef(false);
@@ -70,9 +71,10 @@ export function App() {
   useEffect(() => {
     let on = true;
     (async () => {
-      const s = await loadSavedClocks();
+      const [s, loadedAccess] = await Promise.all([loadSavedClocks(), REWARDED_ADS_ENABLED ? loadCalculationAccess(storage) : Promise.resolve(createCalculationAccess())]);
       if (!on) return;
       setSaved(s);
+      setAccess(loadedAccess);
       const fromLink = planFromQuery(entryQuery());
       const path = entryPath();
       const target: Screen | null = SCREENS.includes(path as Screen) && path !== "home" ? (path as Screen) : null;
@@ -81,7 +83,7 @@ export function App() {
       const restored = fromLink ?? selected?.plan ?? s[0]?.plan;
       if (restored) {
         setPlan(restored);
-        access.complete(restored, true);
+        loadedAccess.complete(restored, true);
       }
       const requested = fromLink ? "result" : target ?? readHash() ?? (s.length ? "clock" : "home");
       const next = !fromLink && requested === "result" && requestedSavedId && !selected ? "clock" : screenForSelection(requested, !!restored?.holdings.length);
@@ -90,6 +92,23 @@ export function App() {
       setReady(true);
     })();
     return () => { on = false; };
+  }, []);
+  // Refresh the allowance copy at Korean midnight and after resuming a suspended webview.
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>;
+    const refresh = () => {
+      clearTimeout(timer);
+      updateAccess((v) => v + 1);
+      timer = setTimeout(refresh, untilKoreanMidnight() + 50);
+    };
+    refresh();
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("focus", refresh);
+      document.removeEventListener("visibilitychange", refresh);
+    };
   }, []);
   // 화면 전환 애니메이션: 앞으로 가기(go)만 짧게 밀어 넣고, 뒤로 가기(백버튼·스와이프·history.back)는 즉시.
   const forward = useRef(false);
@@ -125,7 +144,7 @@ export function App() {
   const showToast = useCallback((m: string) => { setToast(m); window.setTimeout(() => setToast(""), 2200); }, []);
   const refreshSaved = useCallback(async () => setSaved(await loadSavedClocks()), []);
   const needsRewardedAd = (p: Plan) => REWARDED_ADS_ENABLED && access.needsAd(p);
-  const calculationLabel = (p: Plan) => needsRewardedAd(p) ? "광고 보고 계산하기" : "이 조건으로 계산하기";
+  const calculationLabel = (p: Plan) => needsRewardedAd(p) ? "광고 보고 무제한 계산" : "이 조건으로 계산하기";
   const calculate = async (next: Plan) => {
     if (!next.holdings.length || submitting.current) return;
     submitting.current = true; setBusy(true);
@@ -134,9 +153,10 @@ export function App() {
     try {
       const rows = await loadRowsBy(next.holdings.map((h) => h.ticker));
       if (!calcPlan(rows, next).result.series.length) {
+        analytics.click("calculation_error", { stage: "input", reason: "empty" });
         showToast("이 날짜로 계산할 자료가 없어요. 시작일을 바꿔 주세요"); release(); return;
       }
-    } catch { showToast("데이터를 불러오지 못했어요. 다시 시도해 주세요"); release(); return; }
+    } catch { analytics.click("calculation_error", { stage: "input", reason: "load" }); showToast("데이터를 불러오지 못했어요. 다시 시도해 주세요"); release(); return; }
     const needsAd = needsRewardedAd(next);
     let settled = false;
     const finish = (reward: boolean, exempt = false) => {
@@ -145,6 +165,7 @@ export function App() {
       if (reward) { access.reward(); analytics.click("ad_rewarded", { purpose: "calculate" }); }
       access.complete(next, exempt || !REWARDED_ADS_ENABLED);
       updateAccess((v) => v + 1);
+      recordCompletedCalculation();
       analytics.click("calculate", { ticker: next.ticker, holdings: next.holdings.length, mode: next.mode, ad: reward });
       // 광고 뒤에는 롤링을 반복하지 않는다. 계산 자체에는 인위적인 지연을 넣지 않는다.
       setPlan(next); release(); go("result", undefined, needsAd || reward ? "quick" : "reveal");
@@ -163,12 +184,12 @@ export function App() {
       try { rewarded.current.show({ onReward: () => finish(true), onDismiss: cancel, onError: fallback }); }
       catch { fallback(); }
     } else if (inToss) fallback();
-    else setGate({ run: () => finish(true), cancel, desc: "끝까지 보면 앱을 닫기 전까지 추가 광고 시청 없이 계산할 수 있어요.", cta: "계산 결과 보기" });
+    else setGate({ run: () => finish(true), cancel, desc: "끝까지 보면 오늘 자정까지 무제한으로 계산할 수 있어요. 한국 시간 기준이에요.", cta: "계산 결과 보기" });
   };
-  const accessNote = !REWARDED_ADS_ENABLED ? "" : access.isUnlocked() ? "앱을 닫기 전까지 추가 광고 시청 없이 계산해요."
-    : access.needsAd(plan) ? "광고 한 번 보면 앱을 닫기 전까지 자유롭게 계산해요."
-    : access.known(plan) ? "이미 확인한 조건은 무료로 다시 볼 수 있어요."
-    : `무료 계산 ${access.remaining()}회 남았어요.`;
+  const calculationNote = (p: Plan) => !REWARDED_ADS_ENABLED ? "" : access.isUnlocked() ? "오늘 자정까지 무제한으로 계산해요. 한국 시간 기준이에요."
+    : access.needsAd(p) ? "광고를 끝까지 보면 오늘 자정까지 무제한이에요. 한국 시간 기준이에요."
+    : access.known(p) ? "이미 확인한 조건은 무료로 다시 볼 수 있어요."
+    : `오늘 무료 계산 ${access.remaining()}회 남았어요.`;
   const onClose = async () => { if (!(await closeApp())) showToast("토스 앱에서는 미니앱이 닫혀요"); };
 
   if (!ready) return <div className="app" />;
@@ -180,10 +201,10 @@ export function App() {
       body = <LegalScreen kind={screen as "terms" | "privacy"} back={back} {...common} />;
       break;
     case "result":
-      body = <ResultScreen plan={plan} entrance={nav.entrance} onCalculate={calculate} calculationLabel={calculationLabel} busy={busy} back={readSavedId() ? () => go("clock") : back} goCompare={() => go("compare")} onEdit={() => go("home")} goClock={async () => { await refreshSaved(); go("clock"); }} showToast={showToast} {...common} />;
+      body = <ResultScreen plan={plan} entrance={nav.entrance} onCalculate={calculate} calculationLabel={calculationLabel} calculationNote={calculationNote} busy={busy} back={readSavedId() ? () => go("clock") : back} goCompare={() => go("compare")} onEdit={() => go("home")} goClock={async () => { await refreshSaved(); go("clock"); }} showToast={showToast} {...common} />;
       break;
     case "clock":
-      body = <ClockScreen saved={saved} goHome={() => { setPlan({ ...DEFAULT_PLAN, ticker: "", holdings: [] }); go("home"); }} goResult={(item) => { access.complete(item.plan, true); setPlan(item.plan); go("result", item.id); }} onRemove={async (id) => {
+      body = <ClockScreen saved={saved} goHome={() => { setPlan({ ...DEFAULT_PLAN, ticker: "", holdings: [] }); go("home"); }} goResult={(item) => { analytics.click("saved_open", { ticker: item.plan.ticker, holdings: item.plan.holdings.length }); access.complete(item.plan, true); setPlan(item.plan); go("result", item.id); }} onRemove={async (id) => {
         try {
           if (!(await removeSavedClock(id))) { showToast("지우지 못했어요. 다시 시도해 주세요"); return; }
           await refreshSaved(); showToast("저장한 계산을 지웠어요");
@@ -191,11 +212,11 @@ export function App() {
       }} {...common} />;
       break;
     case "compare":
-      body = <CompareScreen plan={plan} back={back} {...common} />;
+      body = <CompareScreen plan={plan} back={back} onEditPlan={(next) => { setPlan(next); go("home"); }} {...common} />;
       break;
     default:
       {
-        body = <InputScreen plan={plan} setPlan={setPlan} onSubmit={() => calculate(plan)} adRequired={hasSelection && needsRewardedAd(plan)} accessNote={accessNote} busy={busy} hasClock={saved.length > 0} goClock={() => go("clock")} goLegal={go} {...common} />;
+        body = <InputScreen plan={plan} setPlan={setPlan} onSubmit={() => calculate(plan)} adRequired={hasSelection && needsRewardedAd(plan)} accessNote={calculationNote(plan)} busy={busy} hasClock={saved.length > 0} goClock={() => go("clock")} goLegal={go} {...common} />;
       }
   }
 
