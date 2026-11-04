@@ -1,15 +1,15 @@
 // 로케일별 표시 포맷터. getFormatter(locale) → 금액·날짜·증감 포맷 묶음.
-// ⚠️ ko 출력은 기존 lib/format.ts와 바이트 단위로 동일해야 한다 (format.test.ts 골든).
+// 한국어 웹·미니앱·공유 이미지가 같은 금액 단위를 사용한다.
 import type { Locale } from "./locales";
 
 export type AmountParts = { n: string; u: string };
 
 export type Formatter = {
-  /** 통계 타일용 정밀 표기. ko "1.63억"(항상 2자리) */
+  /** 통계 타일용 표기. ko 1억 미만 "3,851만원", 이상 "1.63억" */
   money: (v: number) => string;
   /** 표·스크럽용 압축 표기. ko "1.63억"/"6.2억"(10↑)/"205만" */
   compact: (v: number) => string;
-  /** 대략 표기(1자리). ko "6.2억" */
+  /** 대략 표기. ko 1억 미만 "3,851만원", 이상 "6.2억" */
   rough: (v: number) => string;
   /** 히어로 월적립액: 숫자/단위 분리(단위는 작은 글씨로 렌더). ko {n:"1.6",u:"억"}|{n:"100",u:"만원"} */
   amountParts: (v: number) => AmountParts;
@@ -35,11 +35,16 @@ export type Formatter = {
   monthLabel: (month: number) => string;
   /** 입력 카운트(원단위)를 시장 단위로 표기(억 롤오버 없음). ko "100만원", en "$700", de "700 €" */
   unitAmount: (count: number, unitLabel: string) => string;
-  /** 대략 금액(타이밍 중앙값 등). ko "약 10억"(1억↑)·"0.50억", en/de "~$1M" */
+  /** 대략 금액(타이밍 중앙값 등). ko "약 10억"(1억↑)·"5,000만원", en/de "~$1M" */
   approx: (v: number) => string;
 };
 
-// ── ko: 억/만 (기존 로직 그대로) ──────────────────────────────
+// ── ko: 억/만 ──────────────────────────────────────────────
+function koSmallMoney(v: number): string {
+  // 작은 금액을 0만원으로 뭉개지 않는다. 만원 이상은 만원 단위로 반올림한다.
+  if (Math.abs(v) < 10_000) return Math.round(v).toLocaleString("ko-KR") + "원";
+  return Math.round(v / 10_000).toLocaleString("ko-KR") + "만원";
+}
 function koGrowth(principal: number, value: number): string {
   if (principal <= 0) return "";
   const ratio = value / principal;
@@ -48,7 +53,7 @@ function koGrowth(principal: number, value: number): string {
   return (r >= 0 ? "+" : "") + r + "%";
 }
 const KO: Formatter = {
-  money: (v) => (v / 1e8).toFixed(2) + "억",
+  money: (v) => Math.abs(v) < 1e8 ? koSmallMoney(v) : (v / 1e8).toFixed(2) + "억",
   compact: (v) => {
     if (v >= 1e8) {
       const x = v / 1e8;
@@ -56,7 +61,7 @@ const KO: Formatter = {
     }
     return Math.round(v / 1e4).toLocaleString("ko-KR") + "만";
   },
-  rough: (v) => (v / 1e8).toFixed(1) + "억",
+  rough: (v) => Math.abs(v) < 1e8 ? koSmallMoney(v) : (v / 1e8).toFixed(1) + "억",
   amountParts: (v) =>
     v >= 1e8
       ? { n: (Math.round(v / 10_000_000) / 10).toString(), u: "억" }

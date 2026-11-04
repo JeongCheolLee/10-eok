@@ -31,12 +31,21 @@ describe("ko 포맷터 골든 동일성 (구 lib/format.ts 대비)", () => {
   // 원·억 경계, 반올림 경계 등 넓게 스윕
   const vals = [0, 1234, 9_999, 10_000, 205_000, 9_531_0000, 99_999_999, 100_000_000,
     163_000_000, 620_000_000, 1_010_285_129, 5_000_000_000, 12_340_000_000];
-  it("money=eok / compact=won / rough=eok1", () => {
+  it("1억 이상 금액과 압축 표기는 기존 형식을 유지한다", () => {
     for (const v of vals) {
-      expect(ko.money(v)).toBe(refEok(v));
+      if (v >= 1e8) expect(ko.money(v)).toBe(refEok(v));
       expect(ko.compact(v)).toBe(refWon(v));
-      expect(ko.rough(v)).toBe(refEok1(v));
+      if (v >= 1e8) expect(ko.rough(v)).toBe(refEok1(v));
     }
+  });
+  it.each([
+    [0, "0원"], [1234, "1,234원"], [9999, "9,999원"],
+    [10_000, "1만원"], [38_511_243, "3,851만원"], [39_000_000, "3,900만원"],
+    [27_500_000, "2,750만원"], [99_990_000, "9,999만원"],
+    [99_999_999, "10,000만원"], [-39_000_000, "-3,900만원"],
+  ])("1억 미만 %i원은 %s로 표시한다", (value, expected) => {
+    expect(ko.money(value as number)).toBe(expected);
+    expect(ko.rough(value as number)).toBe(expected);
   });
   it("amountParts=manwonParts", () => {
     for (const v of vals) expect(ko.amountParts(v)).toEqual(refManwonParts(v));
@@ -61,8 +70,8 @@ describe("ko 포맷터 골든 동일성 (구 lib/format.ts 대비)", () => {
     expect(ko.unitAmount(100, "만원")).toBe("100만원");
     expect(ko.unitAmount(10, "억")).toBe("10억");
     expect(ko.unitAmount(100000, "만원")).toBe("100000만원");
-    // approx: 타이밍 중앙값 medRough — 1억↑는 "약 N억", 미만은 money(2자리)
-    expect(ko.approx(50_000_000)).toBe("0.50억");
+    // approx: 1억↑는 "약 N억", 미만은 만원 단위
+    expect(ko.approx(50_000_000)).toBe("5,000만원");
     expect(ko.approx(163_000_000)).toBe("약 2억");
     expect(ko.approx(1_010_285_129)).toBe("약 10억");
     // dur: 표 도달 기간 셀(약 N년 M개월)

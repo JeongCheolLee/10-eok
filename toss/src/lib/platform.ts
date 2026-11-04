@@ -1,7 +1,7 @@
 // 플랫폼 어댑터. 브라우저(프로토타입·Vite dev)와 토스 미니앱의 차이는 이 파일 하나에 모은다.
 // 토스 안에서는 @apps-in-toss/web-framework SDK를, 밖에서는 브라우저 API를 쓴다.
 import * as ait from "@apps-in-toss/web-framework";
-import { encodeResultCard, resultShareUrl, type ResultCard } from "@/lib/share/resultCard";
+import { encodeResultCard, resultShareUrl, RESULT_CARD_STYLE_VERSION, type ResultCard } from "@/lib/share/resultCard";
 
 export const APP_NAME = "10-eok";
 export const SITE = "https://jeongcheol.cloud";
@@ -61,11 +61,11 @@ export async function shareResult(text: string, query: string, card?: ResultCard
   const preview = card ? resultShareUrl(SITE, card) : "";
   // Different snapshots of the same conditions need different links to avoid stale messenger previews.
   let version = 2166136261;
-  for (const char of snapshot ?? "") version = Math.imul(version ^ char.charCodeAt(0), 16777619);
+  for (const char of `${RESULT_CARD_STYLE_VERSION}:${snapshot ?? ""}`) version = Math.imul(version ^ char.charCodeAt(0), 16777619);
   const path = `intoss://${APP_NAME}?${query}${snapshot ? `&sv=${(version >>> 0).toString(16)}` : ""}`;
   if (inToss) {
     try {
-      const link = await ait.getTossShareLink(path, snapshot ? `${SITE}/api/og/toss?d=${snapshot}` : OG_IMAGE);
+      const link = await ait.getTossShareLink(path, snapshot ? `${SITE}/api/og/toss?d=${snapshot}&v=${RESULT_CARD_STYLE_VERSION}` : OG_IMAGE);
       await ait.share({ message: `${text}\n${link}` });
       return "shared";
     } catch { return "failed"; }

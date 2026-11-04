@@ -1,6 +1,9 @@
 import { TICKERS, tickerTitle } from "../tickers";
 import { getFormatter } from "../i18n/format";
 
+// Bump when presentation changes so previously cached messenger cards stay separate.
+export const RESULT_CARD_STYLE_VERSION = 2;
+
 /** A bounded, versioned snapshot of the result the sender actually saw. No live-data recalculation. */
 export type ResultCard = {
   v: 1; kind: "reach" | "value" | "amount"; tickers: string[];
@@ -52,5 +55,5 @@ export function resultCardCopy(c: ResultCard) {
     principal: fmt.money(c.principal), final: fmt.money(c.value), lump: fmt.amount(c.lump) };
 }
 export function resultShareUrl(origin: string, card: ResultCard) {
-  return `${origin}/miniapp/share?d=${encodeResultCard(card)}`;
+  return `${origin}/miniapp/share?d=${encodeResultCard(card)}&v=${RESULT_CARD_STYLE_VERSION}`;
 }

@@ -4,9 +4,9 @@ import { getFormatter } from "./i18n/format";
 
 const ko = getFormatter("ko");
 
-/** KRW → "1.63억" */
+/** KRW → 1억 미만 "3,851만원", 이상 "1.63억" */
 export const eok = ko.money;
-/** KRW → "6.2억" (한 자리) */
+/** KRW → 1억 미만 "3,851만원", 이상 "6.2억" (한 자리) */
 export const eok1 = ko.rough;
 /** 0.21 → "+21%" */
 export const pct = ko.pct;
