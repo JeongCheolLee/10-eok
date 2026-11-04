@@ -1,0 +1,12 @@
+import { decodeResultCard, encodeResultCard, resultCardCopy } from "@/lib/share/resultCard";
+export const runtime = "nodejs";
+const esc = (s: string) => s.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
+export function GET(request: Request) {
+  const url = new URL(request.url);
+  const card = decodeResultCard(url.searchParams.get("d"));
+  if (!card) return new Response("공유 결과를 확인할 수 없어요.", { status: 400 });
+  const copy = resultCardCopy(card), d = encodeResultCard(card);
+  const image = `${url.origin}/api/og/toss?d=${d}`;
+  const link = `intoss://10-eok?${card.query}`;
+  return new Response(`<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>${esc(copy.title)}</title><meta name="description" content="${esc(copy.description)}"><meta property="og:type" content="website"><meta property="og:title" content="${esc(copy.title)}"><meta property="og:description" content="${esc(copy.description)}"><meta property="og:image" content="${esc(image)}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="600"><meta property="og:url" content="${esc(url.origin + '/miniapp/share?d=' + d)}"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="${esc(image)}"><style>body{margin:0;background:#f1faf6;color:#192c25;font:16px/1.6 system-ui,sans-serif}main{max-width:800px;margin:48px auto;padding:24px}img{width:100%;height:auto;border-radius:20px}h1{font-size:24px;word-break:keep-all}a{display:block;background:#009b60;color:white;padding:16px;border-radius:14px;text-align:center;text-decoration:none;font-weight:700}p{color:#52675e;font-size:14px}small{display:block;margin-top:20px;color:#52675e}</style></head><body><main><img src="${esc(image)}" width="1200" height="600" alt="${esc(copy.title)}"><h1>${esc(copy.title)}</h1><p>${esc(copy.description)}</p><a href="${esc(link)}">토스에서 같은 조건으로 계산하기</a><p>토스 앱이 설치된 휴대폰에서 열어 주세요. 앱에서는 최신 자료로 다시 계산하므로 결과가 달라질 수 있어요.</p><small>공유 시점의 계산 결과예요. 특정 종목을 추천하거나 미래 수익을 보장하지 않아요.</small></main></body></html>`, { headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "public, max-age=86400", "X-Robots-Tag": "noindex, nofollow" } });
+}
