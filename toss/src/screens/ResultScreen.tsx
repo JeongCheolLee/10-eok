@@ -9,6 +9,7 @@ import { saveClock } from "../lib/clock";
 import { fmt, manLabel, ymKo, ymdKo, mdKo, durKo, freqAdverb, freqWord, holdingsTitle, eulReul } from "../lib/fmt";
 import { CalculationBasis } from "../components/CalculationBasis";
 import { RollingNumber } from "../components/RollingNumber";
+import { makeResultCard, resultShareText } from "../lib/resultShare";
 
 export type ResultEntrance = "reveal" | "quick";
 
@@ -23,6 +24,7 @@ export function ResultScreen({ plan, entrance = "quick", onCalculate, calculatio
   const [reinvest, setReinvest] = useState(plan.reinvest);
   useEffect(() => setReinvest(plan.reinvest), [plan.reinvest]);
   const [tip, setTip] = useState(false);
+  const [sharing, setSharing] = useState(false);
 
   const tickers = plan.holdings.map((h) => h.ticker);
   const tickersKey = tickers.join(",");
@@ -122,30 +124,16 @@ export function ResultScreen({ plan, entrance = "quick", onCalculate, calculatio
   const amtMode = plan.mode === "amount" && !calc.tracking;
   const query = shareQueryOf(plan);
 
-  // 공유 문구는 앞뒤 설명 없이 전달되므로 문장 안에 과거 조건(시작 시점·기간·기준일)을 담는다.
-  const shareTextOf = (): string => {
-    const tail = "\n\n주식으로 10억 모으기";
-    const condition = `${eulReul(names)} ${adverb} ${multi ? "합계 " : ""}${fmt.amount(calc.monthlyWon)}씩 샀다면`;
-    const initial = plan.lump > 0 ? `\n처음 목돈 ${manLabel(plan.lump)}` : "";
-    if (calc.tracking) {
-      return `꾸준히 모았다면 ${fmt.money(r.value)}\n${condition}${initial}\n${ymdKo(start)} 시작 · ${ymdKo(end)} 평가액${tail}`;
-    }
-    if (plan.mode === "amount") {
-      return calc.reqMonthly === 0
-        ? `처음 목돈만으로 10억을 넘었어요\n${ymKo(start)}에 ${eulReul(names)} ${manLabel(plan.lump)}어치 샀다면\n${ymdKo(end)} 기준${tail}`
-        : `지난 ${calc.yearsUsed}년, 10억까지 필요했던 금액\n${eulReul(names)} ${adverb} ${fmt.amount(calc.reqMonthly ?? 0)}씩 샀다면${initial}\n${ymKo(start)} 시작 · ${ymdKo(end)} 기준${tail}`;
-    }
-    if (reachedTime && calc.reach) {
-      return `10억을 처음 넘기까지 ${durKo(r.years, r.monthsRem)}\n${condition}${initial}\n${ymKo(start)} 시작 · ${ymdKo(calc.reach.date)} 첫 도달${tail}`;
-    }
-    return `이 기간 동안 모았다면 ${fmt.money(r.value)}\n${condition}${initial}\n${ymKo(start)} 시작 · ${ymdKo(end)} 기준, 10억 미도달${tail}`;
-  };
-
   const share = async () => {
+    if (sharing) return;
+    setSharing(true);
     analytics.click("share", { ticker: plan.ticker, holdings: tickers.length });
-    const res = await shareResult(shareTextOf(), query);
-    if (res === "copied") showToast("결과를 복사했어요 · 토스에서는 공유 링크로 열려요");
-    if (res === "failed") showToast("지금은 공유할 수 없어요");
+    try {
+      const res = await shareResult(resultShareText(plan, calc), query, makeResultCard(plan, calc));
+      if (res === "copied") showToast("결과와 공유 링크를 복사했어요");
+      if (res === "failed") showToast("지금은 공유할 수 없어요");
+    } catch { showToast("지금은 공유할 수 없어요"); }
+    finally { setSharing(false); }
   };
   const save = async () => {
     let ok = false;
@@ -205,7 +193,7 @@ export function ResultScreen({ plan, entrance = "quick", onCalculate, calculatio
 
       <div className="result-actions">
         <div className="result-share">
-          <Button display="full" size="large" style={{ borderRadius: 14 }} onClick={share}>
+          <Button display="full" size="large" style={{ borderRadius: 14 }} disabled={sharing} onClick={share}>
             <span className="result-share-label"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 15V3m-4 4 4-4 4 4M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6" /></svg>결과 공유하기</span>
           </Button>
         </div>

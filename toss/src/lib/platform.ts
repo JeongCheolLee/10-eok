@@ -1,6 +1,7 @@
 // 플랫폼 어댑터. 브라우저(프로토타입·Vite dev)와 토스 미니앱의 차이는 이 파일 하나에 모은다.
 // 토스 안에서는 @apps-in-toss/web-framework SDK를, 밖에서는 브라우저 API를 쓴다.
 import * as ait from "@apps-in-toss/web-framework";
+import { encodeResultCard, resultShareUrl, type ResultCard } from "@/lib/share/resultCard";
 
 export const APP_NAME = "10-eok";
 export const SITE = "https://jeongcheol.cloud";
@@ -55,19 +56,26 @@ async function copyText(text: string): Promise<boolean> {
 
 /** 결과 공유. 토스: 미니앱 딥링크(intoss://10-eok?…)를 토스 공유 링크로 바꿔 폰 공유 창(카카오톡·문자 등).
  *  브라우저: 폰 공유 창(Web Share)이 있으면 그것, 없으면 텍스트 복사. 사용자가 공유 창을 닫으면 "cancelled". */
-export async function shareResult(text: string, query: string): Promise<"shared" | "copied" | "cancelled" | "failed"> {
+export async function shareResult(text: string, query: string, card?: ResultCard): Promise<"shared" | "copied" | "cancelled" | "failed"> {
+  const snapshot = card ? encodeResultCard(card) : null;
+  const preview = card ? resultShareUrl(SITE, card) : "";
+  // Different snapshots of the same conditions need different links to avoid stale messenger previews.
+  let version = 2166136261;
+  for (const char of snapshot ?? "") version = Math.imul(version ^ char.charCodeAt(0), 16777619);
+  const path = `intoss://${APP_NAME}?${query}${snapshot ? `&sv=${(version >>> 0).toString(16)}` : ""}`;
   if (inToss) {
     try {
-      const link = await ait.getTossShareLink(`intoss://${APP_NAME}?${query}`, OG_IMAGE);
+      const link = await ait.getTossShareLink(path, snapshot ? `${SITE}/api/og/toss?d=${snapshot}` : OG_IMAGE);
       await ait.share({ message: `${text}\n${link}` });
       return "shared";
     } catch { return "failed"; }
   }
+  const message = preview ? `${text}\n${preview}` : text;
   if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
-    try { await navigator.share({ text }); return "shared"; }
+    try { await navigator.share({ text: message }); return "shared"; }
     catch (e) { if ((e as Error)?.name === "AbortError") return "cancelled"; }
   }
-  return (await copyText(text)) ? "copied" : "failed";
+  return (await copyText(message)) ? "copied" : "failed";
 }
 
 /** X 버튼·첫 화면 종료. 토스 밖에서는 아무것도 안 함(호출자가 안내). */
