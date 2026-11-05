@@ -31,12 +31,12 @@ export function analyzeResilience(series: readonly Point[], reachedDate: string 
   }
   close(scope[scope.length - 1].date, false);
   const low = worst as Point | null;
-  const checkpoints: { label: string; point: Point; added: number; pnlChange: number }[] = [];
+  const checkpoints: { label: string; point: Point; added: number; pnl: number }[] = [];
   if (low) {
     const add = (label: string, p: Point | undefined) => {
       if (!p || p.date <= low.date || checkpoints.some(c => c.point.date === p.date)) return;
       checkpoints.push({ label, point: p, added: p.principal - low.principal,
-        pnlChange: (p.value - p.principal) - (low.value - low.principal) });
+        pnl: p.value - p.principal });
     };
     for (const years of [1, 3]) {
       const date = new Date(`${low.date}T00:00:00Z`);
@@ -44,7 +44,10 @@ export function analyzeResilience(series: readonly Point[], reachedDate: string 
       const target = date.toISOString().slice(0, 10);
       add(`${years}년 뒤`, series.find(p => p.date >= target));
     }
-    add("마지막 자료", series[series.length - 1]);
+    const last = series[series.length - 1];
+    const existing = checkpoints.find(c => c.point.date === last.date);
+    if (existing) existing.label += " · 마지막 평가일";
+    else add("마지막 평가일", last);
   }
   return { start: scope[0].date, end: scope[scope.length - 1].date, worst: low,
     loss: low ? low.principal - low.value : 0,

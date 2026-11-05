@@ -26,13 +26,13 @@ describe("contribution-relative investment journey", () => {
     expect(r.loss).toBe(20); expect(r.end).toBe("2020-02-01");
     expect(r.longest?.recovered).toBe(true);
     expect(r.checkpoints).toEqual([
-      { label: "1년 뒤", point: p("2021-01-04", 140, 200), added: 100, pnlChange: -40 },
-      { label: "3년 뒤", point: p("2023-01-02", 420, 400), added: 300, pnlChange: 40 },
+      { label: "1년 뒤", point: p("2021-01-04", 140, 200), added: 100, pnl: -60 },
+      { label: "3년 뒤 · 마지막 평가일", point: p("2023-01-02", 420, 400), added: 300, pnl: 20 },
     ]);
   });
   it("shows only observed follow-up, never projecting recovery", () => {
     const r = analyzeResilience([p("2020-01-01", 50), p("2020-04-01", 60)]);
-    expect(r.checkpoints).toEqual([{ label: "마지막 자료", point: p("2020-04-01", 60), added: 0, pnlChange: 10 }]);
+    expect(r.checkpoints).toEqual([{ label: "마지막 평가일", point: p("2020-04-01", 60), added: 0, pnl: -40 }]);
     expect(analyzeResilience([p("2020-01-01", 50)]).checkpoints).toEqual([]);
     expect(() => analyzeResilience([])).toThrow();
   });
