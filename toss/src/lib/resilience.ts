@@ -51,7 +51,7 @@ export function analyzeResilience(series: readonly Point[], reachedDate: string 
       add(`${years}년 뒤`, series.find(p => p.date >= target));
     }
     const existing = checkpoints.find(c => c.point.date === last.date);
-    if (existing) existing.label += " · 마지막 평가일";
+    if (existing) existing.label += ", 마지막 평가일";
     else add("마지막 평가일", last);
   }
   return { start: scope[0].date, end: scope[scope.length - 1].date, worst: low, worstRate,

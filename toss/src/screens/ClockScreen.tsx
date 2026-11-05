@@ -70,9 +70,9 @@ export function ClockScreen({ saved, goHome, goResult, onRemove, onMenu, onClose
               <span className="saved-calculation-title"><strong>{names}</strong>{editing
                 ? <button type="button" className="saved-calculation-delete" disabled={removing !== null} aria-label={`${names} 저장한 계산 삭제하기`} onClick={() => void remove(item.id)}>{removing === item.id ? "삭제 중…" : "삭제"}</button>
                 : <ChevronRight />}</span>
-              <span className="saved-calculation-amount">{amountMode ? `지난 ${plan.years}년 · ${schedule} 필요한 금액` : `${schedule} · ${plan.holdings.length > 1 ? "합계 " : ""}${manLabel(totalAmount(plan))}씩`}</span>
-              {plan.holdings.length > 1 && <span className="saved-calculation-detail">{plan.holdings.map((h) => `${tickerTitle(h.ticker)} ${manLabel(h.amount)}`).join(" · ")}</span>}
-              <span className="saved-calculation-detail">{plan.lump > 0 ? `처음 목돈 ${manLabel(plan.lump)}` : "목돈 없이"} · {plan.reinvest ? "배당 재투자" : "배당 미반영"}</span>
+              <span className="saved-calculation-amount">{amountMode ? `지난 ${plan.years}년 동안 ${schedule} 필요한 금액` : `${schedule} ${plan.holdings.length > 1 ? "합계 " : ""}${manLabel(totalAmount(plan))}씩`}</span>
+              {plan.holdings.length > 1 && <span className="saved-calculation-detail">{plan.holdings.map((h) => `${tickerTitle(h.ticker)} ${manLabel(h.amount)}`).join(", ")}</span>}
+              <span className="saved-calculation-detail">{plan.lump > 0 ? `처음 목돈 ${manLabel(plan.lump)}` : "목돈 없이"}<br />{plan.reinvest ? "배당 재투자" : "배당 미반영"}</span>
               {plan.tracking && <span className="saved-calculation-detail">{ymdKo(plan.startDate)}부터 계산</span>}
               {updated && <span className="saved-data-badge">저장 후 새 자료</span>}
               <span className="saved-calculation-detail">{priceDate ? `가격 자료: ${ymdKo(priceDate)}까지` : failed ? "자료 기준일을 확인하지 못했어요" : "자료 기준일 확인 중…"}</span>
@@ -83,7 +83,7 @@ export function ClockScreen({ saved, goHome, goResult, onRemove, onMenu, onClose
         })}
       </ul>
       {Object.values(infos).some((info) => info === null) && <Button color="dark" variant="weak" onClick={() => setRetry((value) => value + 1)}>자료 다시 확인하기</Button>}
-      <p className="saved-footnote">저장한 조건은 이 기기에 보관해요.<br />결과는 확인할 때 불러온 자료로 다시 계산해요.<br />‘저장 후 새 자료’는 저장 당시보다 가격·환율 기준일이 새로워졌다는 뜻이에요.</p>
+      <p className="saved-footnote">저장한 조건은 이 기기에 보관해요.<br />결과는 확인할 때 불러온 자료로 다시 계산해요.<br />‘저장 후 새 자료’는 저장 당시보다 가격이나 환율 기준일이 새로워졌다는 뜻이에요.</p>
     </>}
     <p className="disc">과거 자료로 계산한 결과예요.<br />특정 종목을 추천하거나 미래 수익을 보장하지 않아요.</p>
     {saved.length > 0 && <div className="cta-bar saved-cta">

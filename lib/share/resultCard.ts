@@ -43,15 +43,15 @@ export function decodeResultCard(value: string | null): ResultCard | null {
 export function resultCardCopy(c: ResultCard) {
   const fmt = getFormatter("ko");
   const frequency = c.freq === "daily" ? "거래일마다" : c.freq === "weekly" ? "매주" : "매달";
-  const names = c.tickers.map(tickerTitle).join(" · ");
+  const names = c.tickers.map(tickerTitle).join(", ");
   const condition = `${frequency} ${c.tickers.length > 1 ? "합계 " : ""}${fmt.amount(c.amount)}씩 샀다면`;
   const label = c.kind === "reach" ? "처음 10억을 넘기까지" : c.kind === "amount" ? `지난 ${c.years}년, 10억까지 필요했던 금액` : "이 조건으로 샀을 때 마지막 평가액";
   const value = c.kind === "reach" ? `${Math.floor(c.months / 12) ? `${Math.floor(c.months / 12)}년 ` : ""}${c.months % 12}개월`
     : c.kind === "amount" ? c.amount === 0 ? "목돈만으로 도달" : `${frequency} ${fmt.amount(c.amount)}` : fmt.money(c.value);
   const dates = `${c.start.replaceAll("-", ".")} ~ ${c.end.replaceAll("-", ".")}`;
   return { names, condition, label, value, dates,
-    title: `${names} · ${label} ${value}`,
-    description: `${c.kind === "amount" ? `${label} ${value}` : condition}${c.lump ? ` · 처음 목돈 ${fmt.amount(c.lump)}` : ""}. ${dates} 과거 자료로 계산한 결과예요.`,
+    title: `${names}: ${label} ${value}`,
+    description: `${c.kind === "amount" ? `${label} ${value}` : condition}${c.lump ? `, 처음 목돈 ${fmt.amount(c.lump)}` : ""}. ${dates} 과거 자료로 계산한 결과예요.`,
     principal: fmt.money(c.principal), final: fmt.money(c.value), lump: fmt.amount(c.lump) };
 }
 export function resultShareUrl(origin: string, card: ResultCard) {

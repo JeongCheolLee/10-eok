@@ -9,7 +9,7 @@ describe("result share snapshots", () => {
   it("separates the headline, conditions and link prompt into readable blocks", () => {
     const plan = withHoldings({ ...DEFAULT_PLAN, freq: "weekly", weekday: 3, lump: 400, reinvest: false }, [{ ticker: "SPY", amount: 50 }, { ticker: "QQQ", amount: 30 }]);
     const text = resultShareText(plan, calcPlan({ SPY: rows, QQQ: rows }, plan));
-    expect(text).toContain("\n\nSPY · QQQ\n매주 수요일 합계 80만원씩\n처음 목돈 400만원\n배당 재투자 안 함\n");
+    expect(text).toContain("\n\nSPY, QQQ\n매주 수요일 합계 80만원씩\n처음 목돈 400만원\n배당 재투자 안 함\n");
     expect(text).toMatch(/시작\n.*기준\n\n과거 자료로 계산한 결과예요\.\n같은 조건으로 계산해보기$/);
   });
   it("shares the solved contribution in amount mode instead of the input default", () => {

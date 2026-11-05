@@ -9,9 +9,9 @@ export const GROUPS: { id: Group; label: string; desc?: string }[] = [
   { id: "index", label: "지수" },
   { id: "leverage", label: "레버리지" },
   { id: "dividend", label: "배당" },
-  { id: "sector", label: "섹터·테마" },
-  { id: "bond-gold", label: "채권·금" },
-  { id: "kr-listed", label: "국내 상장", desc: "연금저축·ISA에서 살 수 있어요" },
+  { id: "sector", label: "섹터와 테마" },
+  { id: "bond-gold", label: "채권과 금" },
+  { id: "kr-listed", label: "국내 상장", desc: "연금저축이나 ISA에서 살 수 있어요" },
 ];
 
 /** group 필드가 없는 기존 16종 */

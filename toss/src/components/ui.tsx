@@ -156,7 +156,7 @@ export function Chart({ series, target, mark, estUntil }: { series: Pt[]; target
     </svg>
     {h && (
       <div className="chart-tip" style={tipOnLeft ? { left: `${(L / W) * 100 + 2}%` } : { right: `${(R / W) * 100 + 1}%` }} aria-live="polite">
-        <span className="chart-tip-d">{ymKo(h.date)}{estUntil && h.date < estUntil ? " · 추정치" : ""}</span>
+        <span className="chart-tip-d">{ymKo(h.date)}{estUntil && h.date < estUntil && <><br />추정치</>}</span>
         <span>평가액 <b>{fmt.money(h.value)}</b></span>
         <span>넣은 돈 {fmt.money(h.principal)}</span>
       </div>
@@ -230,7 +230,7 @@ export function HoldingRow({ symbol, value, unit, min, max, step, share, onChang
     <div className="row holding-row">
       <button type="button" className="holding-pick" aria-label={`${name} 종목 바꾸기`} aria-haspopup="dialog" onClick={onPick}><Avatar symbol={symbol} size={36} /></button>
       <label htmlFor={id} className="field">
-        <span className="field-label">{name}{share != null && <span className="share"> · {Math.round(share * 100)}%</span>}</span>
+        <span className="field-label">{name}{share != null && <span className="share"> 비중 {Math.round(share * 100)}%</span>}</span>
         <span className="field-value-wrap">
           <input id={id} className="field-input" inputMode="numeric" value={text} aria-invalid={!valid} aria-describedby={!valid ? `${id}-error` : undefined} onChange={(e) => setText(e.target.value)} onBlur={commit} onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }} style={{ width: `${Math.max(2, Math.min(8, text.length + 0.5))}ch` }} />
           <span className="unit">{unit}</span>

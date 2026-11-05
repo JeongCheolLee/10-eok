@@ -10,7 +10,7 @@ export function LegalScreen({ kind, back, onMenu, onClose }: {
     <article className="legal-document">
       <p className="legal-meta">{LEGAL_APP_NAME}</p>
       <h1>{doc.title}</h1>
-      <p className="legal-meta">작성·수정일: {LEGAL_UPDATED}</p>
+      <p className="legal-meta">마지막 수정일: {LEGAL_UPDATED}</p>
       <p>{doc.intro}</p>
       {doc.sections.map((section) => <section key={section.title}>
         <h2>{section.title}</h2>

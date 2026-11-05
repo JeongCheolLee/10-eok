@@ -117,7 +117,7 @@ export function ResultScreen({ plan, entrance = "quick", onCalculate, calculatio
     lead = "입력한 조건으로 계산한 평가액";
     num = fmt.money(r.value);
     const state = r.value >= TARGET ? "10억을 넘었어요" : `10억까지 ${progressPct}%`;
-    sub = <>{ymKo(start)}부터 {buyStr} 샀다고 계산했어요<br />{asOf} · {state} · 넣은 돈 {fmt.money(r.principal)}</>;
+    sub = <>{ymKo(start)}부터 {buyStr} 샀다고 계산했어요<br />{asOf} {state}<br />넣은 돈 {fmt.money(r.principal)}</>;
   } else if (plan.mode === "amount") {
     lead = `지난 ${calc.yearsUsed}년간 10억이 되려면 필요했던 금액`;
     num = calc.reqMonthly === 0 ? "처음 목돈만으로 충분했어요" : `${freqWord(plan.freq)} ${fmt.amount(calc.reqMonthly ?? 0)}`;
@@ -188,11 +188,11 @@ export function ResultScreen({ plan, entrance = "quick", onCalculate, calculatio
       </section>
       {reachedTime && <section className="result-current" aria-label="계속 모았을 때의 평가액">
         <p>이후에도 계속 모았다면 <strong>{fmt.money(r.value)}</strong></p>
-        <p className="result-current-date">{ymdKo(end)} 기준{r.value < TARGET ? " · 다시 10억 아래로 내려왔어요." : ""}</p>
+        <p className="result-current-date">{ymdKo(end)} 기준{r.value < TARGET && <><br />다시 10억 아래로 내려왔어요.</>}</p>
       </section>}
       {!unreachedTime && (adjNote || !reachedTime) && <div className="data-notes">
         {adjNote && <p className="data-note">{adjNote}</p>}
-        {!reachedTime && <p className="data-note">{mdKo(end)} 종가 기준 · 실제 거래 기간으로 계산했어요</p>}
+        {!reachedTime && <p className="data-note">{mdKo(end)} 종가 기준이에요.<br />실제 거래 기간으로 계산했어요.</p>}
       </div>}
 
       <div className="result-banner"><AdSlot /></div>

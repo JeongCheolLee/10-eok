@@ -67,7 +67,7 @@ export function CompareScreen({ plan, back, onEditPlan, onMenu, onClose }: { pla
         <p>{ymdKo(state.window.start)} ~ {ymdKo(state.window.end)}</p>
         <strong>{freqWord(plan.freq)} {plan.holdings.length > 1 ? "합계 " : ""}{fmt.amount(state.window.amountWon)}씩</strong>
         {plan.lump > 0 && <p>처음에 {manLabel(plan.lump)}으로 시작</p>}
-        <p>{plan.holdings.map((h) => tickerTitle(h.ticker)).join(" · ")}의 평가액 <b>{fmt.money(state.window.value)}</b></p>
+        <p>{plan.holdings.map((h) => tickerTitle(h.ticker)).join(", ")}의 평가액 <b>{fmt.money(state.window.value)}</b></p>
         {plan.holdings.length > 1 && <p>합계 금액을 ETF 하나에 넣었다고 계산해요.</p>}
       </section>
       {state.pending > 0 && <p className="comparison-caption" role="status">{TOSS_DISPLAY_TICKERS.length - state.pending}/{TOSS_DISPLAY_TICKERS.length}개 확인했어요. 나머지 ETF를 불러오는 중이에요.</p>}
@@ -83,16 +83,16 @@ export function CompareScreen({ plan, back, onEditPlan, onMenu, onClose }: { pla
       {sections.map((group) => {
         return group.rows.length > 0 && <section className="comparison-group" key={group.id} aria-label={group.label}>
           <h2>{group.label}</h2>
-          {group.id === "estimated" && <p className="comparison-group-note">상장 전 구간을 다른 ETF·지수로 채웠어요. 해당 ETF를 실제로 거래한 결과는 아니에요.</p>}
+          {group.id === "estimated" && <p className="comparison-group-note">상장 전 구간을 다른 ETF나 지수로 채웠어요. 해당 ETF를 실제로 거래한 결과는 아니에요.</p>}
           {group.id === "leverage" && <p className="comparison-group-note">레버리지 ETF는 손실도 크게 늘어날 수 있어요.</p>}
           <ul>{group.rows.map((row) => <li key={row.symbol} className="comparison-etf">
             <div className="comparison-etf-title"><Avatar symbol={row.symbol} /><div><h3>{tickerTitle(row.symbol)}</h3>{row.status === "available" && row.estimate && <span className="estimate-badge">추정 포함</span>}<p>{tossSubtitle(row.symbol)}</p></div></div>
-            {(sortOrder !== "type" || group.id === "unavailable" || group.id === "estimated") && tickerGroup(row.symbol) === "leverage" && <p className="comparison-risk">레버리지 ETF · 손실도 크게 늘어날 수 있어요.</p>}
+            {(sortOrder !== "type" || group.id === "unavailable" || group.id === "estimated") && tickerGroup(row.symbol) === "leverage" && <p className="comparison-risk">레버리지 ETF는 손실도 크게 늘어날 수 있어요.</p>}
             {row.status === "available" ? <>
               <dl><div><dt>{row.estimate ? "추정 포함 평가액" : "마지막 평가액"}</dt><dd>{fmt.money(row.value)}</dd></div><div><dt>넣은 돈</dt><dd>{fmt.money(row.principal)}</dd></div></dl>
               {row.estimate && <div className="comparison-estimate-note">
                 <p>{ymdKo(row.estimate.from)} ~ {ymdKo(row.estimate.to)} 구간은 {row.estimate.proxy === "^BXM" ? "BXM 커버드콜 지수" : tickerTitle(row.estimate.proxy)}{row.estimate.convertedToKrw ? " 가격과 당시 환율" : " 가격"}로 계산했어요.</p>
-                <p>보수·배당·운용 방식의 차이는 반영하지 못해요.</p>
+                <p>보수, 배당, 운용 방식의 차이는 반영하지 못해요.</p>
               </div>}
               {row.valuationDate !== state.window.end && <p className="comparison-date">{ymdKo(row.valuationDate)} 종가 기준</p>}
             </> : row.status === "error" ? <p className="comparison-unavailable">데이터를 불러오지 못했어요</p> : <div className="comparison-unavailable">
@@ -113,7 +113,7 @@ export function CompareScreen({ plan, back, onEditPlan, onMenu, onClose }: { pla
         </section>;
       })}
       {state.pending === 0 && state.rows.some((row) => row.status === "error") && <div className="btn-row"><Button color="dark" variant="weak" onClick={() => setRetry((n) => n + 1)}>다시 시도하기</Button></div>}
-      <p className="disc">{plan.reinvest ? "받은 배당으로 같은 ETF를 다시 샀다고 계산했어요." : "배당은 계산에 넣지 않았어요."}<br />세금·수수료는 계산에 넣지 않았어요.</p>
+      <p className="disc">{plan.reinvest ? "받은 배당으로 같은 ETF를 다시 샀다고 계산했어요." : "배당은 계산에 넣지 않았어요."}<br />세금과 수수료는 계산에 넣지 않았어요.</p>
     </>}
     <p className="disc">과거 자료로 계산한 결과예요.<br />특정 종목을 추천하거나 미래 수익을 보장하지 않아요.</p>
   </div>;
