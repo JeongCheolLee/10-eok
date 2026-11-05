@@ -60,20 +60,29 @@ export function ResilienceAnalysis({ calc, accessKey, onEngage }: { calc: Calc; 
     <p className="resilience-intro">입력한 조건으로 투자했다면, 손실은 얼마나 컸고 이후에는 어떻게 달라졌을까요?</p>
     <p className="resilience-period">손실 분석 기간 · {calc.reach ? "처음 10억을 넘은 날까지" : "계산 기간 전체"}<br />{ymdKo(data.start)} ~ {ymdKo(data.end)}</p>
     {!open ? <>
-      <ul className="resilience-features"><li>넣은 돈 대비 가장 큰 손실</li><li>손실이 가장 오래 이어진 기간</li><li>손실 이후에도 계속 적립한 결과</li></ul>
+      <ul className="resilience-features"><li>가장 큰 손실률과 손실 금액</li><li>손실이 가장 오래 이어진 기간</li><li>손실 이후에도 계속 적립한 결과</li></ul>
       <Button display="full" size="large" variant="weak" style={{ borderRadius: 14 }} disabled={!ready || busy} onClick={show}>
         {!ready ? "이용 기록 확인 중…" : busy ? "광고 준비 중…" : needsAd ? "광고 보고 상세 분석 보기" : "상세 분석 보기"}
       </Button>
       <p className="resilience-help">{needsAd ? "광고를 끝까지 보면 이 조건의 분석을 볼 수 있어요. 기본 계산은 계속 무료예요." : unlocked ? "같은 조건의 분석을 다시 볼 수 있어요." : "이 분석은 광고 없이 확인할 수 있어요."}</p>
     </> : <div className="resilience-details">
       <article>
-        <h3>넣은 돈 대비 가장 큰 손실</h3>
+        <h3>손실률이 가장 컸던 날</h3>
+        {data.worstRate ? <>
+          <p className="resilience-number loss">−{(data.maxLossRate * 100).toFixed(1)}%</p>
+          <p>{ymdKo(data.worstRate.date)} · 손실 −{fmt.money(data.worstRate.principal - data.worstRate.value)}</p>
+          <dl><div><dt>당시까지 넣은 돈</dt><dd>{fmt.money(data.worstRate.principal)}</dd></div><div><dt>당시 평가액</dt><dd>{fmt.money(data.worstRate.value)}</dd></div></dl>
+          <p className="resilience-help">그날까지 넣은 돈에서 줄어든 비율이 가장 컸던 날이에요. 고점 대비 하락률과는 달라요.{data.worstRate.date === data.worst?.date && " 손실 금액이 가장 컸던 날과 같아요."}</p>
+        </> : <p>이 기간의 종가 기준으로는 평가액이 넣은 돈 아래로 내려가지 않았어요.</p>}
+      </article>
+      <article>
+        <h3>손실 금액이 가장 컸던 날</h3>
         {data.worst ? <>
           <p className="resilience-number loss">−{fmt.money(data.loss)}</p>
           <p>{ymdKo(data.worst.date)} · 당시까지 넣은 돈 대비 −{(data.lossRate * 100).toFixed(1)}%</p>
           <dl><div><dt>당시까지 넣은 돈</dt><dd>{fmt.money(data.worst.principal)}</dd></div><div><dt>당시 평가액</dt><dd>{fmt.money(data.worst.value)}</dd></div></dl>
         </> : <p>이 기간의 종가 기준으로는 평가액이 넣은 돈 아래로 내려가지 않았어요.</p>}
-        {data.worst && <p className="resilience-help">그날까지 넣은 돈에서 평가액을 뺀 손실액이 가장 컸던 날이에요. 손실률이 가장 큰 날과는 다를 수 있어요.</p>}
+        {data.worst && <p className="resilience-help">그날까지 넣은 돈에서 평가액을 뺀 손실액이 가장 컸던 날이에요.</p>}
       </article>
       <article>
         <h3>손실이 가장 오래 이어진 기간</h3>
@@ -87,13 +96,14 @@ export function ResilienceAnalysis({ calc, accessKey, onEngage }: { calc: Calc; 
       <article>
         <h3>손실 이후에도 계속 적립했다면</h3>
         {!data.worst ? <p>손실이 있었던 날이 없어 이후 비교는 표시하지 않아요.</p> : !data.checkpoints.length ? <p>손실액이 가장 컸던 날이 계산 마지막 날이라 이후를 비교할 자료가 없어요.</p> : <>
-          <p>손실액이 가장 컸던 {ymdKo(data.worst.date)}부터 1년 뒤·3년 뒤와 마지막 평가일을 비교해요. 같은 금액과 주기로 계속 적립했다고 계산했어요.</p>
+          <p>손실 금액이 가장 컸던 {ymdKo(data.worst.date)}가 기준이에요. 이후에도 같은 금액과 주기로 계속 적립했다고 계산했어요.</p>
           {calc.reach && <p className="resilience-help">이후 비교에는 처음 10억을 넘은 날 이후의 자료도 포함해요.</p>}
+          <p className="resilience-help">1년·3년 뒤와, 5년 뒤부터 5년 간격으로 비교해요. 해당 날짜 또는 그다음 첫 거래일의 자료가 있는 시점과 마지막 평가일을 표시해요.</p>
           {data.checkpoints.map(({ label, point, added, pnl }) => <div className="resilience-checkpoint" key={point.date}>
             <h4>{label} <span>{ymdKo(point.date)}</span></h4>
             <dl><div><dt>평가액</dt><dd>{fmt.money(point.value)}</dd></div><div><dt>그날까지 넣은 돈</dt><dd>{fmt.money(point.principal)}</dd></div><div><dt>이후 추가로 넣은 돈</dt><dd>{fmt.money(added)}</dd></div><div><dt>그날까지의 손익</dt><dd>{signed(pnl)}</dd></div></dl>
           </div>)}
-          <p className="resilience-help">손익은 평가액에서 그날까지 넣은 돈을 뺀 금액이에요. 추가로 넣은 돈은 수익에 포함하지 않아요. 1년·3년 뒤는 해당 날짜 또는 그다음 첫 거래일 기준이며, 자료가 있는 시점만 표시해요.</p>
+          <p className="resilience-help">손익은 평가액에서 그날까지 넣은 돈을 뺀 금액이에요. 추가로 넣은 돈은 수익에 포함하지 않아요.</p>
         </>}
       </article>
       <p className="resilience-help">실제 거래 자료의 일별 종가로 계산해 장중 가격 변동은 반영하지 않아요. 과거에 회복했더라도 앞으로 같은 결과를 보장하지 않아요.</p>
