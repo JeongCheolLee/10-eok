@@ -101,14 +101,28 @@ export function ResilienceAnalysis({ calc, accessKey, onEngage }: { calc: Calc; 
       <article>
         <h3>손실 이후에도 계속 적립했다면</h3>
         {!data.worst ? <p>손실이 있었던 날이 없어 이후 비교는 표시하지 않아요.</p> : !data.checkpoints.length ? <p>손실액이 가장 컸던 날이 계산 마지막 날이라 이후를 비교할 자료가 없어요.</p> : <>
-          <p>손실 금액이 가장 컸던 {ymdKo(data.worst.date)}가 기준이에요. 이후에도 같은 금액과 주기로 계속 적립했다고 계산했어요.</p>
-          {calc.reach && <p className="resilience-help">이후 비교에는 처음 10억을 넘은 날 이후의 자료도 포함해요.</p>}
-          <p className="resilience-help">1년 뒤와 3년 뒤를 보고, 5년 뒤부터 5년 간격으로 비교해요. 해당 날짜 또는 그다음 첫 거래일의 자료가 있는 시점과 마지막 평가일을 표시해요.</p>
+          <p>손실 금액이 가장 컸던 {ymdKo(data.worst.date)}부터 같은 금액과 주기로 계속 적립한 결과예요.</p>
           {data.checkpoints.map(({ label, point, added, pnl }) => <div className="resilience-checkpoint" key={point.date}>
-            <h4>{label} <span>{ymdKo(point.date)}</span></h4>
-            <dl><div><dt>평가액</dt><dd>{fmt.money(point.value)}</dd></div><div><dt>그날까지 넣은 돈</dt><dd>{fmt.money(point.principal)}</dd></div><div><dt>이후 추가로 넣은 돈</dt><dd>{fmt.money(added)}</dd></div><div><dt>그날까지의 손익</dt><dd>{signed(pnl)}</dd></div></dl>
+            <header className="checkpoint-header">
+              <h4>{label.replace(", 마지막 평가일", "")}</h4>
+              <p className="checkpoint-date">{ymdKo(point.date)}{label.endsWith(", 마지막 평가일") && <><br />마지막 평가일</>}</p>
+            </header>
+            <dl className="checkpoint-valuation">
+              <div><dt>평가액</dt><dd>{fmt.money(point.value)}</dd></div>
+            </dl>
+            <dl className="checkpoint-breakdown">
+              <div className="checkpoint-profit"><dt>그날까지의 손익</dt><dd className={pnl < 0 ? "loss" : pnl > 0 ? "profit" : undefined}>{signed(pnl)}</dd></div>
+              <div><dt>그날까지 넣은 돈</dt><dd>{fmt.money(point.principal)}</dd></div>
+              <div className="checkpoint-added"><dt>그중 기준일 이후</dt><dd>{fmt.money(added)}</dd></div>
+            </dl>
           </div>)}
-          <p className="resilience-help">손익은 평가액에서 그날까지 넣은 돈을 뺀 금액이에요. 추가로 넣은 돈은 수익에 포함하지 않아요.</p>
+          <details className="checkpoint-basis">
+            <summary>비교 기준 보기</summary>
+            <p>기준일은 손실 금액이 가장 컸던 {ymdKo(data.worst.date)}예요. 각 카드의 ‘그중 기준일 이후’는 이날 이후 추가로 넣은 돈이에요.</p>
+            <p>1년 뒤와 3년 뒤를 보고, 5년 뒤부터 5년 간격으로 비교해요. 해당 날짜 또는 그다음 첫 거래일의 자료가 있는 시점과 마지막 평가일을 표시해요.</p>
+            {calc.reach && <p>이후 비교에는 처음 10억을 넘은 날 이후의 자료도 포함해요.</p>}
+            <p>손익은 평가액에서 그날까지 넣은 돈을 뺀 금액이에요. 추가로 넣은 돈은 수익에 포함하지 않아요.</p>
+          </details>
         </>}
       </article>
       </>}

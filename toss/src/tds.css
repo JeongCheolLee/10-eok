@@ -474,9 +474,22 @@ input[type="date"].select { font-size: 18px; min-height: 29px; }
 .resilience dl > div { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 12px; padding: 6px 0; }
 .resilience dt { color: var(--text-secondary); }
 .resilience dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
-.resilience-checkpoint { margin-top: 16px; padding: 16px 12px; background: var(--grey50); border-radius: 14px; }
-.resilience h4 { margin: 0; font-size: 14px; }
-.resilience h4 span { display: block; margin-top: 4px; color: var(--text-secondary); font-size: 12px; font-weight: 400; }
+.resilience-checkpoint { margin-top: 20px; padding: 24px 20px; background: var(--bg); border-radius: 20px; }
+.resilience .checkpoint-header h4 { margin: 0; color: var(--brand-strong); font-size: 22px; line-height: 1.4; font-weight: 700; letter-spacing: -.025em; }
+.resilience .checkpoint-date { margin: 4px 0 0; color: var(--text-secondary); font-size: 12px; line-height: 1.6; }
+.resilience .checkpoint-valuation { margin: 20px 0 0; }
+.resilience .checkpoint-valuation > div { display: block; padding: 0; }
+.resilience .checkpoint-valuation dt { font-size: 13px; }
+.resilience .checkpoint-valuation dd { margin-top: 4px; color: var(--grey900); font-size: 32px; line-height: 1.3; font-weight: 700; letter-spacing: -.035em; overflow-wrap: anywhere; }
+.resilience .checkpoint-breakdown { margin: 20px 0 0; padding-top: 12px; border-top: 1px solid var(--grey100); }
+.resilience .checkpoint-profit { align-items: baseline; padding-bottom: 12px; }
+.resilience .checkpoint-profit dd { font-size: 17px; }
+.resilience .checkpoint-profit .profit { color: var(--brand-strong); }
+.resilience .checkpoint-added { padding-top: 0; font-size: 12px; }
+.resilience .checkpoint-added dd { color: var(--text-secondary); font-weight: 400; }
+.checkpoint-basis { margin-top: 20px; }
+.checkpoint-basis summary { display: list-item; min-height: 44px; padding: 12px 0; color: var(--grey700); font-size: 13px; cursor: pointer; }
+.checkpoint-basis summary:focus-visible { outline: 2px solid var(--down); outline-offset: 2px; border-radius: 6px; }
 .resilience-notice { font-size: 13px; line-height: 1.6; color: var(--primary); }
 .analysis-ad-preview { box-sizing: border-box; width: min(360px, calc(100% - 40px)); border: 0; border-radius: 24px; padding: 28px 24px; color: var(--grey900); }
 .analysis-ad-preview::backdrop { background: rgb(0 0 0 / .45); }
