@@ -454,3 +454,31 @@ input[type="date"].select { font-size: 18px; min-height: 29px; }
 .legal-document a { color: #00875b; text-decoration: underline; text-underline-offset: 3px; }
 
 .saved-data-badge { display: inline-block; align-self: flex-start; width: fit-content; padding: 4px 8px; border-radius: 6px; color: var(--primary, #00865a); background: #effaf5; font-size: 12px; font-weight: 600; }
+
+.result-banner .ad-slot { margin: 24px 24px 8px; }
+.result-banner .ad-slot.pending { margin: 0; }
+.resilience { margin: 32px 24px 24px; padding: 24px 20px; word-break: keep-all; overflow-wrap: anywhere; }
+.resilience-eyebrow { margin: 0 0 10px; color: var(--text-secondary); font-size: 13px; }
+.resilience h2 { margin: 0; font-size: 23px; line-height: 1.4; letter-spacing: -.035em; }
+.resilience h2:focus { outline: none; }
+.resilience-intro { font-size: 15px; line-height: 1.6; color: var(--grey700); }
+.resilience-period, .resilience-help { font-size: 12px; line-height: 1.7; color: var(--text-secondary); }
+.resilience-features { padding-left: 19px; margin: 20px 0; font-size: 14px; line-height: 1.9; }
+.resilience button { white-space: normal; }
+.resilience-details article { padding: 24px 0; border-top: 1px solid var(--grey200); }
+.resilience h3 { margin: 0 0 14px; font-size: 17px; line-height: 1.5; }
+.resilience-details p { font-size: 13px; line-height: 1.7; color: var(--grey700); }
+.resilience-details .resilience-number { margin: 8px 0; color: var(--grey900); font-size: 30px; line-height: 1.4; font-weight: 700; font-variant-numeric: tabular-nums; }
+.resilience-details .loss { color: #b3261e; }
+.resilience dl { margin: 16px 0 0; font-size: 13px; }
+.resilience dl > div { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 12px; padding: 6px 0; }
+.resilience dt { color: var(--text-secondary); }
+.resilience dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
+.resilience-checkpoint { margin-top: 16px; padding: 16px 12px; background: var(--grey50); border-radius: 14px; }
+.resilience h4 { margin: 0; font-size: 14px; }
+.resilience h4 span { display: block; margin-top: 4px; color: var(--text-secondary); font-size: 12px; font-weight: 400; }
+.resilience-notice { font-size: 13px; line-height: 1.6; color: var(--primary); }
+.analysis-ad-preview { box-sizing: border-box; width: min(360px, calc(100% - 40px)); border: 0; border-radius: 24px; padding: 28px 24px; color: var(--grey900); }
+.analysis-ad-preview::backdrop { background: rgb(0 0 0 / .45); }
+.analysis-ad-preview p { font-size: 14px; line-height: 1.6; }
+.analysis-ad-preview .text-btn { display: block; margin: 20px auto 0; }

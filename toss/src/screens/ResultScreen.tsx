@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Button, ListRow, Switch } from "@toss/tds-mobile";
 import { tickerTitle } from "@/lib/tickers";
 import { NavBar, Chart, AdSlot, Avatar, ChevronRight } from "../components/ui";
@@ -12,6 +12,8 @@ import { fmt, manLabel, ymKo, ymdKo, mdKo, durKo, freqAdverb, freqWord, holdings
 import { CalculationBasis } from "../components/CalculationBasis";
 import { RollingNumber } from "../components/RollingNumber";
 import { makeResultCard, resultShareText } from "../lib/resultShare";
+import { ResilienceAnalysis } from "../components/ResilienceAnalysis";
+import { conditionKey } from "../lib/conditionKey";
 
 export type ResultEntrance = "reveal" | "quick";
 
@@ -27,6 +29,9 @@ export function ResultScreen({ plan, entrance = "quick", onCalculate, calculatio
   useEffect(() => setReinvest(plan.reinvest), [plan.reinvest]);
   const [tip, setTip] = useState(false);
   const [sharing, setSharing] = useState(false);
+  const analysisEngaged = useRef(false);
+  const analysisKey = conditionKey(plan);
+  useEffect(() => { analysisEngaged.current = false; }, [analysisKey]);
 
   const tickers = plan.holdings.map((h) => h.ticker);
   const tickersKey = tickers.join(",");
@@ -153,7 +158,7 @@ export function ResultScreen({ plan, entrance = "quick", onCalculate, calculatio
     analytics.click("save_clock", { ticker: plan.ticker, holdings: tickers.length });
     showToast("계산을 저장했어요");
     goClock();
-    requestReviewAfterSave();
+    if (!analysisEngaged.current) requestReviewAfterSave();
   };
 
   return (
@@ -190,6 +195,8 @@ export function ResultScreen({ plan, entrance = "quick", onCalculate, calculatio
         {!reachedTime && <p className="data-note">{mdKo(end)} 종가 기준 · 실제 거래 기간으로 계산했어요</p>}
       </div>}
 
+      <div className="result-banner"><AdSlot /></div>
+
       <div className="card result-chart">
         <div className="card-head">
           <span>평가액 변화</span>
@@ -218,6 +225,8 @@ export function ResultScreen({ plan, entrance = "quick", onCalculate, calculatio
         <Button display="full" size="large" color="dark" variant="weak" style={{ borderRadius: 14 }} onClick={onEdit}>조건 바꿔보기</Button>
         <Button display="full" size="large" color="dark" variant="weak" style={{ borderRadius: 14 }} onClick={save}>계산 저장하기</Button>
       </div>
+
+      <ResilienceAnalysis key={analysisKey} accessKey={analysisKey} calc={calc} onEngage={() => { analysisEngaged.current = true; }} />
 
       {port && (
         <>
@@ -257,7 +266,6 @@ export function ResultScreen({ plan, entrance = "quick", onCalculate, calculatio
 
       <CalculationBasis plan={plan} calc={calc} rowsBy={rowsBy} />
 
-      <AdSlot />
       <p className="disc">과거 자료로 계산한 결과예요.<br />특정 종목을 추천하거나 미래 수익을 보장하지 않아요.</p>
     </div>
   );

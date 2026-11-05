@@ -9,16 +9,28 @@ vi.mock("@apps-in-toss/web-framework", () => ({
   getOperationalEnvironment: () => "sandbox",
   TossAds: { attachBanner: { isSupported: () => true } },
   loadFullScreenAd: Object.assign(sdk.load, { isSupported: () => true }),
-  showFullScreenAd: sdk.show,
+  showFullScreenAd: Object.assign(sdk.show, { isSupported: () => true }),
 }));
 beforeEach(() => {
   vi.clearAllMocks(); vi.resetModules();
   vi.stubEnv("VITE_REWARDED_ADS_ENABLED", "true");
+  vi.stubEnv("VITE_ANALYSIS_REWARDED_ADS_ENABLED", "false");
   vi.stubEnv("VITE_AD_REWARDED_ID", "test-explicit-rewarded-id");
 });
 afterEach(() => vi.unstubAllEnvs());
 const handlers = () => ({ onReward: vi.fn(), onDismiss: vi.fn(), onError: vi.fn() });
 describe("rewarded ad lifecycle", () => {
+  it("enables opt-in analysis without enabling the calculation quota", async () => {
+    vi.stubEnv("VITE_REWARDED_ADS_ENABLED", "false");
+    vi.stubEnv("VITE_ANALYSIS_REWARDED_ADS_ENABLED", "true");
+    const { createRewarded, requestAnalysisAd, REWARDED_ADS_ENABLED, ANALYSIS_REWARDED_ADS_ENABLED } = await import("./platform");
+    expect(REWARDED_ADS_ENABLED).toBe(false); expect(ANALYSIS_REWARDED_ADS_ENABLED).toBe(true);
+    expect(createRewarded()).toBeNull(); expect(sdk.load).not.toHaveBeenCalled();
+    const done = vi.fn(); requestAnalysisAd(done);
+    sdk.load.mock.calls[0][0].onEvent({ type: "loaded" });
+    sdk.show.mock.calls[0][0].onEvent({ type: "userEarnedReward" });
+    expect(done).toHaveBeenCalledWith("rewarded");
+  });
   it("does not reward an early dismissal", async () => {
     const { createRewarded } = await import("./platform");
     const ad = createRewarded()!; const h = handlers();

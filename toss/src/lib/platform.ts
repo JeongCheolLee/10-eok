@@ -2,6 +2,8 @@
 // 토스 안에서는 @apps-in-toss/web-framework SDK를, 밖에서는 브라우저 API를 쓴다.
 import * as ait from "@apps-in-toss/web-framework";
 import { encodeResultCard, resultShareUrl, RESULT_CARD_STYLE_VERSION, type ResultCard } from "@/lib/share/resultCard";
+import { startAnalysisReward, type AnalysisAdOutcome } from "./analysisReward";
+import { createAnalysisAccess } from "./analysisAccess";
 
 export const APP_NAME = "10-eok";
 export const SITE = "https://jeongcheol.cloud";
@@ -36,6 +38,7 @@ export const storage = {
     try { localStorage.removeItem(key); return true; } catch { return false; }
   },
 };
+export const analysisAccess = createAnalysisAccess(storage);
 
 type Params = Record<string, string | number | boolean | undefined>;
 /** 콘솔 분석 > 이벤트. 토스 밖에서는 콘솔 출력만. */
@@ -122,6 +125,18 @@ export const AD_REWARDED_ID = import.meta.env.VITE_AD_REWARDED_ID ?? "ait-ad-tes
 // 운영자가 지면을 확인한 뒤 명시적 설정+ID로 활성화한다. 비활성화하면 계산은 무료다.
 export const REWARDED_ADS_ENABLED = import.meta.env.VITE_REWARDED_ADS_ENABLED === "true"
   && !!import.meta.env.VITE_AD_REWARDED_ID?.trim();
+// Independent of the retired calculation quota. Never gates basic calculations.
+export const ANALYSIS_REWARDED_ADS_ENABLED = import.meta.env.VITE_ANALYSIS_REWARDED_ADS_ENABLED === "true"
+  && !!import.meta.env.VITE_AD_REWARDED_ID?.trim();
+
+export function requestAnalysisAd(done: (outcome: AnalysisAdOutcome) => void): () => void {
+  try {
+    if (!ANALYSIS_REWARDED_ADS_ENABLED || !inToss || !ait.loadFullScreenAd.isSupported() || !ait.showFullScreenAd.isSupported()) {
+      done("error"); return () => {};
+    }
+    return startAnalysisReward({ load: ait.loadFullScreenAd, show: ait.showFullScreenAd }, AD_REWARDED_ID, done);
+  } catch { done("error"); return () => {}; }
+}
 export const adsSupported: boolean = (() => {
   if (!inToss) return false;
   try { return ait.TossAds.attachBanner.isSupported(); } catch { return false; }
