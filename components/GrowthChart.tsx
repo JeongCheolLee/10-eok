@@ -2,19 +2,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Locale } from "@/lib/i18n/locales";
 import { getFormatter } from "@/lib/i18n/format";
+import { chartIndices, type ChartPoint } from "@/lib/chartSeries";
 import { getDict } from "@/lib/i18n/dict";
 
-type Pt = { date: string; value: number; principal: number };
-
-/** 5천 포인트는 무거우니 표시용 다운샘플(균등 + 마지막 보존). */
-function downsample(pts: Pt[], max: number): Pt[] {
-  if (pts.length <= max) return pts;
-  const step = (pts.length - 1) / (max - 1);
-  const out: Pt[] = [];
-  for (let i = 0; i < max; i++) out.push(pts[Math.round(i * step)]);
-  out[out.length - 1] = pts[pts.length - 1];
-  return out;
-}
+type Pt = ChartPoint;
 
 export function GrowthChart({
   series,
@@ -35,7 +26,11 @@ export function GrowthChart({
   // 스크럽 중인 표시용 인덱스. null = 손 뗌(최종 결과 표시).
   const [scrubIdx, setScrubIdx] = useState<number | null>(null);
 
-  const pts = useMemo(() => downsample(series, 140), [series]);
+  const indices = useMemo(() => {
+    const firstReach = series.find((p) => p.value >= target);
+    return chartIndices(series, 140, firstReach ? [firstReach.date] : []);
+  }, [series, target]);
+  const pts = series;
 
   // x축 시간 눈금(적응형): 항상 실제 시간 위치(frac)에 배치, 라벨 4~6개 유지.
   //  · 30개월 이상 → 연도 눈금(step=ceil(년수/5), 끝해 포함)
@@ -77,14 +72,14 @@ export function GrowthChart({
       }
     }
     return out;
-  }, [pts]);
+  }, [pts, fmt]);
 
   const maxV = Math.max(target, ...pts.map((p) => p.value)) * 1.06 || 1;
   const x = (i: number) => (pts.length <= 1 ? 0 : (i / (pts.length - 1)) * W);
   const y = (v: number) => H - (v / maxV) * (H - pad);
   const targetY = H - (target / maxV) * (H - pad);
 
-  const d = pts.map((p, i) => `${i === 0 ? "M" : "L"}${x(i).toFixed(1)},${y(p.value).toFixed(1)}`).join(" ");
+  const d = indices.map((i, j) => `${j === 0 ? "M" : "L"}${x(i).toFixed(1)},${y(pts[i].value).toFixed(1)}`).join(" ");
   const area = pts.length ? `${d} L${W},${H} L0,${H} Z` : "";
   const lastI = pts.length - 1;
   const endX = x(lastI);

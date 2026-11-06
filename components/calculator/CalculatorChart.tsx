@@ -4,6 +4,7 @@ import type { WebCalculation, WebPlan } from "@/lib/web-calculator";
 import type { Locale } from "@/lib/i18n/locales";
 import { getFormatter } from "@/lib/i18n/format";
 import { resultCopy } from "./result-copy";
+import { chartIndices } from "@/lib/chartSeries";
 export function CalculatorChart({
   calculation,
   plan,
@@ -19,13 +20,8 @@ export function CalculatorChart({
     [active, setActive] = useState<number | null>(null);
   const series = calculation.result.series;
   const pts = useMemo(() => {
-    const step = Math.max(1, Math.floor(series.length / 180));
-    return series.filter(
-      (p, i) =>
-        i % step === 0 ||
-        i === series.length - 1 ||
-        p.date === calculation.reach?.date,
-    );
+    const mark = calculation.reach?.date;
+    return chartIndices(series, 180, mark ? [mark] : []).map((i) => series[i]);
   }, [series, calculation.reach]);
   if (!pts.length) return null;
   const W = 600,
@@ -47,7 +43,7 @@ export function CalculatorChart({
       )
       .join(" ");
   const view =
-    active === null ? pts.at(-1)! : pts[Math.min(active, pts.length - 1)];
+    active === null ? series.at(-1)! : series[Math.min(active, series.length - 1)];
   const hit = calculation.reach;
   return (
     <section className="wc-chart" aria-label={t.chart}>
@@ -140,8 +136,8 @@ export function CalculatorChart({
         className="wc-chart-slider"
         type="range"
         min="0"
-        max={pts.length - 1}
-        value={active ?? pts.length - 1}
+        max={series.length - 1}
+        value={active === null ? series.length - 1 : Math.min(active, series.length - 1)}
         onChange={(e) => setActive(Number(e.target.value))}
         aria-label={t.chart}
         aria-valuetext={`${fmt.ymd(view.date)} ${fmt.money(view.value)}`}

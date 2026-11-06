@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { tickerInfo, tickerMonogram, tickerTitle } from "@/lib/tickers";
 import { GROUPS, TOSS_DISPLAY_TICKERS, tickerGroup, tossSubtitle } from "../lib/groups";
 import { attachBanner, inToss } from "../lib/platform";
-import { fmt, ymKo } from "../lib/fmt";
+import { chartIndices, type ChartPoint } from "@/lib/chartSeries";
+import { fmt, ymdKo } from "../lib/fmt";
 
 /* ── 아이콘 (모노톤 스트로크) ── */
 const I = ({ d, fill }: { d: string; fill?: boolean }) => (
@@ -65,15 +66,7 @@ export function Ring({ size = 112, stroke = 9, progress, children }: { size?: nu
 }
 
 /* ── 평가액 변화 차트 ── */
-type Pt = { date: string; value: number; principal: number };
-function downsample(pts: Pt[], max: number): Pt[] {
-  if (pts.length <= max) return pts;
-  const step = (pts.length - 1) / (max - 1);
-  const out: Pt[] = [];
-  for (let i = 0; i < max; i++) out.push(pts[Math.round(i * step)]);
-  out[out.length - 1] = pts[pts.length - 1];
-  return out;
-}
+type Pt = ChartPoint;
 function niceStep(maxV: number): number {
   for (const s of [1e8, 2e8, 2.5e8, 5e8, 1e9, 2e9, 2.5e9, 5e9, 1e10]) if (maxV / s <= 4) return s;
   return 2e10;
@@ -81,7 +74,8 @@ function niceStep(maxV: number): number {
 /** mark: 처음 target을 넘은 날(있으면 그 지점에 테두리 점).
  *  estUntil: 상장 전 추정 가격이 끝나는 날(실제 가격 첫날). 있으면 그 전 구간에 옅은 띠. */
 export function Chart({ series, target, mark, estUntil }: { series: Pt[]; target: number; mark?: string; estUntil?: string }) {
-  const pts = useMemo(() => downsample(series, 120), [series]);
+  const indices = useMemo(() => chartIndices(series, 120, mark ? [mark] : []), [series, mark]);
+  const pts = series;
   const [hi, setHi] = useState<number | null>(null); // 손가락·마우스가 가리키는 점
   const W = 360, H = 170, L = 38, R = 10, T = 14, B = 24;
   if (pts.length < 2) return null;
@@ -91,13 +85,13 @@ export function Chart({ series, target, mark, estUntil }: { series: Pt[]; target
     const i = Math.round(((vx - L) / (W - L - R)) * (pts.length - 1));
     setHi(Math.max(0, Math.min(pts.length - 1, i)));
   };
-  const maxRaw = Math.max(target, ...pts.map((p) => p.value)) * 1.05;
+  const maxRaw = Math.max(target, ...pts.map((p) => Math.max(p.value, p.principal))) * 1.05;
   const step = niceStep(maxRaw);
   const maxV = Math.ceil(maxRaw / step) * step;
   const x = (i: number) => L + (i / (pts.length - 1)) * (W - L - R);
   const y = (v: number) => T + (H - T - B) * (1 - v / maxV);
-  const d = pts.map((p, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(p.value).toFixed(1)}`).join(" ");
-  const dp = pts.map((p, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(p.principal).toFixed(1)}`).join(" ");
+  const d = indices.map((i, j) => `${j ? "L" : "M"}${x(i).toFixed(1)},${y(pts[i].value).toFixed(1)}`).join(" ");
+  const dp = indices.map((i, j) => `${j ? "L" : "M"}${x(i).toFixed(1)},${y(pts[i].principal).toFixed(1)}`).join(" ");
   const base = (H - B).toFixed(1);
   const area = `${d} L${x(pts.length - 1).toFixed(1)},${base} L${L},${base} Z`;
   const yTicks: number[] = [];
@@ -112,9 +106,9 @@ export function Chart({ series, target, mark, estUntil }: { series: Pt[]; target
     xTicks.push({ yr, x: px, anchor: px < L + 14 ? "start" : px > W - R - 14 ? "end" : "middle" });
   }
   const last = pts[pts.length - 1];
-  // 도달 지점: 다운샘플된 점 중 mark 이후 첫 점(그날 값이 target 이상이 되도록 원본에서 찾는다)
-  const markPt = mark ? series.find((p) => p.date >= mark) : undefined;
-  const markI = markPt ? pts.findIndex((p) => p.date >= markPt.date) : -1;
+  // 도달일은 선에도 보존하고 표시점도 같은 원본 인덱스와 값으로 배치한다.
+  const markI = mark ? series.findIndex((p) => p.date === mark) : -1;
+  const markPt = markI >= 0 ? series[markI] : undefined;
   // 추정 구간 띠: 첫 점부터 실제 가격 첫날 직전 점까지
   const estI = estUntil && pts[0].date < estUntil ? pts.findIndex((p) => p.date >= estUntil) : -1;
   const estX = estI < 0 ? (estUntil && pts[0].date < estUntil ? x(pts.length - 1) : null) : x(Math.max(0, estI));
@@ -156,7 +150,7 @@ export function Chart({ series, target, mark, estUntil }: { series: Pt[]; target
     </svg>
     {h && (
       <div className="chart-tip" style={tipOnLeft ? { left: `${(L / W) * 100 + 2}%` } : { right: `${(R / W) * 100 + 1}%` }} aria-live="polite">
-        <span className="chart-tip-d">{ymKo(h.date)}{estUntil && h.date < estUntil && <><br />추정치</>}</span>
+        <span className="chart-tip-d">{ymdKo(h.date)}{estUntil && h.date < estUntil && <><br />추정치</>}</span>
         <span>평가액 <b>{fmt.money(h.value)}</b></span>
         <span>넣은 돈 {fmt.money(h.principal)}</span>
       </div>

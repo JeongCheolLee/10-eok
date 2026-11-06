@@ -10,6 +10,7 @@ import type { PxBundle, FxBundle } from "../lib/backtest/compose";
 import { TICKERS, TOSS_TICKERS, tickerCurrency, tickerInfo } from "../lib/tickers";
 import { MARKETS, type Market } from "../lib/i18n/markets";
 import { buildSummary } from "./summary";
+import { closedSessionBar } from "./closedSession";
 
 // TICKER env 지정 시 그 종목만, 없으면 레지스트리 전체.
 const ONLY = process.env.TICKER;
@@ -73,8 +74,11 @@ async function fetchPrices(ticker: string): Promise<PricePoint[]> {
   const adj: (number | null)[] | undefined = r?.indicators?.adjclose?.[0]?.adjclose;
   const close: (number | null)[] | undefined = r?.indicators?.quote?.[0]?.close;
   if (!ts || !adj) throw new Error(`Yahoo ${ticker}: adjclose 없음`);
+  const session = r.meta?.currentTradingPeriod?.regular;
+  const now = Date.now() / 1000;
   const out: PricePoint[] = [];
   for (let i = 0; i < ts.length; i++) {
+    if (!closedSessionBar(ts[i], session, now)) continue;
     const v = adj[i];
     if (v == null || !Number.isFinite(v)) continue;
     const rawV = close?.[i];
