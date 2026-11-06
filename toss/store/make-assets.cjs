@@ -30,11 +30,11 @@ const settled = (page) => page.waitForFunction(() => !document.body.innerText.in
   const ctx = await browser.newContext({ viewport: { width: 390, height: 780 }, deviceScaleFactor: 2, locale: "ko-KR", reducedMotion: "reduce" });
   const regions = {};
   const notes = {};
-  const captureRegion = async (page, name, first, last = first) => {
+  const captureRegion = async (page, name, first, last = first, fullWidth = false) => {
     const a = await first.boundingBox(), b = await last.boundingBox();
     if (!a || !b) throw new Error(`${name}: missing capture region`);
-    const x = Math.min(a.x, b.x), y = Math.min(a.y, b.y);
-    const width = Math.max(a.x + a.width, b.x + b.width) - x;
+    const x = fullWidth ? 0 : Math.min(a.x, b.x), y = Math.min(a.y, b.y);
+    const width = fullWidth ? page.viewportSize().width : Math.max(a.x + a.width, b.x + b.width) - x;
     const height = Math.max(a.y + a.height, b.y + b.height) - y;
     await page.screenshot({ path: path.join(RAW, `${name}.png`), clip: { x, y, width, height } });
     regions[name] = { width, height };
@@ -93,48 +93,55 @@ const settled = (page) => page.waitForFunction(() => !document.body.innerText.in
     if (s.name === "compare") {
       notes.compare = await page.locator(".comparison-window").innerText();
       await captureRegion(page, "compare-detail", page.locator(".comparison-group h2").first(), page.locator(".comparison-etf").nth(1));
+      await captureRegion(page, "compare-view", page.locator(".comparison-window"), page.locator(".comparison-etf").nth(1), true);
     }
     if (s.name === "result") {
       notes.result = await page.locator(".result-current").innerText();
       await captureRegion(page, "chart-detail", page.locator(".result-chart"));
+      await captureRegion(page, "result-view", page.locator(".result-chart"), page.locator(".result-actions button").first(), true);
     }
     if (s.name === "analysis") {
       notes.analysis = await page.locator(".resilience-period").innerText();
       await captureRegion(page, "loss-detail", page.locator(".resilience-details > article").first());
+      await captureRegion(page, "analysis-view", page.locator(".resilience-period"), page.locator(".resilience-details > article").first(), true);
       const fiveYears = page.locator(".resilience-checkpoint").filter({ has: page.getByRole("heading", { name: "5년 뒤", exact: true }) });
       await captureRegion(page, "growth-detail", fiveYears);
+      await captureRegion(page, "growth-view", fiveYears, fiveYears, true);
       notes.growth = await page.locator(".resilience-details > article").nth(3).locator(":scope > p").first().innerText();
     }
     await page.close();
   }
   await ctx.close();
 
-  // 화면의 숫자와 문구는 캡처 그대로 사용한다. 설명은 기능과 예시 조건을 분리한다.
+  // Cover attracts attention; subsequent slides use white backgrounds and one clear message.
+  // Full-width capture regions preserve the actual mobile layout and all numeric results.
   const slides = [
-    { key: "home", image: "input-detail", label: "내 조건으로 시작해요", title: "월급날마다 모았다면<br><em>10억까지 얼마나?</em>", sub: "ETF와 모을 금액을 고르고<br>과거의 결과를 계산해요", context: "매달, 매주, 매일 원하는 주기로", foot: "기본 계산은 횟수 제한 없이 무료예요.", color: "#eaf7f1" },
-    { key: "compare", image: "compare-detail", label: "같은 조건으로 비교해요", title: "같은 돈, 같은 기간<br><em>ETF만 달랐다면?</em>", sub: "기간과 납입 조건은 그대로 두고<br>ETF별 결과를 나란히 봐요", context: notes.compare.split(/\n+/).join("<br>"), foot: "실제 거래 자료로 계산한 결과의 일부예요.", color: "#edf3fc" },
-    { key: "analysis", image: "loss-detail", label: "투자 과정 돌아보기", title: "10억까지 가는 길<br><em>버틸 수 있었을까요?</em>", sub: "가장 큰 손실률과 손실 금액,<br>손실이 이어진 기간을 살펴봐요", context: "SPY를 매달 100만원씩 샀다면<br>" + notes.analysis.split(/\n+/).join("<br>"), foot: "상세 분석은 리워드 광고 시청 후 확인해요.", color: "#f3f0fa" },
-    { key: "growth", image: "growth-detail", label: "손실 이후도 살펴봐요", title: "힘들었던 그때도<br><em>계속 적립했다면?</em>", sub: "1년 뒤, 3년 뒤, 5년 뒤<br>평가액과 추가로 넣은 돈을 함께 봐요", context: "SPY를 매달 100만원씩 샀다면<br>" + notes.growth.replace("부터 같은 금액과 주기로 계속 적립한 결과예요.", " 이후에도 같은 조건으로 적립했어요."), foot: "상세 분석은 리워드 광고 시청 후 확인해요.", color: "#eaf7f1" },
-    { key: "result", image: "chart-detail", label: "결과를 한눈에 확인해요", title: "처음 10억을 넘은 날<br><em>그 이후까지</em>", sub: "넣은 돈과 평가액의 변화를<br>그래프로 확인하고 결과를 공유해요", context: "SPY를 매달 100만원씩 샀다면<br>" + notes.result.split(/\n+/).join("<br>"), foot: "그래프를 누르면 그날의 금액을 볼 수 있어요.", color: "#edf3fc" },
+    { key: "home", image: "home", title: "월급날마다 모았다면<br><em>10억까지 몇 년?</em>", sub: "내 조건으로 돌아보는 ETF 투자", caption: "", dark: true },
+    { key: "compare", image: "compare-view", title: "같은 돈으로<br><em>다른 ETF를 샀다면?</em>", sub: "기간과 금액을 맞춰 비교해요", caption: "" },
+    { key: "analysis", image: "analysis-view", title: "10억까지 가는 길<br><em>버틸 수 있었을까요?</em>", sub: "손실률, 손실 금액, 손실 기간까지", caption: "SPY를 매달 100만원씩 샀다면", rewarded: true },
+    { key: "growth", image: "growth-view", title: "힘들었던 그때도<br><em>계속 적립했다면?</em>", sub: "1년 뒤, 3년 뒤, 5년 뒤를 살펴봐요", caption: "SPY를 매달 100만원씩 샀다면<br>" + notes.growth.replace("손실 금액이 가장 컸던 ", "손실 기준일: ").replace("부터 같은 금액과 주기로 계속 적립한 결과예요.", ""), rewarded: true },
+    { key: "result", image: "result-view", title: "결과는 한눈에<br><em>공유는 간편하게</em>", sub: "그래프로 확인하고 친구에게 공유해요", caption: "SPY를 매달 100만원씩 샀다면<br>" + notes.result.split(/\n+/).find(line => line.includes("기준")) },
   ];
   const img = (n) => "data:image/png;base64," + fs.readFileSync(path.join(RAW, `${n}.png`)).toString("base64");
   const brand = fs.readFileSync(path.join(OUT, "logo.svg"), "utf8");
-  const common = `*{box-sizing:border-box}body{margin:0;font-family:${FONT};color:${INK};overflow:hidden}h1{font-weight:800;letter-spacing:-.045em;line-height:1.24;margin:17px 0 14px}em{font-style:normal;color:#00875a}p{margin:0;line-height:1.55;word-break:keep-all}.brand{display:flex;align-items:center;gap:10px;font-size:17px;font-weight:700}.brand svg{width:28px;height:28px;border-radius:8px}.label{font-weight:700;color:#566676;font-size:18px}.sub{font-size:22px;color:${SUB}}.panel{position:absolute;background:white;border:1px solid #ffffff;border-radius:28px;box-shadow:0 18px 48px #182d3c12;overflow:hidden;padding:20px}.panel img{display:block;width:100%}.context{font-size:16px;color:${SUB};line-height:1.5;margin-bottom:16px}.foot{font-size:17px;font-weight:600;color:${SUB}}.legal{font-size:13px;color:#667680;line-height:1.5}.page{font-size:14px;color:#667680;font-weight:600}`;
-  const panel = (s, left, top, width, maxHeight) => {
-    return `<div class="panel" data-max-height="${maxHeight}" style="left:${left}px;top:${top}px;width:${width}px"><p class="context">${s.context}</p><img src="${img(s.image)}" style="margin:auto" alt="${s.label}"></div>`;
-  };
-  const legal = "과거 자료로 계산한 예시예요. 미래 수익을 보장하지 않아요.";
-  const vert = (s, i) => `<!doctype html><html lang="ko"><head><style>${common}</style></head><body style="width:636px;height:1048px;position:relative;background:${s.color}">
-    <div style="position:absolute;left:44px;top:34px" class="brand">${brand}주식으로 10억 모으기</div>
-    <div style="position:absolute;left:44px;right:36px;top:100px"><p class="label">${s.label}</p><h1 style="font-size:46px">${s.title}</h1><p class="sub">${s.sub}</p></div>
-    ${panel(s, 36, 350, 564, 585)}
-    <div style="position:absolute;left:44px;right:36px;bottom:32px"><p class="foot">${s.foot}</p><p class="legal" style="margin-top:10px">${legal}</p></div>
-    <span class="page" style="position:absolute;right:36px;top:42px">0${i} / 05</span></body></html>`;
-  const wide = (s, i) => `<!doctype html><html lang="ko"><head><style>${common}</style></head><body style="width:1504px;height:741px;position:relative;background:${s.color}">
+  const common = `*{box-sizing:border-box}body{margin:0;font-family:${FONT};color:${INK};overflow:hidden;background:#fff}h1{font-weight:800;letter-spacing:-.045em;line-height:1.2;margin:0;word-break:keep-all}em{font-style:normal;color:#00875a}p{margin:0;line-height:1.5;word-break:keep-all}.brand{display:flex;align-items:center;gap:10px;font-size:17px;font-weight:700}.brand svg{width:28px;height:28px;border-radius:8px}.sub{font-size:22px;color:#6b7684}.device{position:absolute;border:5px solid #e5e8eb;border-radius:42px;background:#fff;overflow:hidden;box-shadow:0 18px 48px #102a2317}.device img{display:block;width:100%}.caption{font-size:17px;text-align:center;color:#6b7684;line-height:1.5;padding:18px 12px 8px}.halo{position:absolute;width:820px;height:820px;border-radius:50%;background:#f2f8f5;pointer-events:none}.footer{position:absolute;background:#fff;color:#6b7684;line-height:1.5;font-size:14px;text-align:center}.reward{font-size:17px;color:#4e5968;margin-bottom:8px}.dark{background:#006b46;color:white}.dark em{color:#b8f5cd}.dark .sub,.dark .footer{color:#d1ece1}.dark .halo{background:#117f59}.dark .footer{background:#006b46}.dark .device{border-color:#e2ebe6}.dark .reward{color:#d1ece1}`;
+  const device = (s, left, top, width, maxHeight, bleed = false) => `<div class="device${bleed ? " bleed" : ""}" data-max-height="${maxHeight}" data-center="${left + width / 2}" data-max-width="${width}" style="left:${left}px;top:${top}px;width:${width}px">${s.caption ? `<p class="caption">${s.caption}</p>` : ""}<img src="${img(s.image)}" alt="${s.key} 실제 앱 화면"></div>`;
+  const legal = "과거 자료로 계산해요. 미래 수익을 보장하지 않아요.";
+  const footer = (s) => `${s.rewarded ? '<p class="reward">상세 분석은 리워드 광고 시청 후 확인해요.</p>' : ""}<p>${legal}</p>`;
+  const vert = (s) => `<!doctype html><html lang="ko"><head><style>${common}</style></head><body class="${s.dark ? "dark" : ""}" style="width:636px;height:1048px;position:relative">
+    <div class="halo" style="left:-92px;top:450px"></div>
+    <div style="position:absolute;left:40px;top:30px" class="brand">${brand}주식으로 10억 모으기</div>
+    <div class="headline" style="position:absolute;left:32px;right:32px;top:110px;text-align:center"><h1 style="font-size:${s.dark ? 56 : 52}px">${s.title}</h1><p class="sub" style="margin-top:22px">${s.sub}</p></div>
+    ${device(s, s.dark ? 84 : 54, 320, s.dark ? 468 : 528, 620, !!s.dark)}
+    <div class="footer" style="left:0;right:0;bottom:0;padding:16px 20px 24px;box-shadow:0 -12px 24px ${s.dark ? "#006b46" : "#fff"}">${footer(s)}</div>
+    </body></html>`;
+  const wide = (s) => `<!doctype html><html lang="ko"><head><style>${common}</style></head><body class="${s.dark ? "dark" : ""}" style="width:1504px;height:741px;position:relative">
+    <div class="halo" style="right:-170px;top:170px"></div>
     <div class="brand" style="position:absolute;left:70px;top:48px">${brand}주식으로 10억 모으기</div>
-    <div style="position:absolute;left:70px;top:165px;width:690px"><p class="label">${s.label}</p><h1 style="font-size:58px">${s.title}</h1><p class="sub" style="font-size:26px;margin-top:24px">${s.sub}</p><p class="foot" style="margin-top:38px">${s.foot}</p></div>
-    ${panel(s, 825, 40, 610, 650)}
-    <p class="legal" style="position:absolute;left:70px;bottom:40px">${legal}</p><span class="page" style="position:absolute;left:70px;top:110px">0${i} / 05</span></body></html>`;
+    <div class="headline" style="position:absolute;left:70px;top:220px;width:715px"><h1 style="font-size:64px">${s.title}</h1><p class="sub" style="font-size:27px;margin-top:28px">${s.sub}</p></div>
+    ${device(s, s.dark ? 910 : 890, 48, s.dark ? 480 : 520, 640, !!s.dark)}
+    <div class="footer" style="left:70px;bottom:38px;text-align:left;background:transparent">${footer(s)}</div>
+    ${s.dark ? '<div style="position:absolute;right:70px;bottom:0;width:600px;height:45px;background:linear-gradient(transparent,#117f59)"></div>' : ""}</body></html>`;
   // 로고: store/logo.svg(숫자 10, 2026-10-26 사용자 선택). 600×600 불투명·각진 모서리.
   const logo = `<!doctype html><html><body style="margin:0;width:600px;height:600px">${fs.readFileSync(path.join(OUT, "logo.svg"), "utf8")}</body></html>`;
 
@@ -143,18 +150,26 @@ const settled = (page) => page.waitForFunction(() => !document.body.innerText.in
     const p = await c.newPage(); await p.setContent(html, { waitUntil: "load" });
     await p.evaluate(async () => {
       await document.fonts.ready;
-      for (const panel of document.querySelectorAll(".panel")) {
-        const context = panel.querySelector(".context"), image = panel.querySelector("img");
+      for (const device of document.querySelectorAll(".device:not(.bleed)")) {
+        const image = device.querySelector("img");
         await image.decode();
-        const room = Number(panel.dataset.maxHeight) - context.getBoundingClientRect().height - 56;
-        image.style.width = `${Math.min(panel.clientWidth - 40, room * image.naturalWidth / image.naturalHeight)}px`;
+        const caption = device.querySelector(".caption");
+        const room = Number(device.dataset.maxHeight) - (caption?.getBoundingClientRect().height ?? 0) - 10;
+        const width = Math.min(Number(device.dataset.maxWidth), room * image.naturalWidth / image.naturalHeight + 10);
+        device.style.width = `${width}px`;
+        device.style.left = `${Number(device.dataset.center) - width / 2}px`;
       }
     });
-    const invalid = await p.evaluate(() => [...document.querySelectorAll(".panel")].some(panel => {
-      const box = panel.getBoundingClientRect();
-      return box.bottom > innerHeight - (innerWidth === 636 ? 105 : 30) || box.right > innerWidth;
-    }));
-    if (invalid) throw new Error(`${file}: panel overlaps footer or canvas edge`);
+    const invalid = await p.evaluate(() => {
+      const headline = document.querySelector(".headline");
+      const device = document.querySelector(".device");
+      if (!headline || !device) return false;
+      const headingBox = headline.getBoundingClientRect(), box = device.getBoundingClientRect();
+      const footerTop = document.querySelector(".footer").getBoundingClientRect().top;
+      return box.right > innerWidth || headingBox.bottom > (innerWidth === 636 ? box.top - 8 : innerHeight - 120)
+        || (!device.classList.contains("bleed") && box.bottom > (innerWidth === 636 ? footerTop - 8 : innerHeight - 30));
+    });
+    if (invalid) throw new Error(`${file}: headline, phone or footer overlap`);
     await p.screenshot({ path: path.join(OUT, file), clip: { x: 0, y: 0, width: w, height: h } }); await c.close();
   };
   await render(logo, 600, 600, "logo-600.png");
