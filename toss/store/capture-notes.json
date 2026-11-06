@@ -1,0 +1,44 @@
+{
+  "capturedAt": "2026-11-06T04:19:25.060Z",
+  "source": "toss/dist + public/data",
+  "notes": {
+    "result": "이후에도 계속 모았다면 8.59억\n\n2026년 11월 5일 기준\n다시 10억 아래로 내려왔어요.",
+    "compare": "2022년 5월 4일 ~ 2026년 11월 5일\n\n매달 50만원씩\n\nJEPQ의 평가액 3,645만원",
+    "analysis": "처음 10억을 넘은 날까지의 손실을 살펴봐요.\n2010년 3월 1일 ~ 2026년 6월 2일",
+    "growth": "손실 금액이 가장 컸던 2011년 8월 10일부터 같은 금액과 주기로 계속 적립한 결과예요."
+  },
+  "regions": {
+    "input-detail": {
+      "width": 390,
+      "height": 377.03125
+    },
+    "chart-detail": {
+      "width": 350,
+      "height": 368.15625
+    },
+    "compare-detail": {
+      "width": 342,
+      "height": 296.6875
+    },
+    "loss-detail": {
+      "width": 302,
+      "height": 327.96875
+    },
+    "growth-detail": {
+      "width": 302,
+      "height": 319.078125
+    }
+  },
+  "outputs": [
+    "shot-1-home-636x1048.png",
+    "shot-wide-1504x741.png",
+    "shot-2-compare-636x1048.png",
+    "shot-wide-2-compare-1504x741.png",
+    "shot-3-analysis-636x1048.png",
+    "shot-wide-3-analysis-1504x741.png",
+    "shot-4-growth-636x1048.png",
+    "shot-wide-4-growth-1504x741.png",
+    "shot-5-result-636x1048.png",
+    "shot-wide-5-result-1504x741.png"
+  ]
+}
