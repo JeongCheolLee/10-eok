@@ -142,7 +142,7 @@ const settled = (page) => page.waitForFunction(() => !document.body.innerText.in
     ${device(s, s.dark ? 910 : 890, 48, s.dark ? 480 : 520, 640, !!s.dark)}
     <div class="footer" style="left:70px;bottom:38px;text-align:left;background:transparent">${footer(s)}</div>
     ${s.dark ? '<div style="position:absolute;right:70px;bottom:0;width:600px;height:45px;background:linear-gradient(transparent,#117f59)"></div>' : ""}</body></html>`;
-  // 로고: store/logo.svg(숫자 10, 2026-10-26 사용자 선택). 600×600 불투명·각진 모서리.
+  // 로고: store/logo.svg(흰색 10억, 2026-11-09 사용자 선택). 600×600 불투명·각진 모서리.
   const logo = `<!doctype html><html><body style="margin:0;width:600px;height:600px">${fs.readFileSync(path.join(OUT, "logo.svg"), "utf8")}</body></html>`;
 
   const render = async (html, w, h, file) => {

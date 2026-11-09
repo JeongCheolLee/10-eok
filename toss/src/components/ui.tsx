@@ -21,15 +21,10 @@ export const ArrowDown = () => <svg width="14" height="14" viewBox="0 0 24 24" f
 export const ArrowUp = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7" /></svg>;
 
 /* ── 네비게이션 바 (토스 SDK가 그리는 영역의 프로토타입. 실제 앱에선 granite.config navigationBar) ── */
-/** 앱 로고(숫자 10). 웹 파비콘·store/logo.svg와 같은 형태. 토스 네비바는 콘솔에 등록한 로고를 사용한다. */
+/** 앱 로고(10억). 웹 파비콘·store/logo.svg와 같은 원본. 토스 네비바는 콘솔에 등록한 로고를 사용한다. */
 export function LogoMark({ size = 24 }: { size?: number }) {
   return (
-    <svg className="nav-logo" width={size} height={size} viewBox="0 0 128 128" aria-hidden="true">
-      <rect width="128" height="128" rx="30" fill="#00A56B" />
-      <path d="M25 45L40 34H48V94H34V52L25 58Z" fill="white" />
-      <rect x="61" y="34" width="42" height="60" rx="21" fill="white" />
-      <rect x="75" y="47" width="14" height="34" rx="7" fill="#00A56B" />
-    </svg>
+    <img className="nav-logo" src="./logo-10eok.png" width={size} height={size} style={{ borderRadius: '24%' }} alt="" aria-hidden="true" />
   );
 }
 
