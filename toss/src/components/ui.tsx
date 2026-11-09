@@ -3,6 +3,8 @@ import { tickerInfo, tickerMonogram, tickerTitle } from "@/lib/tickers";
 import { GROUPS, TOSS_DISPLAY_TICKERS, tickerGroup, tossSubtitle } from "../lib/groups";
 import { attachBanner, inToss } from "../lib/platform";
 import { chartIndices, type ChartPoint } from "@/lib/chartSeries";
+import { loadTickerReturns } from "../lib/tickerReturns";
+import { RETURN_YEARS, type ReturnYears, type TickerReturns } from "@/lib/tickerReturns";
 import { fmt, ymdKo } from "../lib/fmt";
 
 /* ── 아이콘 (모노톤 스트로크) ── */
@@ -255,6 +257,15 @@ export function SwitchRow({ id, title, desc, checked, onChange, disabled }: { id
 /** taken: 다른 행에서 이미 고른 종목(선택 불가) */
 export function TickerSheet({ current, taken = [], onPick, onClose }: { current: string; taken?: string[]; onPick: (t: string) => void; onClose: () => void }) {
   const [q, setQ] = useState("");
+  const [years, setYears] = useState<ReturnYears>(5);
+  const [filter, setFilter] = useState("all");
+  const [returns, setReturns] = useState<TickerReturns | null>(null);
+  const [returnsFailed, setReturnsFailed] = useState(false);
+  useEffect(() => {
+    let active = true;
+    loadTickerReturns().then((value) => { if (active) setReturns(value); }).catch(() => { if (active) setReturnsFailed(true); });
+    return () => { active = false; };
+  }, []);
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
@@ -299,15 +310,23 @@ export function TickerSheet({ current, taken = [], onPick, onClose }: { current:
     };
   }, []);
   const ql = q.trim().toLowerCase();
-  const list = TOSS_DISPLAY_TICKERS.filter((t) => !ql || t.symbol.toLowerCase().includes(ql) || t.name.toLowerCase().includes(ql) || tossSubtitle(t.symbol).includes(ql));
+  const list = TOSS_DISPLAY_TICKERS.filter((t) => (filter === "all" || (filter === "etf" ? t.kind !== "stock" : t.group === filter))).filter((t) => !ql || t.symbol.toLowerCase().includes(ql) || t.name.toLowerCase().includes(ql) || t.aliases?.some((alias) => alias.toLowerCase().includes(ql)) || tossSubtitle(t.symbol).includes(ql));
   const groups = GROUPS.map((g) => ({ ...g, items: list.filter((t) => tickerGroup(t.symbol) === g.id) })).filter((g) => g.items.length > 0);
   return (
     <div className="sheet-backdrop" onClick={onClose}>
       <div ref={dialogRef} className="sheet" role="dialog" aria-modal="true" aria-label="종목 선택" tabIndex={-1} onClick={(e) => e.stopPropagation()}>
         <div className="sheet-handle" aria-hidden="true" />
         <div className="sheet-head">
-          <div className="sheet-title">어떤 ETF가 궁금하세요?</div>
-          <input className="search" placeholder="종목 검색" value={q} onChange={(e) => setQ(e.target.value)} aria-label="종목 검색" />
+          <div className="sheet-title">어떤 종목가 궁금하세요?</div>
+          <input className="search" placeholder="종목 이름이나 티커 검색" value={q} onChange={(e) => setQ(e.target.value)} aria-label="종목 검색" />
+          <div className="sheet-filters" aria-label="종목 종류">
+            {[["all", "전체"], ["kr-stock", "한국 주식"], ["us-stock", "미국 주식"], ["etf", "ETF"]].map(([id, label]) => <button type="button" key={id} aria-pressed={filter === id} onClick={() => setFilter(id)}>{label}</button>)}
+          </div>
+          <div className="sheet-return-controls"><span>연평균 수익률</span><div role="group" aria-label="수익률 기간">{RETURN_YEARS.map((n) => <button type="button" key={n} aria-pressed={years === n} onClick={() => setYears(n)}>{n}년</button>)}</div></div>
+          <details className="sheet-return-basis"><summary>수익률 기준 보기</summary>
+            <p>{returns && `${ymdKo(returns.asOf)} 기준이에요. `}선택한 기간 동안 한 번 사서 보유했을 때의 연평균 수익률이에요. 원화와 배당 재투자 기준이며, 세금과 수수료는 제외했어요. 적립식 계산의 수익률과는 달라요. 장이 쉬는 날에는 해당 시장의 거래일을 사용해요.</p>
+          </details>
+          {returnsFailed && <p className="sheet-return-notice">수익률을 불러오지 못했어요. 종목 선택과 계산은 할 수 있어요.</p>}
         </div>
         <div className="sheet-list">
           {groups.map((g) => (
@@ -320,10 +339,14 @@ export function TickerSheet({ current, taken = [], onPick, onClose }: { current:
                 const isTaken = t.symbol !== current && taken.includes(t.symbol);
                 // 국내 상장 묶음 안에서는 부제 "국내 상장"이 겹치므로 이름(무엇을 담는지)만 둔다
                 const extra = g.id === "kr-listed" ? "" : tossSubtitle(t.symbol);
+                const period = returns?.rows[t.symbol]?.[years];
+                const rate = period && Number.isFinite(period.cagr) ? period.cagr : null;
+                const rateText = rate === null ? (period === null ? "기간 부족" : "—") : `${rate > 0 ? "+" : ""}${(rate * 100).toFixed(1)}%`;
                 return (
                 <button key={t.symbol} type="button" className="list-row list-btn" aria-pressed={t.symbol === current} disabled={isTaken} onClick={() => onPick(t.symbol)}>
                   <span className="avatar" style={{ background: t.color }}>{tickerMonogram(t.symbol)}</span>
                   <span className="field"><span className="row-title">{tickerTitle(t.symbol)}</span>{(isTaken || extra) && <span className="row-desc">{isTaken ? "이미 담았어요" : extra}</span>}</span>
+                  {!isTaken && <span className={"ticker-return " + (rate === null ? "muted" : rate >= 0 ? "up-text" : "down-text")} aria-label={rate === null ? (period === null ? `${years}년 수익률을 계산할 자료가 부족해요` : "수익률 정보 없음") : `${years}년 연평균 수익률 ${rateText}`} title={period ? `${period.start} ~ ${period.end}` : undefined}>{rateText}</span>}
                   {t.symbol === current && <span className="brand-text" aria-hidden="true"><Check /></span>}
                 </button>
                 );

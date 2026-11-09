@@ -10,7 +10,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "e2e": "playwright test",
-    "gen": "tsx generator/build-bundle.ts"
+    "gen": "tsx generator/build-bundle.ts",
+    "release:toss": "node scripts/release-toss.mjs"
   },
   "dependencies": {
     "@next/third-parties": "^15.5.20",

@@ -1,4 +1,4 @@
-import { tickerTitle } from "@/lib/tickers";
+import { tickerTitle, tickerInfo } from "@/lib/tickers";
 import { getLoadedDataInfo } from "../lib/data";
 import { fmt, manLabel, freqLabel, ymdKo } from "../lib/fmt";
 import { needsFx } from "../lib/dataInfo";
@@ -35,8 +35,9 @@ export function CalculationBasis({ plan, calc, rowsBy }: { plan: Plan; calc: Cal
             {plan.holdings.length > 1 && <ul>{plan.holdings.map((holding, index) => <li key={holding.ticker}>{tickerTitle(holding.ticker)} {fmt.amount(calc.portfolio?.holdings[index]?.amountWon ?? holding.amount * 10_000)}</li>)}</ul>}
             {plan.freq === "daily" ? <p>장이 열리는 날마다 샀다고 계산해요.</p> : <p>{plan.freq === "monthly" && plan.buyDay === 29 ? "그달 마지막 거래일에 샀다고 계산해요." : "장이 쉬는 날이면 다음 거래일에 샀다고 계산해요."}</p>}
           </dd></div>
-          <div><dt>처음 넣은 돈</dt><dd>{plan.lump > 0 ? manLabel(plan.lump) : "0원"}{plan.lump > 0 && plan.holdings.length > 1 && <p>ETF마다 넣는 금액의 비율대로 나눴어요.</p>}</dd></div>
-          <div><dt>배당</dt><dd>{plan.reinvest ? "받은 배당으로 같은 ETF를 다시 샀다고 계산해요." : "배당금은 계산에 넣지 않았어요."}</dd></div>
+          <div><dt>처음 넣은 돈</dt><dd>{plan.lump > 0 ? manLabel(plan.lump) : "0원"}{plan.lump > 0 && plan.holdings.length > 1 && <p>종목마다 넣는 금액의 비율대로 나눴어요.</p>}</dd></div>
+          <div><dt>배당</dt><dd>{plan.reinvest ? "받은 배당으로 같은 종목을 다시 샀다고 계산해요." : "배당금은 계산에 넣지 않았어요."}</dd></div>
+          <div><dt>매수 수량</dt><dd>1주보다 작은 수량도 살 수 있다고 계산해요. 실제 거래에서 가능한 수량과 다를 수 있어요.</dd></div>
           <div><dt>세금과 수수료</dt><dd>계산에 넣지 않았어요.</dd></div>
           <div><dt>가격 자료</dt><dd>실제로 거래된 기간만 사용해요. 거래 시작 전 추정 가격은 포함하지 않아요.
             <ul>{tickers.map((ticker) => {
@@ -44,11 +45,11 @@ export function CalculationBasis({ plan, calc, rowsBy }: { plan: Plan; calc: Cal
               const rows = rowsBy[ticker];
               const first = info?.actualStart ?? rows?.[0]?.date;
               const last = info?.priceAsOf ?? rows?.[rows.length - 1]?.date;
-              return <li key={ticker}>{tickerTitle(ticker)}{first && last && <><br />{ymdKo(first)} ~ {ymdKo(last)}</>}</li>;
+              return <li key={ticker}>{tickerTitle(ticker)}{first && last && <><br />{ymdKo(first)} ~ {ymdKo(last)}</>}{tickerInfo(ticker).historyNote && <p>{tickerInfo(ticker).historyNote}</p>}</li>;
             })}</ul>
           </dd></div>
           {needsFx(tickers) && <div><dt>환율 자료</dt><dd>
-            달러로 거래되는 ETF는 해당 날짜 환율로 원화로 바꿔 계산해요. 해당 날짜 환율이 없으면 직전 값을 사용해요.
+            달러로 거래되는 종목은 해당 날짜 환율로 원화로 바꿔 계산해요. 해당 날짜 환율이 없으면 직전 값을 사용해요.
             {fxDates.map(({ ticker, date }) => <p key={ticker}>{tickerTitle(ticker)}<br />{ymdKo(date)}까지의 환율 자료를 사용해요.</p>)}
           </dd></div>}
         </dl>

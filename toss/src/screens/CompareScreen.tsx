@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Button } from "@toss/tds-mobile";
-import { tickerTitle } from "@/lib/tickers";
+import { tickerTitle, tickerInfo } from "@/lib/tickers";
 import { GROUPS, TOSS_DISPLAY_TICKERS, tickerGroup, tossSubtitle } from "../lib/groups";
 import { NavBar, Avatar } from "../components/ui";
 import { loadComparisonHistory, loadRowsBy } from "../lib/data";
@@ -49,15 +49,15 @@ export function CompareScreen({ plan, back, onEditPlan, onMenu, onClose }: { pla
       ? groups.map((group) => ({ ...group, rows: actual.filter((row) => tickerGroup(row.symbol) === group.id) }))
       : [{ id: "values", label: "실제 거래 자료로 계산한 결과", rows: sortValues(actual) }]),
     { id: "estimated", label: "추정 자료를 포함한 결과", rows: sortOrder === "type" ? groups.flatMap((group) => estimated.filter((row) => tickerGroup(row.symbol) === group.id)) : sortValues(estimated) },
-    { id: "unavailable", label: "비교 결과를 표시할 수 없는 ETF", rows: state.rows.filter((row) => row.status !== "available") },
+    { id: "unavailable", label: "비교 결과를 표시할 수 없는 종목", rows: state.rows.filter((row) => row.status !== "available") },
   ];
 
   return <div className="screen compare-screen">
     <NavBar back={back} onMenu={onMenu} onClose={onClose} />
     <header className="input-hero">
-      <p className="input-eyebrow">ETF 바꿔보기</p>
-      <h1>같은 기간,<br />다른 ETF였다면?</h1>
-      <p className="input-intro">기간과 금액은 그대로, ETF만 바꿔 봐요.</p>
+      <p className="input-eyebrow">종목 바꿔보기</p>
+      <h1>같은 기간,<br />다른 종목이었다면?</h1>
+      <p className="input-intro">기간과 금액은 그대로, 종목만 바꿔 봐요.</p>
     </header>
     {state.status === "loading" && <div className="state"><div className="spinner" aria-hidden="true" /><p className="state-desc">같은 조건으로 계산 중…</p></div>}
     {state.status === "error" && <div className="state"><p className="state-title">데이터를 불러오지 못했어요</p><Button onClick={() => setRetry((n) => n + 1)}>다시 시도하기</Button></div>}
@@ -68,9 +68,9 @@ export function CompareScreen({ plan, back, onEditPlan, onMenu, onClose }: { pla
         <strong>{freqWord(plan.freq)} {plan.holdings.length > 1 ? "합계 " : ""}{fmt.amount(state.window.amountWon)}씩</strong>
         {plan.lump > 0 && <p>처음에 {manLabel(plan.lump)}으로 시작</p>}
         <p>{plan.holdings.map((h) => tickerTitle(h.ticker)).join(", ")}의 평가액 <b>{fmt.money(state.window.value)}</b></p>
-        {plan.holdings.length > 1 && <p>합계 금액을 ETF 하나에 넣었다고 계산해요.</p>}
+        {plan.holdings.length > 1 && <p>합계 금액을 한 종목에 넣었다고 계산해요.</p>}
       </section>
-      {state.pending > 0 && <p className="comparison-caption" role="status">{TOSS_DISPLAY_TICKERS.length - state.pending}/{TOSS_DISPLAY_TICKERS.length}개 확인했어요. 나머지 ETF를 불러오는 중이에요.</p>}
+      {state.pending > 0 && <p className="comparison-caption" role="status">{TOSS_DISPLAY_TICKERS.length - state.pending}/{TOSS_DISPLAY_TICKERS.length}개 확인했어요. 나머지 종목을 불러오는 중이에요.</p>}
       <div className="comparison-sort">
         <label htmlFor="comparison-sort">보기 순서</label>
         <select id="comparison-sort" value={sortOrder} onChange={(event) => setSortOrder(event.target.value as SortOrder)}>
@@ -79,7 +79,7 @@ export function CompareScreen({ plan, back, onEditPlan, onMenu, onClose }: { pla
           <option value="type">유형별</option>
         </select>
       </div>
-      <p className="comparison-caption">{sortOrder === "type" ? "실제 거래 자료로 계산한 ETF를 유형별로 모았어요." : "실제 결과와 추정 포함 결과를 나눠, 각각 평가액순으로 정렬했어요."}</p>
+      <p className="comparison-caption">{sortOrder === "type" ? "실제 거래 자료로 계산한 종목을 유형별로 모았어요." : "실제 결과와 추정 포함 결과를 나눠, 각각 평가액순으로 정렬했어요."}</p>
       {sections.map((group) => {
         return group.rows.length > 0 && <section className="comparison-group" key={group.id} aria-label={group.label}>
           <h2>{group.label}</h2>
@@ -103,17 +103,18 @@ export function CompareScreen({ plan, back, onEditPlan, onMenu, onClose }: { pla
                 : row.dataEnd < state.window.end
                   ? `${ymdKo(row.dataEnd)}까지 자료가 있어요. 비교 종료일까지 채울 자료가 없어요.`
                   : "이 기간에는 계산할 거래 자료가 없어요."}</p>
+              {tickerInfo(row.symbol).historyNote && <p>{tickerInfo(row.symbol).historyNote}</p>}
               <p>확인한 자료: {ymdKo(row.dataStart)} ~ {ymdKo(row.dataEnd)}</p>
               <Button display="full" color="dark" variant="weak" style={{ borderRadius: 12 }} onClick={() => {
                 onEditPlan(singlePlan({ ...plan, mode: "time", tracking: true, startDate: row.actualStart }, row.symbol, Math.max(1, Math.round(state.window.amountWon / 10_000))));
               }}>자료가 있는 기간으로 계산하기</Button>
-              <p>실제 거래 시작일로 바꿔요. 다음 화면에서 조건을 확인해 주세요.</p>
+              <p>계산할 자료가 있는 시작일로 바꿔요. 다음 화면에서 조건을 확인해 주세요.</p>
             </div>}
           </li>)}</ul>
         </section>;
       })}
       {state.pending === 0 && state.rows.some((row) => row.status === "error") && <div className="btn-row"><Button color="dark" variant="weak" onClick={() => setRetry((n) => n + 1)}>다시 시도하기</Button></div>}
-      <p className="disc">{plan.reinvest ? "받은 배당으로 같은 ETF를 다시 샀다고 계산했어요." : "배당은 계산에 넣지 않았어요."}<br />세금과 수수료는 계산에 넣지 않았어요.</p>
+      <p className="disc">{plan.reinvest ? "받은 배당으로 같은 종목을 다시 샀다고 계산했어요." : "배당은 계산에 넣지 않았어요."}<br />세금과 수수료는 계산에 넣지 않았어요.</p>
     </>}
     <p className="disc">과거 자료로 계산한 결과예요.<br />특정 종목을 추천하거나 미래 수익을 보장하지 않아요.</p>
   </div>;

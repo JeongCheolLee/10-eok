@@ -7,6 +7,11 @@ export type TickerInfo = {
   color: string; // 모노그램 아바타 배경색
   currency?: "USD" | "KRW"; // 기본 USD
   short?: string; // 모노그램에 표시할 짧은 라벨 (없으면 symbol)
+  kind?: "etf" | "stock";
+  aliases?: string[];
+  // 기업 재편 전 가격을 현재 회사의 이력으로 쓰지 않도록 제한한다.
+  historyStart?: string;
+  historyNote?: string;
   // 상장 이전 구간을 유사 전략 지수(proxy)로 스케일 접합해 합성. 원화 종목에 달러 프록시를 붙이면 생성기가 그날 환율로 원화 환산 후 접합. 생성기가 데이터를 만들고,
   // UI는 이 필드가 있으면 "상장 이전은 근사치" 안내를 띄운다. label은 안내에 쓸 프록시 이름.
   splice?: { proxy: string; label: string };
@@ -18,10 +23,10 @@ export type TickerInfo = {
   // "kr-foreign" = 국내 상장 해외주식형 ETF: 매매차익에 배당소득세 15.4%(공제 없음, 종목별).
   tax?: "us" | "kr-domestic" | "kr-foreign";
   // 미니앱 종목 선택 시트의 묶음.
-  group?: "index" | "leverage" | "dividend" | "sector" | "bond-gold" | "kr-listed";
+  group?: "index" | "leverage" | "dividend" | "sector" | "bond-gold" | "kr-listed" | "kr-stock" | "us-stock";
 };
 
-// ETF만 (단일 종목 제외). 검색 가능한 드롭다운으로 고르며, 추후 ETF 추가 용이.
+// ETF와 개별주. 개별주는 미니앱부터 제공하며 웹의 기존 ETF 콘텐츠와 분리한다.
 export const TICKERS: TickerInfo[] = [
   { symbol: "QLD", name: "나스닥100 2배", color: "#5e6ad2" },
   { symbol: "TQQQ", name: "나스닥100 3배", color: "#e0467c" },
@@ -49,6 +54,23 @@ export const TICKERS: TickerInfo[] = [
   { symbol: "360750.KS", name: "TIGER 미국S&P500", color: "#ea580c", currency: "KRW", short: "T500", splice: { proxy: "SPY", label: "SPY(같은 S&P 500 지수, 원화 환산)" }, tax: "kr-foreign", webHidden: true, group: "kr-listed" },
   { symbol: "133690.KS", name: "TIGER 미국나스닥100", color: "#1d4ed8", currency: "KRW", short: "TNDQ", tax: "kr-foreign", webHidden: true, group: "kr-listed" },
   { symbol: "458730.KS", name: "TIGER 미국배당다우존스", color: "#0d9488", currency: "KRW", short: "TDIV", splice: { proxy: "SCHD", label: "SCHD(같은 배당다우존스 지수, 원화 환산)" }, tax: "kr-foreign", webHidden: true, group: "kr-listed" },
+  // 개별주는 상장 전 추정 가격을 만들지 않는다.
+  {"symbol": "005930.KS", "name": "삼성전자", "color": "#2563eb", "kind": "stock", "webHidden": true, "group": "kr-stock", "currency": "KRW", "short": "삼성"},
+  {"symbol": "000660.KS", "name": "SK하이닉스", "color": "#dc2626", "kind": "stock", "webHidden": true, "group": "kr-stock", "currency": "KRW", "short": "SK", "aliases": ["하이닉스"]},
+  {"symbol": "005380.KS", "name": "현대차", "color": "#334155", "kind": "stock", "webHidden": true, "group": "kr-stock", "currency": "KRW", "short": "현대", "aliases": ["현대자동차"]},
+  {"symbol": "000270.KS", "name": "기아", "color": "#475569", "kind": "stock", "webHidden": true, "group": "kr-stock", "currency": "KRW", "short": "기아"},
+  {"symbol": "035420.KS", "name": "NAVER", "color": "#15803d", "kind": "stock", "webHidden": true, "group": "kr-stock", "currency": "KRW", "short": "N", "aliases": ["네이버"], "historyStart": "2013-08-29", "historyNote": "회사 분할 후 다시 거래를 시작한 2013년 8월 29일부터 계산해요. 분할 전 NHN의 가격은 제외했어요."},
+  {"symbol": "035720.KS", "name": "카카오", "color": "#a16207", "kind": "stock", "webHidden": true, "group": "kr-stock", "currency": "KRW", "short": "카카오", "historyStart": "2014-10-14", "historyNote": "합병 신주가 상장된 2014년 10월 14일부터 계산해요. 합병 전 다음의 가격은 제외했어요."},
+  {"symbol": "105560.KS", "name": "KB금융", "color": "#92400e", "kind": "stock", "webHidden": true, "group": "kr-stock", "currency": "KRW", "short": "KB", "aliases": ["국민은행"], "historyStart": "2008-10-10", "historyNote": "KB금융이 상장한 2008년 10월 10일부터 계산해요. 이전 국민은행의 가격은 제외했어요."},
+  {"symbol": "033780.KS", "name": "KT&G", "color": "#0f766e", "kind": "stock", "webHidden": true, "group": "kr-stock", "currency": "KRW", "short": "KT&G", "aliases": ["케이티앤지"]},
+  {"symbol": "NVDA", "name": "엔비디아", "color": "#4d7c0f", "kind": "stock", "webHidden": true, "group": "us-stock", "aliases": ["NVIDIA"]},
+  {"symbol": "TSLA", "name": "테슬라", "color": "#b91c1c", "kind": "stock", "webHidden": true, "group": "us-stock", "aliases": ["Tesla"]},
+  {"symbol": "AAPL", "name": "애플", "color": "#475569", "kind": "stock", "webHidden": true, "group": "us-stock", "aliases": ["Apple"]},
+  {"symbol": "MSFT", "name": "마이크로소프트", "color": "#0369a1", "kind": "stock", "webHidden": true, "group": "us-stock", "aliases": ["Microsoft"]},
+  {"symbol": "GOOGL", "name": "알파벳 A", "color": "#2563eb", "kind": "stock", "webHidden": true, "group": "us-stock", "aliases": ["구글", "Google", "Alphabet"]},
+  {"symbol": "AMZN", "name": "아마존", "color": "#b45309", "kind": "stock", "webHidden": true, "group": "us-stock", "aliases": ["Amazon"]},
+  {"symbol": "META", "name": "메타", "color": "#1d4ed8", "kind": "stock", "webHidden": true, "group": "us-stock", "aliases": ["페이스북", "Facebook"]},
+  {"symbol": "KO", "name": "코카콜라", "color": "#b91c1c", "kind": "stock", "webHidden": true, "group": "us-stock", "aliases": ["Coca-Cola"]},
 ];
 
 /** 세금 규칙(필드 생략 시 통화로 결정). */

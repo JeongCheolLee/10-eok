@@ -69,12 +69,12 @@ export function InputScreen({ plan, setPlan, onSubmit, adRequired, accessNote, b
   const canSubmit = hasSelection && Object.keys(invalidFields).length === 0 && !dateError && (!hasLump || plan.lump > 0);
   const total = totalAmount(plan);
   const cta = plan.tracking ? "이 조건으로 계산하기" : plan.mode === "time" ? "10억까지 계산하기" : "필요한 금액 계산하기";
-  const buyingTitle = plan.freq === "monthly" ? "월급날마다 ETF를 모았다면" : plan.freq === "weekly" ? "매주 ETF를 모았다면" : "거래일마다 ETF를 모았다면";
+  const buyingTitle = plan.freq === "monthly" ? "월급날마다 꾸준히 모았다면" : plan.freq === "weekly" ? "매주 꾸준히 모았다면" : "거래일마다 꾸준히 모았다면";
   return (
     <div className="screen input-screen">
       <NavBar onMenu={onMenu} onClose={onClose} />
       <header className="input-hero">
-        <p className="input-eyebrow">{plan.tracking ? "정한 날부터 ETF를 모았다면" : plan.mode === "amount" ? "기간을 정해 돌아보면" : buyingTitle}</p>
+        <p className="input-eyebrow">{plan.tracking ? "정한 날부터 꾸준히 모았다면" : plan.mode === "amount" ? "기간을 정해 돌아보면" : buyingTitle}</p>
         <h1>{plan.tracking ? <>얼마나<br />모였을까요?</> : <><span className="target-line"><strong>10억</strong><span>까지,</span></span><br />{plan.mode === "amount" ? "얼마씩 필요했을까요?" : "얼마나 걸렸을까요?"}</>}</h1>
       </header>
       {hasClock && (
@@ -90,7 +90,7 @@ export function InputScreen({ plan, setPlan, onSubmit, adRequired, accessNote, b
             <SegmentedControl.Item value="time">얼마나 걸렸을까</SegmentedControl.Item>
             <SegmentedControl.Item value="amount" disabled={multi}>얼마씩 모았을까</SegmentedControl.Item>
           </SegmentedControl>
-          {multi && <p className="seg-note">얼마씩 모았을지는 ETF가 하나일 때 계산할 수 있어요</p>}
+          {multi && <p className="seg-note">얼마씩 모았을지는 한 종목일 때 계산할 수 있어요</p>}
         </div>
       )}
       */}
@@ -100,9 +100,9 @@ export function InputScreen({ plan, setPlan, onSubmit, adRequired, accessNote, b
         </div>
       )}
 
-      <div className="section-label">{!hasSelection ? "어떤 ETF가 궁금하세요?" : multi ? `${hs.length}개 ETF에 나눠 사요` : "계산할 ETF"}</div>
+      <div className="section-label">{!hasSelection ? "어떤 종목가 궁금하세요?" : multi ? `${hs.length}개 종목에 나눠 사요` : "계산할 종목"}</div>
       {!hasSelection ? (
-        <button type="button" className="etf-select-empty" onClick={() => setSheet(0)} aria-haspopup="dialog"><span aria-hidden="true">＋</span> ETF 선택하기</button>
+        <button type="button" className="etf-select-empty" onClick={() => setSheet(0)} aria-haspopup="dialog"><span aria-hidden="true">＋</span> 종목 선택하기</button>
       ) : multi ? (
         hs.map((h, i) => (
           <HoldingRow onValidityChange={reportValidity} key={h.ticker} symbol={h.ticker} value={h.amount} unit="만원" min={AMOUNT_MIN[plan.freq]} max={100_000} step={AMOUNT_STEP[plan.freq]} share={total > 0 ? h.amount / total : 0} onChange={(v) => setAmount(i, v)} onPick={() => setSheet(i)} onRemove={() => remove(i)} />
@@ -115,13 +115,13 @@ export function InputScreen({ plan, setPlan, onSubmit, adRequired, accessNote, b
             withArrow
             onClick={() => setSheet(0)}
             aria-haspopup="dialog"
-            aria-label={`ETF ${tickerTitle(plan.ticker)} 바꾸기`}
+            aria-label={`종목 ${tickerTitle(plan.ticker)} 바꾸기`}
           />
         </ul>
       )}
       {hasSelection && hs.length < MAX_HOLDINGS && (
         <>
-          <button type="button" className="add-row" onClick={() => setSheet(-1)} aria-haspopup="dialog"><span className="plus" aria-hidden="true">+</span>ETF 추가하기</button>
+          <button type="button" className="add-row" onClick={() => setSheet(-1)} aria-haspopup="dialog"><span className="plus" aria-hidden="true">+</span>종목 추가하기</button>
 
         </>
       )}

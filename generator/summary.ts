@@ -4,6 +4,7 @@
 import { composeRows, type PxBundle, type FxBundle } from "../lib/backtest/compose";
 import { runToToday, runFirstReach } from "../lib/backtest/simulate";
 import type { BacktestResult, Row } from "../lib/backtest/types";
+import { actualHistoryRows } from "../lib/tickerHistory";
 import { tickerCurrency, tickerName } from "../lib/tickers";
 import type { Market } from "../lib/i18n/markets";
 
@@ -61,6 +62,7 @@ export function buildSummary({ pxBySymbol, fx, market, generatedAt, mode = "toda
     let r: BacktestResult & { reachValue?: number };
     try {
       composed = composeRows(px, isNative ? null : fx);
+      if (mode === "firstReach") composed = actualHistoryRows(symbol, composed);
       r = mode === "firstReach" ? runFirstReach(composed, { monthly, buyDay: BUY_DAY, target }) : runToToday(composed, { monthly, buyDay: BUY_DAY, target });
     } catch {
       continue;

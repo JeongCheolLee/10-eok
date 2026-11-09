@@ -495,3 +495,21 @@ input[type="date"].select { font-size: 18px; min-height: 29px; }
 .analysis-ad-preview::backdrop { background: rgb(0 0 0 / .45); }
 .analysis-ad-preview p { font-size: 14px; line-height: 1.6; }
 .analysis-ad-preview .text-btn { display: block; margin: 20px auto 0; }
+
+/* 종목 선택: 종류와 같은 기간의 수익률을 구분해 보여준다. */
+.sheet-filters { display: flex; gap: 6px; margin-top: 12px; }
+.sheet-filters button { min-height: 44px; flex: 1; border: 0; border-radius: 10px; background: var(--bg); padding: 9px 4px; font-size: 13px; color: var(--text-secondary); white-space: nowrap; }
+.sheet-filters button[aria-pressed="true"] { background: #e8f7ef; color: #007c51; font-weight: 700; }
+.sheet-return-controls { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 12px; font-size: 13px; color: var(--text-secondary); }
+.sheet-return-controls > div { display: flex; gap: 4px; }
+.sheet-return-controls button { min-height: 44px; min-width: 44px; border: 0; border-radius: 8px; padding: 8px 12px; background: #f2f4f6; color: #4e5968; }
+.sheet-return-controls button[aria-pressed="true"] { background: #333d4b; color: #fff; }
+.sheet-return-basis { font-size: 12px; color: #6b7684; margin-top: 8px; }
+.sheet-return-basis summary { cursor: pointer; padding: 4px 0; }
+.sheet-return-basis p { line-height: 1.5; margin: 8px 0 0; max-height: 100px; overflow-y: auto; }
+.sheet-return-notice { font-size: 12px; color: #6b7684; line-height: 1.5; margin: 8px 0 0; }
+.ticker-return { flex-shrink: 0; font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.ticker-return.muted { font-size: 12px; font-weight: 400; color: #6b7684; }
+
+.ticker-return.up-text { color: var(--up); }
+.ticker-return.down-text { color: var(--down); }

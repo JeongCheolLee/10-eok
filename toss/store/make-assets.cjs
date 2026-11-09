@@ -59,14 +59,14 @@ const settled = (page) => page.waitForFunction(() => !document.body.innerText.in
     if (s.name === "compare") {
       await page.getByRole("button", { name: "같은 조건으로 비교하기" }).click();
       await page.locator(".comparison-etf").first().waitFor();
-      await page.waitForFunction(() => !document.body.innerText.includes("나머지 ETF를 불러오는 중"));
+      await page.waitForFunction(() => !document.body.innerText.includes("나머지 종목을 불러오는 중"));
     }
     await page.waitForTimeout(400);
     // 등록 이미지는 광고가 없는 상태로 캡처한다. 브라우저 전용 테스트 광고 박스는 소개 이미지에 넣지 않는다.
     await page.addStyleTag({ content: '.ad-slot { display: none !important; }' });
     await page.evaluate(() => document.fonts.ready);
     if (s.name === "picker") {
-      await page.getByRole('button', { name: 'ETF 선택하기', exact: true }).click();
+      await page.getByRole('button', { name: '종목 선택하기', exact: true }).click();
       await page.getByRole('dialog').waitFor();
       await page.waitForTimeout(350);
     }
@@ -116,8 +116,8 @@ const settled = (page) => page.waitForFunction(() => !document.body.innerText.in
   // Cover attracts attention; subsequent slides use white backgrounds and one clear message.
   // Full-width capture regions preserve the actual mobile layout and all numeric results.
   const slides = [
-    { key: "home", image: "home", title: "월급날마다 모았다면<br><em>10억까지 몇 년?</em>", sub: "내 조건으로 돌아보는 ETF 투자", caption: "", dark: true },
-    { key: "compare", image: "compare-view", title: "같은 돈으로<br><em>다른 ETF를 샀다면?</em>", sub: "기간과 금액을 맞춰 비교해요", caption: "" },
+    { key: "home", image: "home", title: "월급날마다 모았다면<br><em>10억까지 몇 년?</em>", sub: "주식과 ETF를 내 조건으로 계산해요", caption: "", dark: true },
+    { key: "compare", image: "compare-view", title: "같은 돈으로<br><em>다른 종목을 샀다면?</em>", sub: "기간과 금액을 맞춰 비교해요", caption: "" },
     { key: "analysis", image: "analysis-view", title: "10억까지 가는 길<br><em>버틸 수 있었을까요?</em>", sub: "손실률, 손실 금액, 손실 기간까지", caption: "SPY를 매달 100만원씩 샀다면", rewarded: true },
     { key: "growth", image: "growth-view", title: "힘들었던 그때도<br><em>계속 적립했다면?</em>", sub: "1년 뒤, 3년 뒤, 5년 뒤를 살펴봐요", caption: "SPY를 매달 100만원씩 샀다면<br>" + notes.growth.replace("손실 금액이 가장 컸던 ", "손실 기준일: ").replace("부터 같은 금액과 주기로 계속 적립한 결과예요.", ""), rewarded: true },
     { key: "result", image: "result-view", title: "결과는 한눈에<br><em>공유는 간편하게</em>", sub: "그래프로 확인하고 친구에게 공유해요", caption: "SPY를 매달 100만원씩 샀다면<br>" + notes.result.split(/\n+/).find(line => line.includes("기준")) },

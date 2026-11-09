@@ -2,7 +2,7 @@
   <img src="app/icon.svg" width="88" height="88" alt="10-eok 로고" />
   <h1>10-eok</h1>
   <p><strong>월급날마다 ETF를 모았다면,<br />10억까지 얼마나 걸렸을까요?</strong></p>
-  <p>과거 가격과 환율로 돌아보는 ETF 적립 계산기</p>
+  <p>과거 가격과 환율로 돌아보는 주식과 ETF 적립 계산기</p>
   <p>
     <a href="https://jeongcheol.cloud">지금 계산해 보기</a> ·
     <a href="https://jeongcheol.cloud/guides">투자 가이드</a> ·
@@ -63,7 +63,7 @@
 | --- | --- | --- |
 | 화면 | Next.js · React | Vite · React · Toss Design System |
 | 언어·통화 | 한국어/KRW · English/USD · 日本語/JPY · Deutsch/EUR | 한국어/KRW |
-| 종목 | 한국어 16종 · 다른 언어 15종 | 미국·국내 상장 ETF 25종 |
+| 종목 | 한국어 16종 · 다른 언어 15종 | ETF 25종과 한국·미국 개별주 16종 |
 | 실행 | 브라우저 | Apps in Toss WebView · 브라우저 미리보기 |
 | 광고 연동 | Google AdSense | Apps in Toss 광고 SDK |
 | 배포 산출물 | Next.js 앱 | `toss/10-eok.ait` |
@@ -165,7 +165,7 @@ pnpm start
 
 # 미니앱 WebView 번들 / 업로드용 AIT
 pnpm --dir toss build
-pnpm --dir toss build:ait
+pnpm release:toss
 
 # 원자료를 다시 수집하고 public/data를 갱신할 때만 실행
 pnpm gen
@@ -195,3 +195,5 @@ e2e/                   Playwright 브라우저 테스트
 ```
 
 기능별 동작과 화면 문구는 [계산 방법](https://jeongcheol.cloud/how-it-works), [UX 라이팅 가이드](toss/UX_WRITING.md), 종목별 설명은 [투자 가이드](https://jeongcheol.cloud/guides)를 참고해요.
+
+토스 미니앱의 개별주 목록과 이력 기준은 [종목 자료 안내](toss/STOCKS.md), 검증·업로드 자동화는 [배포 안내](toss/RELEASE.md)를 참고해요.

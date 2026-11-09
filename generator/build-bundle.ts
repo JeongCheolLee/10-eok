@@ -10,6 +10,7 @@ import type { PxBundle, FxBundle } from "../lib/backtest/compose";
 import { TICKERS, TOSS_TICKERS, tickerCurrency, tickerInfo } from "../lib/tickers";
 import { MARKETS, type Market } from "../lib/i18n/markets";
 import { buildSummary } from "./summary";
+import { buildTickerReturns } from "../lib/tickerReturns";
 import { closedSessionBar } from "./closedSession";
 
 // TICKER env 지정 시 그 종목만, 없으면 레지스트리 전체.
@@ -70,6 +71,10 @@ async function fetchPrices(ticker: string): Promise<PricePoint[]> {
   if (!res.ok) throw new Error(`Yahoo ${ticker} HTTP ${res.status}`);
   const json: any = await res.json();
   const r = json?.chart?.result?.[0];
+  const info = tickerInfo(ticker);
+  if (info.kind === "stock" && (r?.meta?.instrumentType !== "EQUITY" || r?.meta?.currency !== tickerCurrency(ticker))) {
+    throw new Error(`Yahoo ${ticker}: 종목 유형 또는 거래 통화 불일치`);
+  }
   const ts: number[] | undefined = r?.timestamp;
   const adj: (number | null)[] | undefined = r?.indicators?.adjclose?.[0]?.adjclose;
   const close: (number | null)[] | undefined = r?.indicators?.quote?.[0]?.close;
@@ -297,6 +302,8 @@ async function buildTicker(ticker: string, fx: FxPoint[], dir: string): Promise<
   const file = join(dir, `${ticker.toLowerCase()}.json`);
   const pxFile = join(dir, "px", `${ticker.toLowerCase()}.json`);
   let prices = await fetchPrices(ticker);
+  const historyStart = tickerInfo(ticker).historyStart;
+  if (historyStart) prices = prices.filter((p) => p.date >= historyStart);
   // 합성 접합: 상장 이전 구간을 유사 전략 지수로 스케일해 앞에 붙인다(레지스트리 splice 설정).
   const splice = tickerInfo(ticker).splice;
   if (splice) {
@@ -336,14 +343,17 @@ async function buildTicker(ticker: string, fx: FxPoint[], dir: string): Promise<
 }
 
 async function main() {
-  const symbols = ONLY ? [ONLY] : TICKERS.map((t) => t.symbol);
+  const symbols = ONLY ? ONLY.split(",").map((s) => s.trim().toUpperCase()).filter(Boolean) : TICKERS.map((t) => t.symbol);
+  for (const symbol of symbols) {
+    if (!TICKERS.some((t) => t.symbol === symbol)) throw new Error(`등록되지 않은 종목: ${symbol}`);
+  }
   console.log(`[build-bundle] 환율(FRED) 수집…`);
-  const fx = await fetchFx();
+  const fx = (await fetchFx()).filter((row) => row.date >= FX_FILE_START);
   console.log(`  fx=${fx.length}`);
   if (fx.length < MIN_FX_ROWS) throw new Error(`FRED DEXKOUS: ${fx.length}개 < 최소 ${MIN_FX_ROWS}개 — 잘린 응답 의심`);
   const fxEnd = fx[fx.length - 1].date;
 
-  const dir = join(process.cwd(), "public", "data");
+  const dir = process.env.DATA_DIR ?? join(process.cwd(), "public", "data");
   mkdirSync(dir, { recursive: true });
   mkdirSync(join(dir, "px"), { recursive: true });
   mkdirSync(join(dir, "fx"), { recursive: true });
@@ -467,6 +477,16 @@ async function main() {
       console.warn(`  summary/${file} 생성 실패 (${e.message}) — 건너뜀(기존 파일 유지)`);
       annotate("warning", `summary/${file} 생성 실패: ${e.message}`);
     }
+  }
+  // 수익률 요약 실패가 정상 가격 갱신까지 막지 않게 기존 요약을 유지한다.
+  try {
+    const returnBundles = TOSS_TICKERS.map((symbol) => readPrevPx(join(dir, "px", `${symbol.toLowerCase()}.json`)));
+    if (returnBundles.some((px) => !px)) throw new Error("수익률 요약에 필요한 종목 자료가 없어요");
+    const returns = buildTickerReturns(returnBundles as PxBundle[], fxBundle);
+    writeFileSync(join(dir, "summary", "returns.json"), JSON.stringify(returns));
+  } catch (e: any) {
+    console.warn(`  수익률 요약 생성 실패: ${e.message} — 기존 파일 유지`);
+    annotate("warning", `수익률 요약 생성 실패: ${e.message}`);
   }
   console.log(`  fx/krw: ${fxBundle.rows.length}행 (${FX_FILE_START}~)`);
   console.log(`  cpi-kr: ${cpi.length}개월, ${cpi[0]?.ym} ~ ${cpi[cpi.length - 1]?.ym}`);

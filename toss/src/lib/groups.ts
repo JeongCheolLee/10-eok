@@ -6,12 +6,14 @@ export type Tax = ReturnType<typeof tickerTax>;
 
 /** 시트에 보이는 순서·이름·한 줄 설명 */
 export const GROUPS: { id: Group; label: string; desc?: string }[] = [
-  { id: "index", label: "지수" },
-  { id: "leverage", label: "레버리지" },
-  { id: "dividend", label: "배당" },
-  { id: "sector", label: "섹터와 테마" },
-  { id: "bond-gold", label: "채권과 금" },
-  { id: "kr-listed", label: "국내 상장", desc: "연금저축이나 ISA에서 살 수 있어요" },
+  { id: "kr-stock", label: "한국 주식" },
+  { id: "us-stock", label: "미국 주식" },
+  { id: "index", label: "지수 ETF" },
+  { id: "leverage", label: "레버리지 ETF" },
+  { id: "dividend", label: "배당 ETF" },
+  { id: "sector", label: "섹터와 테마 ETF" },
+  { id: "bond-gold", label: "채권과 금 ETF" },
+  { id: "kr-listed", label: "국내 상장 해외 ETF", desc: "연금저축이나 ISA에서 살 수 있어요" },
 ];
 
 /** group 필드가 없는 기존 16종 */
@@ -29,6 +31,8 @@ export function tickerGroup(symbol: string): Group {
 
 /** Representative funds first: editorial familiarity order, not a measured popularity or performance ranking. */
 const DISPLAY_ORDER: Record<Group, readonly string[]> = {
+  "kr-stock": ["005930.KS", "000660.KS", "005380.KS", "000270.KS", "035420.KS", "035720.KS", "105560.KS", "033780.KS"],
+  "us-stock": ["NVDA", "TSLA", "AAPL", "MSFT", "GOOGL", "AMZN", "META", "KO"],
   index: ["SPY", "QQQ", "VOO", "QQQM", "SPYM", "DIA", "VT", "069500.KS"],
   leverage: ["TQQQ", "SOXL", "QLD"],
   dividend: ["SCHD", "JEPI", "JEPQ", "VYM", "DGRO"],
@@ -47,7 +51,10 @@ export const TOSS_DISPLAY_TICKERS = GROUPS.flatMap(({ id }) => {
 
 /** 보조 표기. 국내 상장 해외 ETF는 "국내 상장"으로 구분(tickers.ts의 "한국 주식"은 오해 소지). */
 export function tossSubtitle(symbol: string): string {
-  return tickerTax(symbol) === "kr-foreign" ? "국내 상장" : tickerSubtitle(symbol);
+  const info = tickerInfo(symbol);
+  if (info.kind === "stock" && info.currency === "KRW") return symbol.replace(/\.KS$/, "");
+  if (info.currency === "KRW") return "국내 상장 ETF";
+  return tickerSubtitle(symbol);
 }
 
 const TAX_DESC: Record<Tax, string> = {
@@ -59,9 +66,10 @@ const TAX_DESC: Record<Tax, string> = {
 /** 담은 종목들의 세금 안내. taxable=false면 스위치를 끈다(국내 주식형만 담았을 때). label은 "평가액은 ○○ N원을 뺀 금액" 문구용. */
 export function taxInfo(symbols: string[]): { taxable: boolean; desc: string; label: string } {
   const set = new Set(symbols.map(tickerTax));
+  const hasKrStock = symbols.some((s) => tickerInfo(s).kind === "stock" && tickerInfo(s).currency === "KRW");
   const us = set.has("us"), krf = set.has("kr-foreign");
-  if (us && krf) return { taxable: true, label: "세금", desc: "해외 ETF 양도세는 합쳐서 250만원까지 안 내고, 국내 상장 해외 ETF는 15.4%가 붙어요" };
+  if (us && krf) return { taxable: true, label: "세금", desc: "해외주식 양도세는 합쳐서 250만원까지 안 내고, 국내 상장 해외 ETF는 15.4%가 붙어요" };
   if (us) return { taxable: true, label: "양도세", desc: TAX_DESC.us };
   if (krf) return { taxable: true, label: "배당소득세", desc: TAX_DESC["kr-foreign"] };
-  return { taxable: false, label: "세금", desc: TAX_DESC["kr-domestic"] };
+  return { taxable: false, label: "세금", desc: hasKrStock ? "국내 주식의 세금과 수수료는 계산에 넣지 않아요" : TAX_DESC["kr-domestic"] };
 }

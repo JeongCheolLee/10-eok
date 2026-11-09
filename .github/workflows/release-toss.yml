@@ -1,0 +1,48 @@
+name: Build Toss release
+on:
+  workflow_dispatch:
+    inputs:
+      upload:
+        description: '콘솔에 테스트 버전 업로드 (심사/운영 출시는 별도)'
+        type: boolean
+        default: false
+permissions:
+  contents: read
+concurrency:
+  group: release-toss
+  cancel-in-progress: false
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Verify, build and optionally upload
+        env:
+          AIT_API_KEY: ${{ secrets.AIT_API_KEY }}
+          VITE_AD_BANNER_ID: ${{ vars.VITE_AD_BANNER_ID }}
+          VITE_AD_REWARDED_ID: ${{ vars.VITE_AD_REWARDED_ID }}
+          VITE_REWARDED_ADS_ENABLED: 'false'
+          VITE_ANALYSIS_REWARDED_ADS_ENABLED: 'true'
+          UPLOAD: ${{ inputs.upload }}
+        run: |
+          if [ "$UPLOAD" = "true" ]; then
+            test -n "$AIT_API_KEY" || { echo 'AIT_API_KEY secret is required'; exit 1; }
+            pnpm release:toss --upload
+          else
+            pnpm release:toss
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: toss-release-${{ github.sha }}
+          path: |
+            toss/10-eok.ait
+            toss/release-manifest.json
+          if-no-files-found: error

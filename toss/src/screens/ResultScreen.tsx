@@ -82,7 +82,7 @@ export function ResultScreen({ plan, entrance = "quick", onCalculate, calculatio
       <NavBar back={back} onMenu={onMenu} onClose={onClose} />
       <div className="state">
         <div className="state-title">이 날짜로 계산할 자료가 없어요</div>
-        <div className="state-desc">선택한 ETF의 가격 자료는 {ymdKo(commonEnd(rowsBy, plan))}까지예요. 시작일을 앞당겨 주세요.</div>
+        <div className="state-desc">선택한 종목의 가격 자료는 {ymdKo(commonEnd(rowsBy, plan))}까지예요. 시작일을 앞당겨 주세요.</div>
         <Button size="large" onClick={onEdit}>시작일 바꾸기</Button>
       </div>
     </div>;
@@ -178,7 +178,7 @@ export function ResultScreen({ plan, entrance = "quick", onCalculate, calculatio
           <p className="result-label">{lead}</p>
           {unreachedTime && <div className="result-history-note">
             <p>{ymdKo(historyStart)}부터 {ymdKo(end)}까지의 실제 거래 자료로 계산했어요.</p>
-            {multi && <p>선택한 ETF 모두에 자료가 있는 기간이에요.</p>}
+            {multi && <p>선택한 모든 종목에 자료가 있는 기간이에요.</p>}
             <p>그 이전부터 모았다면 어땠을지는 이 자료로 알 수 없어요.</p>
           </div>}
           {unreachedTime && <p className="result-value-label">마지막 평가액</p>}
