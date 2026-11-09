@@ -11,7 +11,7 @@ pnpm release:toss --upload
 pnpm release:toss --upload --memo-file /path/to/release-note.txt
 ```
 
-최초 인증은 `cd toss && pnpm exec ait token add`로 등록한다. 키는 채팅이나 Git에 넣지 않는다. CI에서는 GitHub Actions secret `AIT_API_KEY`를 사용한다.
+최초 인증은 `cd toss && pnpm exec ait token add`로 등록한다. 키는 채팅이나 Git에 넣지 않는다. 이름을 지정해 등록했다면 `AIT_PROFILE=프로필명 pnpm release:toss --upload`로 실행한다. CI에서는 GitHub Actions secret `AIT_API_KEY`를 사용한다. 업로드는 테스트용 앱스킴을 받은 경우에만 성공으로 처리한다.
 
 운영 광고 설정은 로컬의 Git 제외 파일 `toss/.env.production.local` 또는 CI 환경변수에 둔다. 기본 계산은 `VITE_REWARDED_ADS_ENABLED=false`, 상세 분석은 `VITE_ANALYSIS_REWARDED_ADS_ENABLED=true`, 배너와 리워드는 각각 `VITE_AD_BANNER_ID`와 `VITE_AD_REWARDED_ID`를 설정한다. 배포 명령은 운영 광고 ID 누락을 차단한다.
 

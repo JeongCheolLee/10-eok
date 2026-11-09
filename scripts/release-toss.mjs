@@ -38,8 +38,15 @@ console.log(`완료: ${artifact} (${bytes.length} bytes)`);
 if (upload) {
   // 같은 폴더의 오래된 10eok.ait를 고르지 않도록 파일을 반드시 지정한다.
   const deployArgs = ['deploy', '--location', artifact, '--scheme-only'];
+  if (process.env.AIT_PROFILE) deployArgs.push('--profile', process.env.AIT_PROFILE);
   if (process.env.AIT_API_KEY) deployArgs.push('--api-key', process.env.AIT_API_KEY);
   if (memo) deployArgs.push('--memo', memo);
-  run(path.join(toss, 'node_modules/.bin/ait'), deployArgs, toss);
+  // CLI는 인증 프롬프트에서 EOF를 받아도 0으로 끝날 수 있다. 테스트 스킴까지 확인한다.
+  const deployed = spawnSync(path.join(toss, 'node_modules/.bin/ait'), deployArgs, { cwd: toss, stdio: ['ignore', 'pipe', 'pipe'], env: process.env, encoding: 'utf8', timeout: 180_000 });
+  const scheme = deployed.stdout?.match(/intoss-private:\/\/[^\s\x1b]+/)?.[0];
+  if (deployed.error || deployed.status !== 0 || !scheme) {
+    throw new Error('콘솔 업로드 완료를 확인하지 못했어요. AIT_API_KEY 또는 ait token add로 인증을 등록하고 다시 실행해 주세요. 이름을 지정해 등록했다면 AIT_PROFILE도 지정해 주세요.');
+  }
+  console.log(scheme);
   console.log('테스트 버전을 업로드했어요. 운영 반영은 콘솔에서 검토 요청 → 승인 → 출시 순서로 진행해 주세요.');
 } else console.log('업로드하려면 --upload를 붙여 실행해 주세요.');
