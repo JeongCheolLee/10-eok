@@ -10,7 +10,7 @@
 
 > 2026-11-05 운영: 기본 계산은 무제한 무료(`VITE_REWARDED_ADS_ENABLED=false`). 투자 과정 상세 분석만 별도 `VITE_ANALYSIS_REWARDED_ADS_ENABLED=true`와 운영 리워드 ID로 연다. 같은 조건은 시청 완료 기록을 기기에 보관해 다시 열 수 있고, 중도 닫기는 잠금을 유지하며 광고 오류는 해당 화면만 무료로 연다. 배너는 독립 유지. 아래 일일 무료 2회 규칙은 비활성 기능이다.
 
-ETF 적립 백테스트 계산기. 웹(`app/`, jeongcheol.cloud)과 토스 미니앱(`toss/`)이 `lib/`(엔진·포맷터·종목)을 공유한다.
+ETF 적립 백테스트 계산기. 웹(`app/`, fefelabs.dev)과 토스 미니앱(`toss/`)이 `lib/`(엔진·포맷터·종목)을 공유한다.
 - 구조·개발 명령: `README.md` · 디자인 언어(웹): `DESIGN.md` · 미니앱 실행 계획: `TOSS_MASTERPLAN.md`
 - 로컬 pnpm 11: `pnpm-workspace.yaml`의 `allowBuilds`를 실제 값으로 채운 뒤(10/20) `pnpm test/gen/build:ait`가 의존성 검사를 통과한다. 다시 막히면 `node_modules/.bin/{tsc,vitest,tsx,vite,ait}` 직접 실행. CI는 pnpm 10(호환 확인).
 

@@ -1,9 +1,10 @@
 /** 미니앱과 콘솔 등록용 웹 문서의 공통 원문. 웹 계산기 약관과는 적용 범위가 다르다. */
 export const LEGAL_APP_NAME = "주식으로 10억 모으기";
-// 2026-10-24 사용자가 법적 문서에 공개할 운영자와 기존 문의 이메일을 확인했다.
+// 2026-10-24 사용자가 법적 문서에 공개할 운영자 이름을 확인했다.
+// 2026-11-17 도메인 이전에 맞춰 문의 이메일을 운영자용 주소로 바꿨다(사용자 지정).
 export const LEGAL_OPERATOR = "페페랩스";
-export const LEGAL_EMAIL = "jclee7503@gmail.com";
-export const LEGAL_UPDATED = "2026-11-05";
+export const LEGAL_EMAIL = "fefelabss@gmail.com";
+export const LEGAL_UPDATED = "2026-11-17";
 export type LegalKind = "terms" | "privacy";
 export type LegalDocument = { title: string; intro: string; sections: { title: string; paragraphs: string[] }[] };
 
@@ -67,7 +68,7 @@ export const MINIAPP_LEGAL: Record<LegalKind, LegalDocument> = {
         "맞춤형 광고 설정은 토스 앱의 개인정보 관련 설정과 기기 설정에서 관리할 수 있어요. iOS에서는 ‘개인정보 보호 및 보안 → 추적’, Android에서는 Google 또는 개인정보 보호의 광고 설정을 확인해 주세요. 메뉴 이름은 기기 버전에 따라 다를 수 있어요. 맞춤형 광고를 제한해도 일반 광고는 표시될 수 있어요.",
       ] },
       { title: "5. 외부 서비스와 공유", paragraphs: [
-        "시장 자료는 jeongcheol.cloud에서 내려받아요. 자료 전달과 보안을 위해 호스팅 제공업체 Vercel이 IP 주소, 요청 주소, 접속 시각, 브라우저 정보 등 통신 정보를 처리할 수 있어요. 요청 주소에는 자료를 조회한 ETF 코드가 포함될 수 있어요. 이용자의 기기에서 Yahoo Finance나 FRED로 계산 조건을 보내는 방식은 아니에요.",
+        "시장 자료는 fefelabs.dev에서 내려받아요. 자료 전달과 보안을 위해 호스팅 제공업체 Vercel이 IP 주소, 요청 주소, 접속 시각, 브라우저 정보 등 통신 정보를 처리할 수 있어요. 요청 주소에는 자료를 조회한 ETF 코드가 포함될 수 있어요. 이용자의 기기에서 Yahoo Finance나 FRED로 계산 조건을 보내는 방식은 아니에요.",
         "공유를 선택하면 계산 조건이 담긴 링크를 토스 공유 서비스로 전달해요. ETF, 금액, 주기, 매수일, 목돈, 배당 설정과 조건에 따라 시작일, 기간이 포함돼요. 선택한 메신저 등에도 공유 문구와 링크가 전달돼요. 공유받은 사람은 링크로 같은 조건을 열 수 있으며, 전달된 메시지와 링크는 이 앱에서 회수할 수 없어요.",
         "토스, 광고, 호스팅 서비스가 처리하는 정보는 각 서비스의 처리 조건에 따라 관리돼요. 이 방침에 적힌 처리 외에 운영자가 계산 조건을 판매하거나 광고 목적으로 제공하지 않아요.",
       ] },

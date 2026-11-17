@@ -250,7 +250,7 @@ export const PRIVACY_JA = {
 
       <h2>7. お問い合わせ</h2>
       <p>
-        個人情報に関するお問い合わせは<a href="mailto:jclee7503@gmail.com">jclee7503@gmail.com</a>
+        個人情報に関するお問い合わせは<a href="mailto:fefelabss@gmail.com">fefelabss@gmail.com</a>
         までお送りください。
       </p>
     </>
@@ -298,7 +298,7 @@ export const TERMS_JA = {
       </p>
 
       <p className="note">
-        お問い合わせ: <a href="mailto:jclee7503@gmail.com">jclee7503@gmail.com</a>
+        お問い合わせ: <a href="mailto:fefelabss@gmail.com">fefelabss@gmail.com</a>
       </p>
     </>
   ),

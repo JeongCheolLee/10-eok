@@ -8,8 +8,8 @@ export function JsonLd({ data }: { data: object }) {
 }
 
 const ORG = { "@type": "Organization", name: "10-eok", url: SITE_URL };
-// YMYL(금융) 신뢰 신호: 글의 author 는 실명 개인. 운영 주체(publisher)는 Organization 유지.
-const PERSON = { "@type": "Person", name: AUTHOR, url: `${SITE_URL}/about` };
+// YMYL(금융) 신뢰 신호: 글의 author 는 운영자(페페랩스), 소개 페이지로 연결. 서비스 주체(publisher)는 10-eok.
+const PERSON = { "@type": "Organization", name: AUTHOR, url: `${SITE_URL}/about` };
 
 export function webSiteLd(lang: Locale = DEFAULT_LOCALE) {
   return {

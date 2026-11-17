@@ -73,7 +73,7 @@ function KoBody() {
 
       <h2>7. 문의</h2>
       <p>
-        개인정보 관련 문의는 <a href="mailto:jclee7503@gmail.com">jclee7503@gmail.com</a>으로
+        개인정보 관련 문의는 <a href="mailto:fefelabss@gmail.com">fefelabss@gmail.com</a>으로
         보내주세요.
       </p>
     </>

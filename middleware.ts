@@ -3,9 +3,15 @@
 // (rewrite는 프리렌더된 SSG 출력을 그대로 서빙. 쿼리스트링은 nextUrl.clone으로 보존)
 import { NextRequest, NextResponse } from "next/server";
 import { DEFAULT_LOCALE, PREFIXED_LOCALES } from "./lib/i18n/locales";
+import { legacyRedirectUrl } from "./lib/site";
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
+
+  // 이전 도메인으로 온 페이지 요청은 새 도메인의 같은 주소로 308 (검색 색인·기존 공유 링크 유지).
+  // matcher가 제외한 /data·/api·/og·/miniapp은 여기 오지 않아 이전 주소에서 그대로 응답한다.
+  const moved = legacyRedirectUrl(req.headers.get("host"), pathname, req.nextUrl.search);
+  if (moved) return NextResponse.redirect(moved, 308);
 
   // 내부 경로 /ko/*가 공개 중복 URL이 되지 않게 프리픽스 제거로 308
   if (pathname === `/${DEFAULT_LOCALE}` || pathname.startsWith(`/${DEFAULT_LOCALE}/`)) {

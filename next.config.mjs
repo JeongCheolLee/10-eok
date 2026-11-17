@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // 토스 미니앱이 https://jeongcheol.cloud/data/* 를 교차 출처로 fetch한다.
+  // 토스 미니앱이 https://fefelabs.dev/data/* 를 교차 출처로 fetch한다.
   // 공개 읽기 전용 JSON이라 Origin은 * 허용 (headers는 public/ 파일보다 먼저 적용됨).
   async headers() {
     return [

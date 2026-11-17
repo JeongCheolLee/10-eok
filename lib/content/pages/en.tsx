@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { localeHref } from "@/lib/i18n/seo";
 import { Sources } from "@/components/Sources";
+import { authorName } from "@/lib/site";
 
 
 export const DCA_EN = {
@@ -192,7 +193,7 @@ export const CONTACT_EN = {
   Body: () => (
     <>
       <p>
-        Hi, I&rsquo;m <strong>이정철 (Jeongcheol Lee)</strong>, the person who built and runs
+        Hi, this is <strong>{authorName("en")}</strong>, the one-person studio that built and runs
         10-eok. I&rsquo;m not a financial company or an advisory firm — I&rsquo;m a{" "}
         <strong>developer and individual investor</strong> who built this tool because I was
         curious &ldquo;what if I&rsquo;d invested like this in the past?&rdquo; and wanted to check
@@ -204,7 +205,7 @@ export const CONTACT_EN = {
       </p>
       <p>
         <strong>Email:</strong>{" "}
-        <a href="mailto:jclee7503@gmail.com">jclee7503@gmail.com</a>
+        <a href="mailto:fefelabss@gmail.com">fefelabss@gmail.com</a>
       </p>
 
       <h2>What&rsquo;s helpful to include</h2>
@@ -286,7 +287,7 @@ export const PRIVACY_EN = {
       <h2>7. Contact</h2>
       <p>
         For privacy-related questions, please email{" "}
-        <a href="mailto:jclee7503@gmail.com">jclee7503@gmail.com</a>.
+        <a href="mailto:fefelabss@gmail.com">fefelabss@gmail.com</a>.
       </p>
     </>
   ),
@@ -336,7 +337,7 @@ export const TERMS_EN = {
       <p>These terms may be updated from time to time; any changes will be posted on this page. Continuing to use the Service after a change means you accept the updated terms.</p>
 
       <p className="note">
-        Contact: <a href="mailto:jclee7503@gmail.com">jclee7503@gmail.com</a>
+        Contact: <a href="mailto:fefelabss@gmail.com">fefelabss@gmail.com</a>
       </p>
     </>
   ),

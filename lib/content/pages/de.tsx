@@ -195,7 +195,7 @@ export const CONTACT_DE = {
     return (
       <>
         <p>
-          Hallo, ich bin <strong>{name}</strong>, ich habe 10-eok gebaut und betreibe es. Keine
+          Hallo, hier ist <strong>{name}</strong> – ich habe 10-eok gebaut und betreibe es. Keine
           Finanzfirma, keine Beratung — ich bin <strong>Entwickler und Privatanleger</strong> und habe
           dieses Tool gebaut, weil mich selbst interessiert hat, was gewesen wäre, wenn ich damals so
           angespart hätte, und ich das mit echten Daten überprüfen wollte.
