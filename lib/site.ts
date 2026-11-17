@@ -7,7 +7,7 @@ export const SITE_URL = "https://10-eok.fefelabs.dev";
 // 이전 도메인. 페이지 요청만 새 주소로 보낸다(middleware).
 // /data·/api·/og·/miniapp은 middleware matcher 밖이라 이전 주소에서 그대로 응답한다.
 // 이미 출시된 미니앱 번들이 이전 주소의 /data를 교차 출처로 읽고, 리다이렉트 응답에는 CORS 헤더가 없어 fetch가 실패하기 때문이다.
-export const LEGACY_HOSTS = ["jeongcheol.cloud", "www.jeongcheol.cloud"];
+export const LEGACY_HOSTS = ["jeongcheol.cloud", "www.jeongcheol.cloud", "10-eok.jeongcheol.cloud"];
 
 /** 이전 도메인으로 온 요청이면 새 주소의 같은 경로·쿼리를, 아니면 null을 돌려준다. */
 export function legacyRedirectUrl(host: string | null | undefined, pathname: string, search = ""): string | null {

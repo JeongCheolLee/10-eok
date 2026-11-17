@@ -6,6 +6,7 @@ describe("legacyRedirectUrl", () => {
   it("이전 도메인의 페이지 요청을 새 도메인의 같은 경로·쿼리로 보낸다", () => {
     expect(legacyRedirectUrl("jeongcheol.cloud", "/etf/069500.ks", "?h=QLD&m=100")).toBe(`${SITE_URL}/etf/069500.ks?h=QLD&m=100`);
     expect(legacyRedirectUrl("www.jeongcheol.cloud", "/", "")).toBe(`${SITE_URL}/`);
+    expect(legacyRedirectUrl("10-eok.jeongcheol.cloud", "/about", "")).toBe(`${SITE_URL}/about`);
     expect(legacyRedirectUrl("JeongCheol.Cloud:443", "/en/guides")).toBe(`${SITE_URL}/en/guides`);
   });
 
