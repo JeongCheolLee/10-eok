@@ -9,12 +9,8 @@ describe("legacyRedirectUrl", () => {
     expect(legacyRedirectUrl("JeongCheol.Cloud:443", "/en/guides")).toBe(`${SITE_URL}/en/guides`);
   });
 
-  it("새 도메인의 www도 루트로 보낸다", () => {
-    expect(legacyRedirectUrl("www.fefelabs.dev", "/guides", "?a=1")).toBe(`${SITE_URL}/guides?a=1`);
-  });
-
-  it("새 도메인·미리보기·로컬 요청은 그대로 둔다", () => {
-    for (const host of ["fefelabs.dev", "10-eok-git-main.vercel.app", "localhost:3000", "notjeongcheol.cloud", "", null, undefined]) {
+  it("새 주소·비워 둔 루트·미리보기·로컬 요청은 그대로 둔다", () => {
+    for (const host of ["10-eok.fefelabs.dev", "fefelabs.dev", "www.fefelabs.dev", "10-eok-git-main.vercel.app", "localhost:3000", "notjeongcheol.cloud", "", null, undefined]) {
       expect(legacyRedirectUrl(host, "/", "")).toBeNull();
     }
   });
@@ -29,6 +25,7 @@ describe("공개 운영자 정보", () => {
     expect(AUTHOR).toBe("페페랩스");
     expect(authorName("ko")).toBe("페페랩스");
     expect(authorName("en")).toBe("Fefe Labs");
+    expect(SITE_URL).toBe("https://10-eok.fefelabs.dev");
     expect(CONTACT_EMAIL).toBe("fefelabss@gmail.com");
     expect(LEGAL_EMAIL).toBe(CONTACT_EMAIL);
   });

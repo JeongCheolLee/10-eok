@@ -6,7 +6,7 @@ import { startAnalysisReward, type AnalysisAdOutcome } from "./analysisReward";
 import { createAnalysisAccess } from "./analysisAccess";
 
 export const APP_NAME = "10-eok";
-export const SITE = "https://fefelabs.dev";
+export const SITE = "https://10-eok.fefelabs.dev";
 // 공유 링크 미리보기: 결과 숫자 없는 앱 소개 카드(숫자는 공유 문구에). 웹 /api/og는 웹 계산 기준이라 미니앱 결과와 다를 수 있다.
 export const OG_IMAGE = `${SITE}/og/toss-share.png?v=20261024-2`;
 

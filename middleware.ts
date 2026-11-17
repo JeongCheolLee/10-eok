@@ -8,7 +8,7 @@ import { legacyRedirectUrl } from "./lib/site";
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // 이전 도메인으로 온 페이지 요청은 새 도메인의 같은 주소로 308 (검색 색인·기존 공유 링크 유지).
+  // 이전 도메인으로 온 페이지 요청은 새 주소의 같은 경로로 308 (검색 색인·기존 공유 링크 유지).
   // matcher가 제외한 /data·/api·/og·/miniapp은 여기 오지 않아 이전 주소에서 그대로 응답한다.
   const moved = legacyRedirectUrl(req.headers.get("host"), pathname, req.nextUrl.search);
   if (moved) return NextResponse.redirect(moved, 308);

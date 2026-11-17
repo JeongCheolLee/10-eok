@@ -3,7 +3,7 @@
 - 같은 폴더의 `CLAUDE.md`(현재 상태 블록)·`TOSS_MASTERPLAN.md` — 토스 미니앱 진행 상태·결정·일정.
 - 이 리포의 `CLAUDE.md` — UX 라이팅 규칙(모든 한국어 UI 문구에 적용)과 용어 사전, `toss/UX_WRITING.md`.
 
-이 리포는 ETF 적립 백테스트 계산기다. 웹(`app/`, Next.js, fefelabs.dev)과 토스 미니앱(`toss/`, Vite+TDS, '주식으로 10억 부자되기')이 `lib/`(엔진·포맷터·종목)를 공유한다. 데이터는 `generator/`가 매일 만들어 `public/data`로 배포하고, 미니앱은 그 JSON을 받아 기기에서 계산한다(계산 서버 없음).
+이 리포는 ETF 적립 백테스트 계산기다. 웹(`app/`, Next.js, 10-eok.fefelabs.dev)과 토스 미니앱(`toss/`, Vite+TDS, '주식으로 10억 부자되기')이 `lib/`(엔진·포맷터·종목)를 공유한다. 데이터는 `generator/`가 매일 만들어 `public/data`로 배포하고, 미니앱은 그 JSON을 받아 기기에서 계산한다(계산 서버 없음).
 
 - 검증: `node_modules/.bin/vitest run`, `node_modules/.bin/tsc --noEmit`(웹)·`-p toss/tsconfig.json`(미니앱), `node_modules/.bin/next build`, `cd toss && node_modules/.bin/vite build`, 웹 e2e `node_modules/.bin/playwright test`.
 - main에 push하면 Vercel이 바로 운영 배포한다. main에는 매일 데이터 갱신 봇 커밋이 쌓인다.

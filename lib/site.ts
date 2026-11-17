@@ -1,19 +1,18 @@
 import type { Locale } from "./i18n/locales";
 
-// 사이트 canonical 기준 URL. 루트(apex)를 10-eok로 쓴다. 2026-11-17 도메인 이전.
-export const SITE_URL = "https://fefelabs.dev";
+// 사이트 canonical 기준 URL. 2026-11-17 도메인 이전.
+// fefelabs.dev 루트는 비워 두고 서비스마다 서브도메인을 쓴다(사용자 결정). 10억 계산기는 10-eok.
+export const SITE_URL = "https://10-eok.fefelabs.dev";
 
 // 이전 도메인. 페이지 요청만 새 주소로 보낸다(middleware).
 // /data·/api·/og·/miniapp은 middleware matcher 밖이라 이전 주소에서 그대로 응답한다.
-// 이미 올라간 미니앱 번들이 이전 주소의 /data를 교차 출처로 읽고, 리다이렉트 응답에는 CORS 헤더가 없어 fetch가 실패하기 때문이다.
+// 이미 출시된 미니앱 번들이 이전 주소의 /data를 교차 출처로 읽고, 리다이렉트 응답에는 CORS 헤더가 없어 fetch가 실패하기 때문이다.
 export const LEGACY_HOSTS = ["jeongcheol.cloud", "www.jeongcheol.cloud"];
-// 새 도메인의 www도 루트로 모은다(Vercel 도메인 설정의 리다이렉트에 기대지 않는다).
-const REDIRECT_HOSTS = [...LEGACY_HOSTS, `www.${new URL(SITE_URL).host}`];
 
-/** 이전 도메인이나 www로 온 요청이면 새 도메인의 같은 경로·쿼리 주소를, 아니면 null을 돌려준다. */
+/** 이전 도메인으로 온 요청이면 새 주소의 같은 경로·쿼리를, 아니면 null을 돌려준다. */
 export function legacyRedirectUrl(host: string | null | undefined, pathname: string, search = ""): string | null {
   const name = host?.trim().toLowerCase().replace(/:\d+$/, "");
-  if (!name || !REDIRECT_HOSTS.includes(name)) return null;
+  if (!name || !LEGACY_HOSTS.includes(name)) return null;
   return `${SITE_URL}${pathname}${search}`;
 }
 

@@ -17,7 +17,7 @@ export type TickerInfo = {
   splice?: { proxy: string; label: string };
   // 상장이 늦어 데이터 이력이 짧음(장기 백테스트 한계). UI가 "이력 짧음" 안내를 띄운다.
   shortHistory?: boolean;
-  // 웹(fefelabs.dev) 시장 목록·ETF 상세 페이지에서 제외. 토스 미니앱에만 노출(웹은 4개 언어 콘텐츠가 필요해서, 2026-10-22).
+  // 웹(10-eok.fefelabs.dev) 시장 목록·ETF 상세 페이지에서 제외. 토스 미니앱에만 노출(웹은 4개 언어 콘텐츠가 필요해서, 2026-10-22).
   webHidden?: boolean;
   // 세금 규칙. 생략 시 currency로 결정: USD → "us"(해외주식 양도세 22%, 연 250만 공제 합산), KRW → "kr-domestic"(국내주식형 ETF 매매차익 비과세).
   // "kr-foreign" = 국내 상장 해외주식형 ETF: 매매차익에 배당소득세 15.4%(공제 없음, 종목별).

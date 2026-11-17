@@ -4,15 +4,15 @@
   <p><strong>월급날마다 ETF를 모았다면,<br />10억까지 얼마나 걸렸을까요?</strong></p>
   <p>과거 가격과 환율로 돌아보는 주식과 ETF 적립 계산기</p>
   <p>
-    <a href="https://fefelabs.dev">지금 계산해 보기</a> ·
-    <a href="https://fefelabs.dev/guides">투자 가이드</a> ·
-    <a href="https://fefelabs.dev/how-it-works">계산 방법</a>
+    <a href="https://10-eok.fefelabs.dev">지금 계산해 보기</a> ·
+    <a href="https://10-eok.fefelabs.dev/guides">투자 가이드</a> ·
+    <a href="https://10-eok.fefelabs.dev/how-it-works">계산 방법</a>
   </p>
   <p>
-    <a href="https://fefelabs.dev">한국어</a> ·
-    <a href="https://fefelabs.dev/en">English</a> ·
-    <a href="https://fefelabs.dev/ja">日本語</a> ·
-    <a href="https://fefelabs.dev/de">Deutsch</a>
+    <a href="https://10-eok.fefelabs.dev">한국어</a> ·
+    <a href="https://10-eok.fefelabs.dev/en">English</a> ·
+    <a href="https://10-eok.fefelabs.dev/ja">日本語</a> ·
+    <a href="https://10-eok.fefelabs.dev/de">Deutsch</a>
   </p>
 </div>
 
@@ -78,7 +78,7 @@
 - **매수·배당:** 휴장일에 예정된 매수는 다음 거래일로 옮겨요. 소수점 매수를 가정하고, 배당 재투자는 수정주가로 반영해요. 투자자의 거래 수수료·스프레드는 제외해요.
 - **연평균:** 자산 가격의 증가율을 연 단위 복리로 환산한 값이에요. 매수 시점별 납입금을 반영한 투자자 수익률과는 달라요.
 
-과거 자료로 계산한 참고용 결과예요. 특정 종목을 추천하거나 미래 수익을 보장하지 않아요. 세금·물가 옵션 등 세부 가정은 [계산 방법](https://fefelabs.dev/how-it-works)에서 확인할 수 있어요.
+과거 자료로 계산한 참고용 결과예요. 특정 종목을 추천하거나 미래 수익을 보장하지 않아요. 세금·물가 옵션 등 세부 가정은 [계산 방법](https://10-eok.fefelabs.dev/how-it-works)에서 확인할 수 있어요.
 
 ## 데이터는 이렇게 들어와요
 
@@ -125,7 +125,7 @@ pnpm dev
 ```bash
 # 미니앱 · http://localhost:5173
 # 브라우저 미리보기에서는 공개 JSON 데이터 주소를 지정해요.
-VITE_DATA_BASE=https://fefelabs.dev/data pnpm --dir toss dev
+VITE_DATA_BASE=https://10-eok.fefelabs.dev/data pnpm --dir toss dev
 ```
 
 토스 공유·광고 등 플랫폼 기능은 브라우저 미리보기와 실제 토스 앱에서 동작이 다를 수 있어요. 실제 연동은 토스 앱의 테스트 환경에서 확인해야 해요.
@@ -194,6 +194,6 @@ toss/
 e2e/                   Playwright 브라우저 테스트
 ```
 
-기능별 동작과 화면 문구는 [계산 방법](https://fefelabs.dev/how-it-works), [UX 라이팅 가이드](toss/UX_WRITING.md), 종목별 설명은 [투자 가이드](https://fefelabs.dev/guides)를 참고해요.
+기능별 동작과 화면 문구는 [계산 방법](https://10-eok.fefelabs.dev/how-it-works), [UX 라이팅 가이드](toss/UX_WRITING.md), 종목별 설명은 [투자 가이드](https://10-eok.fefelabs.dev/guides)를 참고해요.
 
 토스 미니앱의 개별주 목록과 이력 기준은 [종목 자료 안내](toss/STOCKS.md), 검증·업로드 자동화는 [배포 안내](toss/RELEASE.md)를 참고해요.
