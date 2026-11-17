@@ -1,0 +1,101 @@
+<style>
+#analysis-entry-options { --ae-bg:light-dark(#ffffff,#17191c); --ae-text:light-dark(#191f28,#f2f4f6); --ae-sub:light-dark(#586474,#aeb8c4); --ae-soft:light-dark(#f2f4f6,#262b32); --ae-line:light-dark(#e5e8eb,#3a414a); --ae-green:light-dark(#008a58,#36d59c); --ae-mint:light-dark(#edf9f3,#193c31); --ae-button:light-dark(#009f67,#008958); font-family:-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Noto Sans KR',sans-serif; }
+#analysis-entry-options * { box-sizing:border-box; }
+#analysis-entry-options section { min-width:0; }
+#analysis-entry-options .ae-stage { min-height:650px; padding:24px 12px; display:flex; justify-content:center; align-items:flex-start; }
+#analysis-entry-options .ae-phone { width:390px; max-width:100%; background:var(--ae-bg); color:var(--ae-text); padding:28px 20px; border-radius:24px; }
+#analysis-entry-options .ae-context { display:flex; justify-content:space-between; gap:12px; color:var(--ae-sub); font-size:13px; line-height:1.5; padding:0 2px 24px; }
+#analysis-entry-options .ae-context strong { color:var(--ae-text); font-weight:600; }
+#analysis-entry-options .ae-card { padding:24px; border-radius:22px; }
+#analysis-entry-options .ae-kicker { margin:0 0 14px; color:var(--ae-green); font-size:13px; font-weight:600; line-height:1.5; }
+#analysis-entry-options h2 { margin:0; font-size:27px; font-weight:700; line-height:1.36; letter-spacing:-1px; word-break:keep-all; }
+#analysis-entry-options .ae-intro { margin:16px 0 22px; font-size:15px; line-height:1.65; color:var(--ae-sub); word-break:keep-all; }
+#analysis-entry-options .ae-benefits { display:flex; flex-wrap:wrap; gap:8px 16px; margin:22px 0 24px; font-size:13px; line-height:1.6; color:var(--ae-sub); }
+#analysis-entry-options .ae-benefits span { display:inline-flex; gap:5px; align-items:center; }
+#analysis-entry-options .ae-benefits i { width:14px; height:14px; color:var(--ae-green); }
+#analysis-entry-options .ae-cta { width:100%; min-height:56px; padding:14px 10px; border:0; border-radius:14px; color:#fff; background:var(--ae-button); font-family:inherit; font-size:16px; font-weight:600; line-height:1.5; }
+#analysis-entry-options .ae-note { margin:12px 0 0; text-align:center; color:var(--ae-sub); font-size:12px; line-height:1.6; word-break:keep-all; }
+#analysis-entry-options .ae-bottom { margin:28px 0 0; padding:0 4px; color:var(--ae-sub); font-size:14px; line-height:1.5; }
+#analysis-entry-options .ae-simple { background:var(--ae-mint); }
+#analysis-entry-options .ae-simple h2 em { color:var(--ae-green); font-style:normal; }
+#analysis-entry-options .ae-preview { background:var(--ae-soft); }
+#analysis-entry-options .ae-preview h2 { font-size:25px; }
+#analysis-entry-options .ae-rows { margin:22px 0; display:flex; flex-direction:column; gap:2px; }
+#analysis-entry-options .ae-row { min-height:60px; display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid var(--ae-line); }
+#analysis-entry-options .ae-row:last-child { border-bottom:0; }
+#analysis-entry-options .ae-row .ae-num { width:28px; height:28px; display:grid; place-items:center; border-radius:9px; background:var(--ae-bg); color:var(--ae-green); font-size:12px; font-weight:600; flex-shrink:0; }
+#analysis-entry-options .ae-row strong { flex:1; font-size:15px; font-weight:600; line-height:1.5; }
+#analysis-entry-options .ae-row .ae-lock { color:var(--ae-sub); width:16px; height:16px; }
+#analysis-entry-options .ae-bold { background:light-dark(#12392e,#12392e); color:#fff; padding-top:28px; }
+#analysis-entry-options .ae-bold .ae-kicker { color:#8de5bd; }
+#analysis-entry-options .ae-bold h2 { font-size:31px; line-height:1.35; letter-spacing:-1.2px; }
+#analysis-entry-options .ae-bold h2 em { color:#93edc6; font-style:normal; }
+#analysis-entry-options .ae-bold .ae-intro { color:#d3e5dc; }
+#analysis-entry-options .ae-bold .ae-divider { width:32px; height:3px; border-radius:2px; margin:25px 0; background:#93edc6; }
+#analysis-entry-options .ae-bold .ae-labels { color:#d3e5dc; font-size:14px; line-height:1.9; margin:0 0 26px; }
+#analysis-entry-options .ae-bold .ae-cta { background:#a3f1ca; color:#11392c; }
+#analysis-entry-options .ae-bold .ae-note { color:#d3e5dc; }
+#analysis-entry-options .ae-feedback { margin:12px 0 0; font-size:13px; line-height:1.5; color:var(--ae-sub); text-align:center; }
+#analysis-entry-options [hidden] { display:none !important; }
+@media(max-width:380px) { #analysis-entry-options .ae-stage { min-height:690px; padding:18px 0; } #analysis-entry-options .ae-phone { padding:22px 12px; } #analysis-entry-options .ae-card { padding:22px 18px; } #analysis-entry-options h2 { font-size:25px; } #analysis-entry-options .ae-bold h2 { font-size:29px; } }
+#analysis-entry-options .ae-comparison { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; }
+#analysis-entry-options .ae-variant-label { color:var(--ae-text); font-size:16px; font-weight:600; margin:12px 0 0; text-align:center; }
+#analysis-entry-options .ae-stage { min-height:0; padding:16px 0; }
+@media(max-width:1000px){#analysis-entry-options .ae-comparison {grid-template-columns:minmax(0,1fr);}}
+</style>
+<div id="analysis-entry-options">
+<div class="ae-comparison viz-dotted-background" aria-label="상세 분석 진입 시안" data-previous-label="이전 시안" data-next-label="다음 시안">
+<section data-variant="간결한 강조" aria-label="간결한 강조 시안"><p class="ae-variant-label">간결한 강조</p>
+<div class="ae-stage"><div class="ae-phone">
+<div class="ae-context"><span>계산 결과</span><strong>투자 과정 돌아보기</strong></div>
+<article class="ae-card ae-simple" aria-label="간결한 강조 카드">
+<p class="ae-kicker">결과 다음엔, 투자 과정</p>
+<h2>10억까지 가는 길,<br><em>버틸 수 있었을까요?</em></h2>
+<p class="ae-intro">가장 힘들었던 시기와<br>계속 모았을 때의 변화를 확인해요.</p>
+<div class="ae-benefits"><span><i data-lucide="check" aria-hidden="true"></i>최대 손실</span><span><i data-lucide="check" aria-hidden="true"></i>손실 기간</span><span><i data-lucide="check" aria-hidden="true"></i>이후 변화</span></div>
+<button type="button" class="ae-cta cursor-interaction">광고 보고 분석 보기</button>
+<p class="ae-note">광고를 끝까지 보면 이 조건의 분석이 열려요.</p>
+</article>
+<p class="ae-feedback" aria-live="polite" hidden>시안 미리보기예요. 실제 광고는 재생되지 않아요.</p>
+<p class="ae-bottom">같은 조건으로 비교하기 →</p>
+</div></div></section>
+<section data-variant="분석 항목 미리보기" aria-label="분석 항목 미리보기 시안"><p class="ae-variant-label">분석 항목 미리보기</p>
+<div class="ae-stage"><div class="ae-phone">
+<div class="ae-context"><span>계산 결과</span><strong>투자 과정 돌아보기</strong></div>
+<article class="ae-card ae-preview" aria-label="분석 항목 미리보기 카드">
+<p class="ae-kicker">내 조건으로 보는 상세 분석</p>
+<h2>수익만 봐서는<br>알 수 없는 것들</h2>
+<div class="ae-rows">
+<div class="ae-row"><span class="ae-num">01</span><strong>가장 큰 손실률과 금액</strong><i class="ae-lock" data-lucide="lock-keyhole" aria-hidden="true"></i></div>
+<div class="ae-row"><span class="ae-num">02</span><strong>손실이 이어진 최장 기간</strong><i class="ae-lock" data-lucide="lock-keyhole" aria-hidden="true"></i></div>
+<div class="ae-row"><span class="ae-num">03</span><strong>계속 모았다면 이후 변화</strong><i class="ae-lock" data-lucide="lock-keyhole" aria-hidden="true"></i></div>
+</div>
+<button type="button" class="ae-cta cursor-interaction">광고 보고 분석 보기</button>
+<p class="ae-note">광고를 끝까지 보면 세 가지 분석이 열려요.</p>
+</article>
+<p class="ae-feedback" aria-live="polite" hidden>시안 미리보기예요. 실제 광고는 재생되지 않아요.</p>
+<p class="ae-bottom">같은 조건으로 비교하기 →</p>
+</div></div></section>
+<section data-variant="강한 대비" aria-label="강한 대비 시안"><p class="ae-variant-label">강한 대비</p>
+<div class="ae-stage"><div class="ae-phone">
+<div class="ae-context"><span>계산 결과</span><strong>투자 과정 돌아보기</strong></div>
+<article class="ae-card ae-bold" aria-label="강한 대비 카드">
+<p class="ae-kicker">10억까지 가는 길</p>
+<h2>그 과정도<br><em>버틸 수<br>있었을까요?</em></h2>
+<div class="ae-divider" aria-hidden="true"></div>
+<p class="ae-labels">가장 큰 손실은 얼마였을지,<br>계속 모았다면 어떻게 달라졌을지.</p>
+<button type="button" class="ae-cta cursor-interaction">광고 보고 분석 보기</button>
+<p class="ae-note">광고를 끝까지 보면 이 조건의 분석이 열려요.</p>
+</article>
+<p class="ae-feedback" aria-live="polite" hidden>시안 미리보기예요. 실제 광고는 재생되지 않아요.</p>
+<p class="ae-bottom">같은 조건으로 비교하기 →</p>
+</div></div></section>
+</div>
+</div>
+<script>
+(() => {
+ const root=document.getElementById('analysis-entry-options');
+ root.querySelectorAll('.ae-cta').forEach(button=>button.addEventListener('click',()=>{button.closest('.ae-phone').querySelector('.ae-feedback').hidden=false;}));
+ if(globalThis.Tweak){root.querySelectorAll('.ae-card').forEach(card=>{const state={radius:22};const render=()=>{card.style.borderRadius=state.radius+'px';};const tweak=new Tweak({container:card,onChange:render});tweak.addSlider(state,'radius',{label:'모서리 둥글기',min:12,max:28,unit:'px'});});}
+})();
+</script>

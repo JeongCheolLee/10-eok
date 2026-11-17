@@ -29,7 +29,7 @@ input, select { font-family: inherit; }
 /* 네비게이션 바 */
 .nav { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; height: 56px; display: flex; align-items: center; gap: 4px; padding: 0 8px 0 12px; background: var(--bg); }
 .nav-logo { flex: 0 0 auto; width: 24px; height: 24px; border-radius: 6px; margin-left: 4px; display: block; }
-.nav-title { flex: 1; font-size: 16px; font-weight: 700; letter-spacing: -0.01em; padding-left: 6px; }
+.nav-title { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 16px; font-weight: 700; letter-spacing: -0.01em; padding-left: 6px; }
 .icon-btn { width: 40px; height: 40px; border: 0; background: transparent; display: inline-flex; align-items: center; justify-content: center; border-radius: 20px; color: var(--grey800); }
 .icon-btn:active { background: var(--grey100); }
 
@@ -261,17 +261,33 @@ input[type="date"].select { font-size: 18px; min-height: 29px; }
 .data-notes { padding: 4px 24px 0; display: flex; flex-direction: column; gap: 4px; }
 .data-note { margin: 0; font-size: 13px; line-height: 19.5px; color: var(--text-secondary); }
 .data-notes .tip { background: var(--grey100); }
-.stats-label { font-size: 12px; line-height: 18px; color: var(--text-secondary); margin-bottom: -6px; }
+.result-stats { margin-top: 10px; padding-top: 16px; border-top: 1px solid var(--grey200); }
+.stats-label { margin: 0 0 16px; font-size: 14px; line-height: 21px; font-weight: 600; color: var(--grey800); }
+.result-stats .stats { border-top: 0; padding-top: 0; }
+.chart-fx-note { margin: 4px 0 0; color: var(--text-secondary); font-size: 12px; line-height: 1.6; word-break: keep-all; }
+/* TDS animates its default blue inline; only the checked track overrides that color. */
+.brand-switch[aria-checked="true"] { background-color: var(--brand) !important; }
+.reach-change { margin-top: 12px; border-top: 1px solid var(--grey200); }
+.reach-change summary { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 44px; font-size: 13px; font-weight: 600; color: var(--grey700); cursor: pointer; list-style: none; }
+.reach-change summary::-webkit-details-marker { display: none; }
+.reach-change[open] .chev { transform: rotate(90deg); }
+.reach-change p { margin: 4px 0 12px; font-size: 12px; line-height: 1.6; color: var(--text-secondary); word-break: keep-all; }
+.reach-change dl { margin: 0 0 12px; display: grid; gap: 12px; }
+.reach-change dl > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; font-size: 13px; }
+.reach-change dt { color: var(--grey700); word-break: keep-all; }
+.reach-change dd { margin: 0; text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+.reach-change dd span { display: block; margin-top: 4px; font-size: 11px; font-weight: 400; color: var(--text-secondary); }
+.reach-change .reach-market { border-top: 1px solid var(--grey200); padding-top: 12px; }
 
 /* 계산 기준은 필요할 때 펼쳐 읽고, 주요 결과는 간결하게 유지한다. */
-.calculation-basis { display: block; }
-.calculation-basis summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; list-style: none; cursor: pointer; font-size: 15px; font-weight: 600; color: var(--grey800); padding: 4px 0; }
+.calculation-basis { display: block; margin: 0 24px; border-top: 1px solid var(--grey100); }
+.calculation-basis summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 56px; list-style: none; cursor: pointer; font-size: 15px; font-weight: 500; color: var(--grey800); padding: 14px 0; }
 .calculation-basis summary::-webkit-details-marker { display: none; }
 .calculation-basis summary::marker { content: ""; }
 .calculation-basis summary .chev { flex-shrink: 0; }
 .calculation-basis[open] summary .chev { transform: rotate(90deg); }
 .calculation-basis summary:focus-visible { outline: 2px solid var(--down); outline-offset: 4px; border-radius: 4px; }
-.basis-content { padding-top: 16px; }
+.basis-content { padding: 0 0 16px; }
 .basis-list { margin: 0 0 16px; display: flex; flex-direction: column; gap: 14px; }
 .basis-list dt { font-size: 12px; color: var(--text-secondary); margin-bottom: 3px; }
 .basis-list dd { margin: 0; font-size: 14px; line-height: 1.6; color: var(--grey800); word-break: keep-all; overflow-wrap: anywhere; }
@@ -347,6 +363,12 @@ input[type="date"].select { font-size: 18px; min-height: 29px; }
 .result-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 20px 24px 0; }
 .result-share { grid-column: 1 / -1; }
 .result-share-label { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.result-compare { margin: 16px 24px 0; }
+.result-compare .text-btn { display: flex; justify-content: space-between; width: 100%; min-height: 56px; text-align: left; font-size: 15px; color: var(--grey800); }
+.result-compare .text-btn span { word-break: keep-all; }
+.result-compare .text-btn svg { flex-shrink: 0; color: var(--grey400); }
+.dividend-recalculate { display: flex; flex-direction: column; gap: 12px; padding: 4px 24px 20px; }
+.dividend-recalculate .data-note { font-size: 13px; line-height: 20px; }
 .holding-result-detail { display: flex; flex-direction: column; }
 .holding-result-detail > span { word-break: keep-all; }
 @media (max-width: 374px) { .input-hero h1 { font-size: 30px; } .result-number { font-size: 44px; } .amount-number { font-size: 30px; } }
@@ -354,6 +376,8 @@ input[type="date"].select { font-size: 18px; min-height: 29px; }
 .comparison-window p { margin: 4px 0; font-size: 12px; line-height: 1.6; color: var(--text-secondary); word-break: keep-all; }
 .comparison-window > strong { display: block; margin: 6px 0; color: var(--grey900); font-size: 18px; }
 .comparison-window b { color: var(--grey800); }
+.comparison-banner .ad-slot { margin: 24px 24px 0; }
+.comparison-banner .ad-slot.pending { margin: 0; }
 .comparison-caption { margin: 18px 24px 0; font-size: 12px; color: var(--text-secondary); }
 .comparison-sort { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 20px 24px 0; }
 .comparison-sort label { font-size: 14px; color: var(--text-secondary); }
@@ -463,7 +487,6 @@ input[type="date"].select { font-size: 18px; min-height: 29px; }
 .resilience h2:focus { outline: none; }
 .resilience-intro { font-size: 15px; line-height: 1.6; color: var(--grey700); }
 .resilience-period, .resilience-help { font-size: 12px; line-height: 1.7; color: var(--text-secondary); }
-.resilience-features { padding-left: 19px; margin: 20px 0; font-size: 14px; line-height: 1.9; }
 .resilience button { white-space: normal; }
 .resilience-details article { padding: 24px 0; border-top: 1px solid var(--grey200); }
 .resilience h3 { margin: 0 0 14px; font-size: 17px; line-height: 1.5; }
@@ -497,19 +520,51 @@ input[type="date"].select { font-size: 18px; min-height: 29px; }
 .analysis-ad-preview .text-btn { display: block; margin: 20px auto 0; }
 
 /* 종목 선택: 종류와 같은 기간의 수익률을 구분해 보여준다. */
-.sheet-filters { display: flex; gap: 6px; margin-top: 12px; }
-.sheet-filters button { min-height: 44px; flex: 1; border: 0; border-radius: 10px; background: var(--bg); padding: 9px 4px; font-size: 13px; color: var(--text-secondary); white-space: nowrap; }
-.sheet-filters button[aria-pressed="true"] { background: #e8f7ef; color: #007c51; font-weight: 700; }
 .sheet-return-controls { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 12px; font-size: 13px; color: var(--text-secondary); }
 .sheet-return-controls > div { display: flex; gap: 4px; }
 .sheet-return-controls button { min-height: 44px; min-width: 44px; border: 0; border-radius: 8px; padding: 8px 12px; background: #f2f4f6; color: #4e5968; }
 .sheet-return-controls button[aria-pressed="true"] { background: #333d4b; color: #fff; }
-.sheet-return-basis { font-size: 12px; color: #6b7684; margin-top: 8px; }
-.sheet-return-basis summary { cursor: pointer; padding: 4px 0; }
-.sheet-return-basis p { line-height: 1.5; margin: 8px 0 0; max-height: 100px; overflow-y: auto; }
 .sheet-return-notice { font-size: 12px; color: #6b7684; line-height: 1.5; margin: 8px 0 0; }
 .ticker-return { flex-shrink: 0; font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .ticker-return.muted { font-size: 12px; font-weight: 400; color: #6b7684; }
 
 .ticker-return.up-text { color: var(--up); }
 .ticker-return.down-text { color: var(--down); }
+
+/* Calculation mission is separate from the ad slot and never covers the result. */
+
+.sheet-sort-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 24px; min-height: 44px; color: var(--text-secondary); font-size: 12px; }
+
+.ticker-sort { position: relative; }
+.ticker-sort-trigger { display: inline-flex; align-items: center; justify-content: flex-end; gap: 5px; min-height: 44px; border: 0; border-radius: 8px; background: transparent; color: var(--grey800); font: inherit; font-size: 13px; padding: 8px 0 8px 8px; cursor: pointer; }
+.ticker-sort-trigger .chev-down { width: 16px; height: 16px; }
+.ticker-sort-trigger:focus-visible, .ticker-sort-menu button:focus-visible { outline: 2px solid var(--brand); outline-offset: -2px; }
+.ticker-sort-menu { position: absolute; top: calc(100% + 2px); right: 0; z-index: 5; width: 184px; padding: 6px; border: 1px solid var(--grey200); border-radius: 14px; background: #fff; box-shadow: 0 8px 24px rgb(0 0 0 / 12%); }
+.ticker-sort-menu button { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 44px; padding: 10px 12px; border: 0; border-radius: 8px; background: transparent; color: var(--grey800); font: inherit; font-size: 14px; text-align: left; cursor: pointer; }
+.ticker-sort-menu button[aria-checked="true"] { background: var(--brand-weak); color: var(--brand-strong); font-weight: 600; }
+.ticker-sort-menu button:hover { background: var(--grey100); }
+.ticker-sort-check { display: inline-flex; }
+.ticker-sort-check svg { width: 18px; height: 18px; }
+
+.resilience.resilience-teaser { background: #f3f5f6; border-radius: 24px; padding: 28px 24px 24px; margin-bottom: 0; }
+.resilience-teaser + .result-actions { margin-top: 16px; }
+.resilience-teaser .resilience-eyebrow { color: #007f56; font-weight: 600; margin-bottom: 28px; }
+.resilience-teaser h2 { font-size: clamp(22px, 6.4vw, 27px); line-height: 1.4; letter-spacing: -.04em; }
+.resilience-teaser h2 span { color: #007f56; }
+.resilience .resilience-preview-metrics { margin: 26px 0 28px; }
+.resilience .resilience-preview-metrics > div { flex-wrap: nowrap; align-items: center; gap: 12px; padding: 10px 0; }
+.resilience-preview-metrics dt { font-size: 15px; font-weight: 400; color: var(--grey700); line-height: 1.5; }
+.resilience-preview-metrics dd { display: flex; flex-shrink: 0; align-items: center; gap: 4px; }
+.resilience-unknown { display: flex; align-items: baseline; gap: 2px; color: var(--grey900); font-size: 15px; }
+.resilience-unknown strong { font-size: 25px; line-height: 1; font-weight: 750; }
+.resilience-lock { color: var(--grey500); }
+.resilience-preview-available { font-size: 13px; color: var(--brand-strong); }
+.resilience-teaser .resilience-unlock-help { text-align: center; margin: 12px 0 0; }
+.analysis-details-dialog { position: fixed; inset: 0; width: min(100%, 430px); height: 100%; height: 100dvh; max-width: none; max-height: none; margin: auto; padding: 0; border: 0; background: var(--bg); color: var(--grey900); font-family: var(--font); overflow: hidden; }
+.analysis-details-dialog[open] { display: flex; flex-direction: column; }
+.analysis-details-dialog::backdrop { background: rgb(0 0 0 / .4); }
+.analysis-dialog-header { flex-shrink: 0; display: flex; justify-content: space-between; align-items: center; min-height: 56px; padding: env(safe-area-inset-top, 0px) 12px 0 24px; border-bottom: 1px solid var(--grey100); background: var(--bg); font-size: 17px; font-weight: 600; }
+.analysis-dialog-scroll { min-height: 0; flex: 1; overflow-y: auto; overscroll-behavior: contain; }
+.resilience.analysis-dialog-content { margin: 0; padding: 24px 24px calc(24px + env(safe-area-inset-bottom, 0px)); }
+.analysis-dialog-content h2 span { color: var(--brand-strong); }
+@media (max-width: 359px) { .resilience.resilience-teaser { margin-inline: 20px; padding-inline: 18px; } }

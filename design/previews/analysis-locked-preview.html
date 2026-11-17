@@ -1,0 +1,38 @@
+<style>
+#locked-analysis-mock{font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",sans-serif;padding:20px 12px;color-scheme:light dark;}
+#locked-analysis-mock *{box-sizing:border-box;}
+#locked-analysis-mock .surface{--ink:light-dark(#191f28,#f0f3f6);--secondary:light-dark(#4e5968,#b8c0cb);--green:light-dark(#007f56,#58dbab);max-width:390px;margin:auto;padding:28px 24px 24px;border-radius:26px;background:light-dark(#f3f5f6,#20252c);color:var(--ink);}
+#locked-analysis-mock .eyebrow{margin:0 0 28px;color:var(--green);font-size:14px;font-weight:600;line-height:1.5;}
+#locked-analysis-mock h2{font-size:27px;line-height:1.4;letter-spacing:-1px;font-weight:750;margin:0 0 26px;}
+#locked-analysis-mock h2 span{display:block;color:var(--green);}
+#locked-analysis-mock .intro{font-size:15px;line-height:1.8;color:var(--secondary);margin:0 0 24px;word-break:keep-all;}
+#locked-analysis-mock dl{margin:0 0 28px;}
+#locked-analysis-mock .row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;}
+#locked-analysis-mock dt{font-size:15px;line-height:1.5;color:var(--secondary);}
+#locked-analysis-mock dd{margin:0;display:flex;align-items:center;gap:4px;color:light-dark(#6b7684,#a9b4c2);font-size:15px;}
+#locked-analysis-mock .question{display:inline-block;min-width:18px;text-align:center;font-size:25px;line-height:1;font-weight:750;color:var(--ink);}
+#locked-analysis-mock .unknown{display:flex;align-items:baseline;gap:2px;color:var(--ink);font-weight:600;}
+#locked-analysis-mock dd svg{width:13px;height:13px;color:light-dark(#8b95a1,#a9b4c2);}
+#locked-analysis-mock .cta{width:100%;min-height:56px;padding:14px 8px;border:0;border-radius:15px;background:#00875b;color:#fff;font:inherit;font-size:17px;font-weight:700;}
+#locked-analysis-mock .helper{margin:14px 0 0;font-size:12px;line-height:1.7;text-align:center;color:var(--secondary);word-break:keep-all;}
+#locked-analysis-mock .feedback:empty{display:none;}
+#locked-analysis-mock .feedback{font-size:12px;line-height:1.7;color:var(--secondary);text-align:center;margin:12px 0 0;}
+@media(max-width:359px){#locked-analysis-mock{padding:16px 8px;}#locked-analysis-mock .surface{padding:24px 18px;}#locked-analysis-mock h2{font-size:24px;}}
+</style>
+<div id="locked-analysis-mock" class="viz-dotted-background">
+<section class="surface" aria-label="투자 과정 분석 카드 시안">
+<p class="eyebrow">투자 과정 돌아보기</p>
+<h2>10억까지 가는 길,<span>버틸 수 있었을까요?</span></h2>
+<dl>
+<div class="row"><dt>가장 큰 손실률</dt><dd aria-label="광고 시청 후 확인"><span class="unknown" aria-hidden="true"><span class="question">??</span><span>%</span></span><i data-lucide="lock-keyhole" aria-hidden="true"></i></dd></div>
+<div class="row"><dt>가장 길었던 손실 기간</dt><dd aria-label="광고 시청 후 확인"><span class="question" aria-hidden="true">??</span><i data-lucide="lock-keyhole" aria-hidden="true"></i></dd></div>
+<div class="row"><dt>계속 모았을 때의 변화</dt><dd aria-label="광고 시청 후 확인"><span class="question" aria-hidden="true">??</span><i data-lucide="lock-keyhole" aria-hidden="true"></i></dd></div>
+</dl>
+<button type="button" class="cta cursor-interaction">광고 보고 분석 보기</button>
+<p class="helper">광고를 끝까지 보면 이 조건의 분석이 열려요.</p>
+<p class="feedback" role="status"></p>
+</section>
+</div>
+<script>
+(()=>{const root=document.getElementById('locked-analysis-mock');root.querySelector('.cta').addEventListener('click',()=>{root.querySelector('.feedback').textContent='시안이에요. 실제 앱에서는 광고 시청 후 분석이 열려요.';});})();
+</script>

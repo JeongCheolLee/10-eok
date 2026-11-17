@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { Button } from "@toss/tds-mobile";
 import type { Calc } from "../lib/plan";
 import { analyzeResilience } from "../lib/resilience";
@@ -18,7 +19,7 @@ export function ResilienceAnalysis({ calc, accessKey, onEngage }: { calc: Calc; 
   const active = useRef(false);
   const pending = useRef(false);
   const cleanup = useRef<(() => void) | null>(null);
-  const heading = useRef<HTMLHeadingElement>(null);
+  const entry = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     active.current = true;
     void analysisAccess.has(accessKey).then(earned => {
@@ -26,7 +27,10 @@ export function ResilienceAnalysis({ calc, accessKey, onEngage }: { calc: Calc; 
     });
     return () => { active.current = false; cleanup.current?.(); };
   }, [accessKey]);
-  useEffect(() => { if (open) heading.current?.focus({ preventScroll: true }); }, [open]);
+  const closeDetails = () => {
+    setOpen(false);
+    requestAnimationFrame(() => entry.current?.focus({ preventScroll: true }));
+  };
 
   const complete = (outcome: AnalysisAdOutcome) => {
     if (!active.current || !pending.current) return;
@@ -54,18 +58,35 @@ export function ResilienceAnalysis({ calc, accessKey, onEngage }: { calc: Calc; 
   };
   const needsAd = ANALYSIS_REWARDED_ADS_ENABLED && !unlocked;
   const signed = (value: number) => `${value >= 0 ? "+" : "−"}${fmt.money(Math.abs(value))}`;
-  return <section className="resilience card" aria-label="투자 과정 분석">
+  const title = calc.reach ? <>10억까지 가는 길,<br /><span>버틸 수 있었을까요?</span></> : <>꾸준히 모으는 동안,<br /><span>어떤 일이 있었을까요?</span></>;
+  return <>
+    <section className="resilience card resilience-teaser" aria-label="투자 과정 분석">
     <p className="resilience-eyebrow">투자 과정 돌아보기</p>
-    <h2 ref={heading} tabIndex={-1}>{calc.reach ? <>10억까지 가는 길,<br />버틸 수 있었을까요?</> : <>꾸준히 모으는 동안,<br />어떤 일이 있었을까요?</>}</h2>
-    <p className="resilience-intro">입력한 조건으로 투자했다면, 손실은 얼마나 컸고 이후에는 어떻게 달라졌을까요?</p>
-    <p className="resilience-period">{calc.reach ? "처음 10억을 넘은 날까지의 손실을 살펴봐요." : "계산 기간 전체의 손실을 살펴봐요."}<br />{ymdKo(data.start)} ~ {ymdKo(data.end)}</p>
-    {!open ? <>
-      <ul className="resilience-features"><li>가장 큰 손실률과 손실 금액</li><li>손실이 가장 오래 이어진 기간</li><li>손실 이후에도 계속 적립한 결과</li></ul>
-      <Button display="full" size="large" variant="weak" style={{ borderRadius: 14 }} disabled={!ready || busy} onClick={show}>
-        {!ready ? "이용 기록 확인 중…" : busy ? "광고 준비 중…" : needsAd ? "광고 보고 상세 분석 보기" : "상세 분석 보기"}
+    <h2>{title}</h2>
+      <dl className="resilience-preview-metrics" aria-label="분석에서 확인할 내용">
+        {["가장 큰 손실률", "가장 길었던 손실 기간", "손실 이후의 변화"].map((label, index) => <div key={label}>
+          <dt>{label}</dt>
+          <dd aria-label={!ready ? "이용 기록 확인 중" : needsAd ? "광고 시청 후 확인" : "상세 분석에서 확인"}>
+            {needsAd ? <>
+              <span className="resilience-unknown" aria-hidden="true"><strong>??</strong>{index < 2 && <span>{index === 0 ? "%" : "일"}</span>}</span>
+              <svg className="resilience-lock" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2" /><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3" /></svg>
+            </> : <span className="resilience-preview-available" aria-hidden="true">{ready ? "보기" : "…"}</span>}
+          </dd>
+        </div>)}
+      </dl>
+      <Button ref={entry} aria-haspopup="dialog" display="full" size="large" style={{ borderRadius: 14, minHeight: 56, ...(!busy && ready ? { "--button-background-color": "#00875b" } : {}) } as CSSProperties} disabled={!ready || busy} onClick={show}>
+        {!ready ? "이용 기록 확인 중…" : busy ? "광고 준비 중…" : needsAd ? "광고 보고 분석 보기" : unlocked ? "분석 다시 보기" : "상세 분석 보기"}
       </Button>
-      {ready && (needsAd || unlocked) && <p className="resilience-help">{needsAd ? "광고를 끝까지 보면 이 조건의 분석을 볼 수 있어요. 기본 계산은 계속 무료예요." : "같은 조건의 분석을 다시 볼 수 있어요."}</p>}
-    </> : <div className="resilience-details">
+      {ready && (needsAd || unlocked) && <p className="resilience-help resilience-unlock-help">{needsAd ? "광고를 끝까지 보면 이 조건의 분석이 열려요." : "같은 조건의 분석을 다시 볼 수 있어요."}</p>}
+    {notice && !open && <p className="resilience-notice" role="status">{notice}</p>}
+    </section>
+    {open && <AnalysisDetailsDialog onClose={closeDetails}>
+      <div className="resilience analysis-dialog-content">
+      <h2>{title}</h2>
+      <p className="resilience-intro">넣은 돈 대비 손실과<br />손실 이후에도 계속 샀을 때의 변화를 살펴봐요.</p>
+      <p className="resilience-period">{calc.reach ? "처음 10억을 넘은 날까지의 손실을 살펴봐요." : "계산 기간 전체의 손실을 살펴봐요."}<br />{ymdKo(data.start)} ~ {ymdKo(data.end)}</p>
+      {notice && <p className="resilience-notice" role="status">{notice}</p>}
+      <div className="resilience-details">
       {!data.worst ? <article>
         <h3>이 기간에는 손실 구간이 없었어요</h3>
         <p>일별 종가로 계산한 평가액이 그날까지 넣은 돈 아래로 내려가지 않았어요.</p>
@@ -127,11 +148,36 @@ export function ResilienceAnalysis({ calc, accessKey, onEngage }: { calc: Calc; 
       </article>
       </>}
       <p className="resilience-help">실제 거래 자료의 일별 종가로 계산해 장중 가격 변동은 반영하지 않아요. 과거에 회복했더라도 앞으로 같은 결과를 보장하지 않아요.</p>
-      <button className="text-btn" type="button" onClick={() => setOpen(false)}>상세 분석 접기</button>
-    </div>}
-    {notice && <p className="resilience-notice" role="status">{notice}</p>}
+      <Button display="full" color="dark" variant="weak" style={{ borderRadius: 14 }} onClick={closeDetails}>결과로 돌아가기</Button>
+      </div>
+      </div>
+    </AnalysisDetailsDialog>}
     {preview && <AnalysisAdPreview onComplete={() => complete("rewarded")} onClose={() => complete("dismissed")} />}
-  </section>;
+  </>;
+}
+
+/** Keep long analysis out of the result flow; the native modal traps focus and makes the result inert. */
+function AnalysisDetailsDialog({ children, onClose }: { children: ReactNode; onClose: () => void }) {
+  const dialog = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    const element = dialog.current;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    element?.showModal();
+    return () => {
+      element?.close();
+      document.body.style.overflow = previousOverflow;
+    };
+  }, []);
+  return createPortal(<dialog ref={dialog} className="analysis-details-dialog" aria-label="상세 분석" onCancel={event => { event.preventDefault(); onClose(); }}>
+    <header className="analysis-dialog-header">
+      <span>상세 분석</span>
+      <button className="icon-btn" type="button" aria-label="상세 분석 닫기" onClick={onClose}>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>
+      </button>
+    </header>
+    <div className="analysis-dialog-scroll">{children}</div>
+  </dialog>, document.body);
 }
 
 /** Browser-only demo. Native rewards are granted exclusively by the SDK event. */

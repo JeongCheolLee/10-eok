@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
-import { TICKERS, tickerCurrency } from "@/lib/tickers";
+import { TICKERS, TOSS_TICKERS, tickerCurrency } from "@/lib/tickers";
 import { actualHistoryRows } from "@/lib/tickerHistory";
 import { composeRows, type PxBundle, type FxBundle } from "@/lib/backtest/compose";
 import { cleanHoldings, calcPlan, DEFAULT_PLAN, singlePlan, shareQueryOf } from "./plan";
@@ -9,12 +9,21 @@ const stocks = TICKERS.filter(t => t.kind === "stock");
 const read = (name: string) => JSON.parse(readFileSync(`public/data/${name}.json`,"utf8"));
 const fx: FxBundle = read("fx/krw");
 describe("개별주 실제 데이터와 기존 계산 흐름", () => {
-  it("한국 8개와 미국 8개를 중복 없이 선택하며 웹 ETF 목록에는 노출하지 않는다", () => {
+  it("기존 한국 개별주 저장·공유 조건의 메타데이터는 유지하며 개별주는 웹 ETF 목록에 노출하지 않는다", () => {
     expect(stocks.filter(t=>t.currency === "KRW")).toHaveLength(8);
     expect(stocks.filter(t=>t.currency !== "KRW")).toHaveLength(8);
     expect(stocks.every(t=>t.webHidden && !t.splice)).toBe(true);
-    expect(new Set(TOSS_DISPLAY_TICKERS.map(t=>t.symbol)).size).toBe(41);
     expect(taxInfo(["005930.KS"]).desc).not.toContain("ETF");
+  });
+  it("선택·검색·비교에는 미국 개별주 8개와 ETF 25개만 제공하고 한국 상장 ETF는 유지한다", () => {
+    const symbols = TOSS_DISPLAY_TICKERS.map(t => t.symbol);
+    expect(symbols).toHaveLength(33);
+    expect(new Set(symbols)).toEqual(new Set(TOSS_TICKERS));
+    expect(TOSS_DISPLAY_TICKERS.filter(t => t.kind === "stock")).toHaveLength(8);
+    expect(TOSS_DISPLAY_TICKERS.filter(t => t.kind !== "stock")).toHaveLength(25);
+    expect(TOSS_DISPLAY_TICKERS.filter(t => t.kind === "stock" && t.currency === "KRW")).toEqual([]);
+    expect(TOSS_DISPLAY_TICKERS.filter(t => t.currency === "KRW").map(t => t.symbol).sort())
+      .toEqual(["069500.KS", "133690.KS", "360750.KS", "458730.KS"]);
   });
   it.each(stocks)("$symbol의 데이터, 계산, 공유 조건을 검증한다", (info) => {
     const px: PxBundle = read(`px/${info.symbol.toLowerCase()}`);

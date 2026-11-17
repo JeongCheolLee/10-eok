@@ -100,7 +100,7 @@ export function InputScreen({ plan, setPlan, onSubmit, adRequired, accessNote, b
         </div>
       )}
 
-      <div className="section-label">{!hasSelection ? "어떤 종목가 궁금하세요?" : multi ? `${hs.length}개 종목에 나눠 사요` : "계산할 종목"}</div>
+      <div className="section-label">{!hasSelection ? "어떤 종목이 궁금하세요?" : multi ? `${hs.length}개 종목에 나눠 사요` : "계산할 종목"}</div>
       {!hasSelection ? (
         <button type="button" className="etf-select-empty" onClick={() => setSheet(0)} aria-haspopup="dialog"><span aria-hidden="true">＋</span> 종목 선택하기</button>
       ) : multi ? (

@@ -1,12 +1,11 @@
 // 미니앱 종목 묶음·세금 안내. lib/tickers.ts(계약)는 건드리지 않고, group이 빈 기존 16종은 여기서 매핑한다.
-import { TICKERS, tickerInfo, tickerSubtitle, tickerTax, type TickerInfo } from "@/lib/tickers";
+import { TICKERS, TOSS_TICKERS, tickerInfo, tickerSubtitle, tickerTax, type TickerInfo } from "@/lib/tickers";
 
 export type Group = NonNullable<TickerInfo["group"]>;
 export type Tax = ReturnType<typeof tickerTax>;
 
 /** 시트에 보이는 순서·이름·한 줄 설명 */
 export const GROUPS: { id: Group; label: string; desc?: string }[] = [
-  { id: "kr-stock", label: "한국 주식" },
   { id: "us-stock", label: "미국 주식" },
   { id: "index", label: "지수 ETF" },
   { id: "leverage", label: "레버리지 ETF" },
@@ -45,7 +44,7 @@ export const TOSS_DISPLAY_TICKERS = GROUPS.flatMap(({ id }) => {
     const index = DISPLAY_ORDER[id].indexOf(symbol);
     return index < 0 ? Number.MAX_SAFE_INTEGER : index;
   };
-  return TICKERS.filter((ticker) => tickerGroup(ticker.symbol) === id)
+  return TICKERS.filter((ticker) => TOSS_TICKERS.includes(ticker.symbol) && tickerGroup(ticker.symbol) === id)
     .sort((a, b) => rank(a.symbol) - rank(b.symbol));
 });
 

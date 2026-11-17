@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 import { tickerInfo, tickerMonogram, tickerTitle } from "@/lib/tickers";
 import { GROUPS, TOSS_DISPLAY_TICKERS, tickerGroup, tossSubtitle } from "../lib/groups";
 import { attachBanner, inToss } from "../lib/platform";
@@ -106,6 +106,9 @@ export function Chart({ series, target, mark, estUntil }: { series: Pt[]; target
   // 도달일은 선에도 보존하고 표시점도 같은 원본 인덱스와 값으로 배치한다.
   const markI = mark ? series.findIndex((p) => p.date === mark) : -1;
   const markPt = markI >= 0 ? series[markI] : undefined;
+  // Keep observed coordinates. Reduce decorations when the milestone and end overlap.
+  const markerDistance = markPt ? Math.hypot(x(markI) - x(pts.length - 1), y(markPt.value) - y(last.value)) : Infinity;
+  const closeMarkers = markerDistance < 18;
   // 추정 구간 띠: 첫 점부터 실제 가격 첫날 직전 점까지
   const estI = estUntil && pts[0].date < estUntil ? pts.findIndex((p) => p.date >= estUntil) : -1;
   const estX = estI < 0 ? (estUntil && pts[0].date < estUntil ? x(pts.length - 1) : null) : x(Math.max(0, estI));
@@ -130,7 +133,7 @@ export function Chart({ series, target, mark, estUntil }: { series: Pt[]; target
       <path d={d} fill="none" stroke="var(--brand)" strokeWidth="2.2" strokeLinejoin="round" />
       {markPt && markI >= 0 && (
         <g pointerEvents="none">
-          <circle cx={x(markI)} cy={y(markPt.value)} r="6" fill="#fff" stroke="var(--brand-strong, var(--brand))" strokeWidth="2.5" />
+          <circle cx={x(markI)} cy={y(markPt.value)} r={closeMarkers ? 3 : 6} fill="#fff" stroke="var(--brand-strong, var(--brand))" strokeWidth="2.5" />
           <text x={x(markI)} y={y(markPt.value) - 10} textAnchor={x(markI) > W - 50 ? "end" : x(markI) < L + 40 ? "start" : "middle"} fontSize="10" fontWeight="600" fill="var(--brand-strong, var(--brand))">처음 10억</text>
         </g>
       )}
@@ -140,7 +143,7 @@ export function Chart({ series, target, mark, estUntil }: { series: Pt[]; target
           <circle cx={hx} cy={y(h.principal)} r="3.5" fill="var(--text-secondary)" stroke="#fff" strokeWidth="1.5" />
           <circle cx={hx} cy={y(h.value)} r="4.5" fill="var(--brand)" stroke="#fff" strokeWidth="2" />
         </g>
-      ) : <circle cx={x(pts.length - 1)} cy={y(last.value)} r="4.5" fill="var(--brand)" stroke="#fff" strokeWidth="2" />}
+      ) : markerDistance >= 9 && <circle cx={x(pts.length - 1)} cy={y(last.value)} r={closeMarkers ? 2 : 4.5} fill="var(--brand)" stroke="#fff" strokeWidth={closeMarkers ? 1 : 2} />}
       {xTicks.map((t) => (
         <text key={t.yr} x={t.x} y={H - 7} textAnchor={t.anchor} fontSize="10" fill="var(--text-secondary)">{t.yr}</text>
       ))}
@@ -248,12 +251,59 @@ export function SwitchRow({ id, title, desc, checked, onChange, disabled }: { id
   );
 }
 
+function TickerSortMenu({ value, options, onChange }: { value: string; options: string[][]; onChange: (value: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const root = useRef<HTMLDivElement>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const menuId = useId();
+  useEffect(() => {
+    if (!open) return;
+    root.current?.querySelector<HTMLButtonElement>('[aria-checked="true"]')?.focus({ preventScroll: true });
+    const outside = (event: PointerEvent) => {
+      if (event.target instanceof Node && !root.current?.contains(event.target)) setOpen(false);
+    };
+    document.addEventListener("pointerdown", outside);
+    return () => document.removeEventListener("pointerdown", outside);
+  }, [open]);
+  return <div ref={root} className="ticker-sort" onBlur={(event) => {
+    if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false);
+  }} onKeyDownCapture={(event) => {
+    if (!open) return;
+    if (event.key === "Escape") {
+      event.preventDefault(); event.stopPropagation(); setOpen(false); trigger.current?.focus(); return;
+    }
+    if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
+    event.preventDefault(); event.stopPropagation();
+    const items = Array.from(root.current?.querySelectorAll<HTMLButtonElement>('[role="menuitemradio"]') ?? []);
+    const index = items.indexOf(document.activeElement as HTMLButtonElement);
+    const next = event.key === "Home" ? 0 : event.key === "End" ? items.length - 1
+      : (index + (event.key === "ArrowDown" ? 1 : -1) + items.length) % items.length;
+    items[next]?.focus();
+  }}>
+    <button ref={trigger} type="button" className="ticker-sort-trigger" aria-label={`종목 정렬: ${options.find(([key]) => key === value)?.[1]}`}
+      aria-haspopup="menu" aria-expanded={open} aria-controls={open ? menuId : undefined}
+      onClick={() => setOpen(!open)} onKeyDown={(event) => {
+        if (event.key === "ArrowDown" || event.key === "ArrowUp") { event.preventDefault(); setOpen(true); }
+      }}>
+      {options.find(([key]) => key === value)?.[1]}<ChevronDown />
+    </button>
+    {open && <div id={menuId} role="menu" aria-label="종목 정렬" className="ticker-sort-menu">
+      {options.map(([key, label]) => <button key={key} type="button" role="menuitemradio" aria-checked={key === value}
+        onClick={() => { onChange(key); setOpen(false); trigger.current?.focus({ preventScroll: true }); }}>
+        <span>{label}</span>{key === value && <span className="ticker-sort-check" aria-hidden="true"><Check /></span>}
+      </button>)}
+    </div>}
+  </div>;
+}
+
 /* ── 바텀시트: 종목 선택 (검색) ── */
 /** taken: 다른 행에서 이미 고른 종목(선택 불가) */
 export function TickerSheet({ current, taken = [], onPick, onClose }: { current: string; taken?: string[]; onPick: (t: string) => void; onClose: () => void }) {
   const [q, setQ] = useState("");
   const [years, setYears] = useState<ReturnYears>(5);
-  const [filter, setFilter] = useState("all");
+  const [sort, setSort] = useState("return-desc");
+  const listRef = useRef<HTMLDivElement>(null);
+  useEffect(() => { listRef.current?.scrollTo({ top: 0 }); }, [q, years, sort]);
   const [returns, setReturns] = useState<TickerReturns | null>(null);
   const [returnsFailed, setReturnsFailed] = useState(false);
   useEffect(() => {
@@ -305,43 +355,57 @@ export function TickerSheet({ current, taken = [], onPick, onClose }: { current:
     };
   }, []);
   const ql = q.trim().toLowerCase();
-  const list = TOSS_DISPLAY_TICKERS.filter((t) => (filter === "all" || (filter === "etf" ? t.kind !== "stock" : t.group === filter))).filter((t) => !ql || t.symbol.toLowerCase().includes(ql) || t.name.toLowerCase().includes(ql) || t.aliases?.some((alias) => alias.toLowerCase().includes(ql)) || tossSubtitle(t.symbol).includes(ql));
-  const groups = GROUPS.map((g) => ({ ...g, items: list.filter((t) => tickerGroup(t.symbol) === g.id) })).filter((g) => g.items.length > 0);
+  const list = TOSS_DISPLAY_TICKERS.filter((t) => !ql || t.symbol.toLowerCase().includes(ql) || t.name.toLowerCase().includes(ql) || t.aliases?.some((alias) => alias.toLowerCase().includes(ql)) || tossSubtitle(t.symbol).includes(ql));
+  const sortOptions = [["group", "유형별"], ["return-desc", "수익률 높은 순"], ["return-asc", "수익률 낮은 순"], ["name", "이름순"]];
+  const rateFor = (symbol: string) => {
+    const value = returns?.rows[symbol]?.[years]?.meanAnnualReturn;
+    return typeof value === "number" && Number.isFinite(value) ? value : null;
+  };
+  const sorted = sort === "group" ? list : [...list].sort((a, b) => {
+    const names = () => tickerTitle(a.symbol).localeCompare(tickerTitle(b.symbol), "ko", { numeric: true });
+    if (sort === "name") return names();
+    const ar = rateFor(a.symbol), br = rateFor(b.symbol);
+    if (ar === null) return br === null ? names() : 1;
+    if (br === null) return -1;
+    return (sort === "return-desc" ? br - ar : ar - br) || names();
+  });
+  const groups = sort === "group"
+    ? GROUPS.map((g) => ({ ...g, items: list.filter((t) => tickerGroup(t.symbol) === g.id) })).filter((g) => g.items.length > 0)
+    : [{ id: "sorted", label: sortOptions.find(([value]) => value === sort)![1], desc: "", items: sorted }];
   return (
     <div className="sheet-backdrop" onClick={onClose}>
       <div ref={dialogRef} className="sheet" role="dialog" aria-modal="true" aria-label="종목 선택" tabIndex={-1} onClick={(e) => e.stopPropagation()}>
         <div className="sheet-handle" aria-hidden="true" />
         <div className="sheet-head">
-          <div className="sheet-title">어떤 종목가 궁금하세요?</div>
+          <div className="sheet-title">어떤 종목이 궁금하세요?</div>
           <input className="search" placeholder="종목 이름이나 티커 검색" value={q} onChange={(e) => setQ(e.target.value)} aria-label="종목 검색" />
-          <div className="sheet-filters" aria-label="종목 종류">
-            {[["all", "전체"], ["kr-stock", "한국 주식"], ["us-stock", "미국 주식"], ["etf", "ETF"]].map(([id, label]) => <button type="button" key={id} aria-pressed={filter === id} onClick={() => setFilter(id)}>{label}</button>)}
-          </div>
-          <div className="sheet-return-controls"><span>연평균 수익률</span><div role="group" aria-label="수익률 기간">{RETURN_YEARS.map((n) => <button type="button" key={n} aria-pressed={years === n} onClick={() => setYears(n)}>{n}년</button>)}</div></div>
-          <details className="sheet-return-basis"><summary>수익률 기준 보기</summary>
-            <p>{returns && `${ymdKo(returns.asOf)} 기준이에요. `}선택한 기간 동안 한 번 사서 보유했을 때의 연평균 수익률이에요. 원화와 배당 재투자 기준이며, 세금과 수수료는 제외했어요. 적립식 계산의 수익률과는 달라요. 장이 쉬는 날에는 해당 시장의 거래일을 사용해요.</p>
-          </details>
+          <div className="sheet-return-controls"><span>연간 수익률 평균</span><div role="group" aria-label="수익률 기간">{RETURN_YEARS.map((n) => <button type="button" key={n} aria-pressed={years === n} onClick={() => setYears(n)}>{n}년</button>)}</div></div>
+          <p className="sheet-return-notice">1년씩 나눈 수익률을 평균 냈어요.</p>
           {returnsFailed && <p className="sheet-return-notice">수익률을 불러오지 못했어요. 종목 선택과 계산은 할 수 있어요.</p>}
         </div>
-        <div className="sheet-list">
+        <div ref={listRef} className="sheet-list">
+          <div className="sheet-sort-row">
+            <span>{list.length}개 종목</span>
+            <TickerSortMenu value={sort} options={sortOptions} onChange={setSort} />
+          </div>
           {groups.map((g) => (
-            <section key={g.id} className="sheet-group" aria-labelledby={`sg-${g.id}`}>
-              <div className="sheet-group-head">
+            <section key={g.id} className="sheet-group" aria-label={g.label}>
+              {sort === "group" && <div className="sheet-group-head">
                 <span id={`sg-${g.id}`} className="sheet-group-title">{g.label}</span>
                 {g.desc && <span className="sheet-group-desc">{g.desc}</span>}
-              </div>
+              </div>}
               {g.items.map((t) => {
                 const isTaken = t.symbol !== current && taken.includes(t.symbol);
                 // 국내 상장 묶음 안에서는 부제 "국내 상장"이 겹치므로 이름(무엇을 담는지)만 둔다
                 const extra = g.id === "kr-listed" ? "" : tossSubtitle(t.symbol);
                 const period = returns?.rows[t.symbol]?.[years];
-                const rate = period && Number.isFinite(period.cagr) ? period.cagr : null;
-                const rateText = rate === null ? (period === null ? "기간 부족" : "—") : `${rate > 0 ? "+" : ""}${(rate * 100).toFixed(1)}%`;
+                const rate = period && Number.isFinite(period.meanAnnualReturn) ? period.meanAnnualReturn : null;
+                const rateText = rate === null ? (period === null ? `${years}년치 자료가 없어요` : "—") : `${rate > 0 ? "+" : ""}${(rate * 100).toFixed(1)}%`;
                 return (
                 <button key={t.symbol} type="button" className="list-row list-btn" aria-pressed={t.symbol === current} disabled={isTaken} onClick={() => onPick(t.symbol)}>
                   <span className="avatar" style={{ background: t.color }}>{tickerMonogram(t.symbol)}</span>
                   <span className="field"><span className="row-title">{tickerTitle(t.symbol)}</span>{(isTaken || extra) && <span className="row-desc">{isTaken ? "이미 담았어요" : extra}</span>}</span>
-                  {!isTaken && <span className={"ticker-return " + (rate === null ? "muted" : rate >= 0 ? "up-text" : "down-text")} aria-label={rate === null ? (period === null ? `${years}년 수익률을 계산할 자료가 부족해요` : "수익률 정보 없음") : `${years}년 연평균 수익률 ${rateText}`} title={period ? `${period.start} ~ ${period.end}` : undefined}>{rateText}</span>}
+                  {!isTaken && <span className={"ticker-return " + (rate === null ? "muted" : rate >= 0 ? "up-text" : "down-text")} aria-label={rate === null ? (period === null ? `${years}년 수익률을 계산할 자료가 부족해요` : "수익률 정보 없음") : `최근 ${years}년의 연간 수익률 평균 ${rateText}`} title={period ? `${period.start} ~ ${period.end}` : undefined}>{rateText}</span>}
                   {t.symbol === current && <span className="brand-text" aria-hidden="true"><Check /></span>}
                 </button>
                 );

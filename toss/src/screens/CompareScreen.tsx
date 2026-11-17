@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@toss/tds-mobile";
 import { tickerTitle, tickerInfo } from "@/lib/tickers";
 import { GROUPS, TOSS_DISPLAY_TICKERS, tickerGroup, tossSubtitle } from "../lib/groups";
-import { NavBar, Avatar } from "../components/ui";
+import { NavBar, Avatar, AdSlot } from "../components/ui";
 import { loadComparisonHistory, loadRowsBy } from "../lib/data";
 import { analytics } from "../lib/platform";
 import { calcPlan, singlePlan, type Plan } from "../lib/plan";
@@ -70,6 +70,7 @@ export function CompareScreen({ plan, back, onEditPlan, onMenu, onClose }: { pla
         <p>{plan.holdings.map((h) => tickerTitle(h.ticker)).join(", ")}의 평가액 <b>{fmt.money(state.window.value)}</b></p>
         {plan.holdings.length > 1 && <p>합계 금액을 한 종목에 넣었다고 계산해요.</p>}
       </section>
+      <div className="comparison-banner"><AdSlot /></div>
       {state.pending > 0 && <p className="comparison-caption" role="status">{TOSS_DISPLAY_TICKERS.length - state.pending}/{TOSS_DISPLAY_TICKERS.length}개 확인했어요. 나머지 종목을 불러오는 중이에요.</p>}
       <div className="comparison-sort">
         <label htmlFor="comparison-sort">보기 순서</label>

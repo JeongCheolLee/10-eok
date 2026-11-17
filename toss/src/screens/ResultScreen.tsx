@@ -13,18 +13,20 @@ import { CalculationBasis } from "../components/CalculationBasis";
 import { RollingNumber } from "../components/RollingNumber";
 import { makeResultCard, resultShareText } from "../lib/resultShare";
 import { ResilienceAnalysis } from "../components/ResilienceAnalysis";
+import { ReachChange } from "../components/ReachChange";
 import { conditionKey } from "../lib/conditionKey";
 
 export type ResultEntrance = "reveal" | "quick";
 
-export function ResultScreen({ plan, entrance = "quick", onCalculate, calculationLabel, calculationNote, busy, back, onEdit, goClock, goCompare, showToast, onMenu, onClose }: {
+export function ResultScreen({ promotionActive = false, onResultReady, plan, entrance = "quick", onCalculate, calculationLabel, calculationNote, busy, back, onEdit, goClock, goCompare, showToast, onMenu, onClose }: {
+  promotionActive?: boolean;
+  onResultReady?: (plan: Plan) => void;
   entrance?: ResultEntrance;
   plan: Plan; onCalculate: (p: Plan) => void; calculationLabel: (p: Plan) => string; calculationNote: (p: Plan) => string; busy: boolean; back: () => void; onEdit: () => void; goClock: () => void; goCompare: () => void; showToast: (m: string) => void; onMenu: () => void; onClose: () => void;
 }) {
   const [rowsBy, setRowsBy] = useState<RowsBy | null>(null);
   const [err, setErr] = useState(false);
   const [retry, setRetry] = useState(0);
-  const [optsOpen, setOptsOpen] = useState(false);
   const [reinvest, setReinvest] = useState(plan.reinvest);
   useEffect(() => setReinvest(plan.reinvest), [plan.reinvest]);
   const [tip, setTip] = useState(false);
@@ -50,6 +52,9 @@ export function ResultScreen({ plan, entrance = "quick", onCalculate, calculatio
     try { return calcPlan(rowsBy, plan); } catch (e) { console.error(e); return "error"; }
   }, [rowsBy, plan]);
   const rows = rowsBy?.[plan.ticker] ?? null;
+  useEffect(() => {
+    if (!err && calc && calc !== "error" && calc.result.series.length > 0 && rows) onResultReady?.(plan);
+  }, [calc, err, rows, plan, onResultReady]);
   useEffect(() => {
     if (err || calc === "error") analytics.click("calculation_error", { stage: "result", reason: err ? "load" : "calculate" });
     else if (calc && calc.result.series.length > 0) analytics.click("result_ready", { ticker: plan.ticker, mode: plan.mode });
@@ -133,7 +138,13 @@ export function ResultScreen({ plan, entrance = "quick", onCalculate, calculatio
     num = fmt.money(r.value);
     sub = <>{ymKo(start)}부터 {durKo(r.years, r.monthsRem)} 동안 {buyStr} 샀을 때<br />{asOf} 금액이에요</>;
   }
-  const statsLabel = reachedTime ? "이후에도 계속 샀을 때" : asOf;
+  const appliedFxDates = [...new Set(tickers.flatMap((ticker) => {
+    const date = getLoadedDataInfo(ticker)?.fxAsOf;
+    return date && date < end ? [date] : [];
+  }))].sort();
+  const statsLabel = reachedTime ? "이후에도 계속 샀다면" : asOf;
+  const dividendPlan = { ...plan, reinvest };
+  const dividendNote = reinvest !== plan.reinvest ? calculationNote(dividendPlan) : "";
   const cagrPct = `${Math.abs(Math.round(r.cagr * 100))}%`;
   const amtMode = plan.mode === "amount" && !calc.tracking;
   const query = shareQueryOf(plan);
@@ -158,7 +169,7 @@ export function ResultScreen({ plan, entrance = "quick", onCalculate, calculatio
     analytics.click("save_clock", { ticker: plan.ticker, holdings: tickers.length });
     showToast("계산을 저장했어요");
     goClock();
-    if (!analysisEngaged.current) requestReviewAfterSave();
+    if (!analysisEngaged.current && !promotionActive) requestReviewAfterSave();
   };
 
   return (
@@ -186,9 +197,10 @@ export function ResultScreen({ plan, entrance = "quick", onCalculate, calculatio
         </>}
         <p className="result-story">{sub}</p>
       </section>
-      {reachedTime && <section className="result-current" aria-label="계속 모았을 때의 평가액">
-        <p>이후에도 계속 모았다면 <strong>{fmt.money(r.value)}</strong></p>
+      {reachedTime && <section className="result-current" aria-label="이후에도 계속 샀다면">
+        <p>이후에도 계속 샀다면 <strong>{fmt.money(r.value)}</strong></p>
         <p className="result-current-date">{ymdKo(end)} 기준{r.value < TARGET && <><br />다시 10억 아래로 내려왔어요.</>}</p>
+        {r.value < TARGET && <ReachChange calc={calc} plan={plan} rowsBy={rowsBy} />}
       </section>}
       {!unreachedTime && (adjNote || !reachedTime) && <div className="data-notes">
         {adjNote && <p className="data-note">{adjNote}</p>}
@@ -199,12 +211,13 @@ export function ResultScreen({ plan, entrance = "quick", onCalculate, calculatio
 
       <div className="card result-chart">
         <div className="card-head">
-          <span>평가액 변화</span>
+          <span>기간별 평가액</span>
           <span className="legend"><i className="dot brand" />평가액 <i className="dot grey" />넣은 돈</span>
         </div>
         <Chart series={r.series} target={TARGET} mark={calc.reach?.date} />
         <p className="chart-help">그래프를 누르면 그때의 금액을 볼 수 있어요.</p>
-        <div className="stats-label">{statsLabel}</div>
+        <section className="result-stats" aria-label={statsLabel}>
+        <h2 className="stats-label">{statsLabel}</h2>
         <div className="stats">
           <div className="stat"><span className="stat-k">넣은 돈</span><span className="stat-v">{fmt.money(r.principal)}</span></div>
           <div className="stat"><span className="stat-k">평가액</span><span className="stat-v">{fmt.money(r.value)}</span></div>
@@ -213,20 +226,22 @@ export function ResultScreen({ plan, entrance = "quick", onCalculate, calculatio
             <span className={"stat-v " + (r.cagr >= 0 ? "up" : "down")}>{fmt.pct(r.cagr)}</span>
           </div>
         </div>
+        </section>
+        {appliedFxDates.length > 0 && <p className="chart-fx-note">환율은 {appliedFxDates.map(mdKo).join(", ")} 자료를 적용했어요. 해당 날짜 환율이 없으면 직전 값을 사용해요.</p>}
         {tip && <div id="annual-return-help" className="tip">연평균 {fmt.pct(r.cagr)}는 평가액이 1년에 평균 {cagrPct}씩 {r.cagr >= 0 ? "늘었다는" : "줄었다는"} 뜻이에요. {names} 과거 가격으로 계산했어요.</div>}
       </div>
 
+      <ResilienceAnalysis key={analysisKey} accessKey={analysisKey} calc={calc} onEngage={() => { analysisEngaged.current = true; }} />
+
       <div className="result-actions">
         <div className="result-share">
-          <Button display="full" size="large" style={{ borderRadius: 14 }} disabled={sharing} onClick={share}>
+          <Button display="full" size="large" variant="weak" style={{ borderRadius: 14 }} disabled={sharing} onClick={share}>
             <span className="result-share-label"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 15V3m-4 4 4-4 4 4M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6" /></svg>결과 공유하기</span>
           </Button>
         </div>
         <Button display="full" size="large" color="dark" variant="weak" style={{ borderRadius: 14 }} onClick={onEdit}>조건 바꿔보기</Button>
         <Button display="full" size="large" color="dark" variant="weak" style={{ borderRadius: 14 }} onClick={save}>계산 저장하기</Button>
       </div>
-
-      <ResilienceAnalysis key={analysisKey} accessKey={analysisKey} calc={calc} onEngage={() => { analysisEngaged.current = true; }} />
 
       {port && (
         <>
@@ -244,27 +259,28 @@ export function ResultScreen({ plan, entrance = "quick", onCalculate, calculatio
         </>
       )}
 
-      <div className="list-head"><button type="button" className="text-btn" onClick={goCompare}>같은 조건으로 비교하기 <ChevronRight /></button></div>
+      <div className="result-compare"><button type="button" className="text-btn" onClick={goCompare}><span>같은 조건으로 다른 종목을 샀다면?</span><ChevronRight /></button></div>
 
-      <ul className="tds-list">
+      <ul className="tds-list dividend-settings">
         <ListRow
-          contents={<ListRow.Texts type="2RowTypeA" top="계산 옵션" bottom={`배당 ${plan.reinvest ? "재투자" : "미반영"}`} />}
-          right={<span className={"chev" + (optsOpen ? " open" : "")}><ChevronRight /></span>}
-          onClick={() => setOptsOpen((v) => !v)}
-          aria-expanded={optsOpen}
+          contents={<ListRow.Texts type="2RowTypeA" top="배당 재투자" bottom={reinvest ? "받은 배당으로 다시 사요" : "배당금은 계산에 넣지 않아요"} />}
+          right={<Switch className="brand-switch" checked={reinvest} onChange={(_, c) => setReinvest(c)} aria-label="배당 재투자"
+            onKeyDown={(event) => {
+              if (event.key === " " || event.key === "Enter") {
+                event.preventDefault(); setReinvest((value) => !value);
+              }
+            }} />}
         />
-        {optsOpen && (
-          <>
-            <ListRow
-              contents={<ListRow.Texts type="2RowTypeA" top="배당 재투자" bottom="받은 배당으로 다시 사요" />}
-              right={<Switch checked={reinvest} onChange={(_, c) => setReinvest(c)} aria-label="배당 재투자" />}
-            />
-            {reinvest !== plan.reinvest && <li className="row"><div><p className="data-note">바꾼 배당 조건으로 다시 계산해요.</p><p className="data-note">{calculationNote({ ...plan, reinvest })}</p><Button disabled={busy} onClick={() => onCalculate({ ...plan, reinvest })}>{busy ? "계산 중…" : calculationLabel({ ...plan, reinvest })}</Button></div></li>}
-          </>
-        )}
+        {reinvest !== plan.reinvest && <li className="dividend-recalculate">
+          <p className="data-note" role="status">다시 계산하면 바뀐 설정을 적용해요.</p>
+          {dividendNote && <p className="data-note">{dividendNote}</p>}
+          <Button display="full" size="large" style={{ borderRadius: 14 }} disabled={busy} onClick={() => onCalculate(dividendPlan)}>{busy ? "계산 중…" : calculationLabel(dividendPlan)}</Button>
+        </li>}
       </ul>
 
       <CalculationBasis plan={plan} calc={calc} rowsBy={rowsBy} />
+
+      <div className="result-banner result-footer-banner"><AdSlot /></div>
 
       <p className="disc">과거 자료로 계산한 결과예요.<br />특정 종목을 추천하거나 미래 수익을 보장하지 않아요.</p>
     </div>

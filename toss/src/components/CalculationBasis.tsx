@@ -24,7 +24,7 @@ export function CalculationBasis({ plan, calc, rowsBy }: { plan: Plan; calc: Cal
         : "실제 거래 자료가 있는 첫 달부터 계산했어요.";
 
   return (
-    <details className="card calculation-basis">
+    <details className="calculation-basis">
       <summary>계산 기준 보기<span className="chev"><ChevronRight /></span></summary>
       <div className="basis-content">
         <dl className="basis-list">
@@ -49,7 +49,7 @@ export function CalculationBasis({ plan, calc, rowsBy }: { plan: Plan; calc: Cal
             })}</ul>
           </dd></div>
           {needsFx(tickers) && <div><dt>환율 자료</dt><dd>
-            달러로 거래되는 종목은 해당 날짜 환율로 원화로 바꿔 계산해요. 해당 날짜 환율이 없으면 직전 값을 사용해요.
+            달러로 거래되는 종목은 해당 날짜 환율로 원화로 바꿔 계산해요. 해당 날짜 환율이 없으면 직전 값을 사용해요. FRED 환율은 일별 값을 주 단위로 발표해 가격 기준일보다 늦을 수 있어요.
             {fxDates.map(({ ticker, date }) => <p key={ticker}>{tickerTitle(ticker)}<br />{ymdKo(date)}까지의 환율 자료를 사용해요.</p>)}
           </dd></div>}
         </dl>

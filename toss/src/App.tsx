@@ -1,3 +1,5 @@
+import { loadEntryPromotion } from "./lib/promotionPlatform";
+import { conditionKey } from "./lib/conditionKey";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createCalculationAccess, loadCalculationAccess, untilKoreanMidnight } from "./lib/calculationAccess";
 import { recordCompletedCalculation } from "./lib/review";
@@ -45,6 +47,30 @@ function planFromQuery(q: URLSearchParams): Plan | null {
 }
 
 export function App() {
+  const [toast, setToast] = useState("");
+  const showToast = useCallback((m: string) => { setToast(m); window.setTimeout(() => setToast(""), 2200); }, []);
+  const [promotionEntry] = useState(() => entryPath() === "promotion");
+  const [promotion] = useState(loadEntryPromotion);
+  const submittedPromotionPlan = useRef<string | null>(null);
+  useEffect(() => {
+    if (!promotion) return;
+    analytics.click("calculation_promotion_entry", { test: promotion.config.test });
+    const unsubscribe = promotion.subscribe(() => {
+      const { status } = promotion.snapshot();
+      analytics.click("calculation_promotion_status", { status, test: promotion.config.test });
+      if (status === "retryable") showToast("포인트를 지급하지 못했어요. 다시 계산해 주세요.");
+      else if (status === "uncertain") showToast("포인트 지급 여부를 적립 내역에서 확인해 주세요.");
+      else if (status === "ended") showToast("지금은 포인트 이벤트에 참여할 수 없어요.");
+      else if (status === "unavailable") showToast("포인트 참여 정보를 확인하지 못했어요.");
+    });
+    void promotion.initialize();
+    return unsubscribe;
+  }, [promotion, showToast]);
+  const onResultReady = useCallback((resultPlan: Plan) => {
+    if (!promotion || submittedPromotionPlan.current !== conditionKey(resultPlan)) return;
+    submittedPromotionPlan.current = null;
+    void promotion.complete(true);
+  }, [promotion]);
   const [access, setAccess] = useState(createCalculationAccess);
   const [, updateAccess] = useState(0);
   const [busy, setBusy] = useState(false);
@@ -55,7 +81,6 @@ export function App() {
   const [screen, setScreen] = useState<Screen>(() => readHash() ?? "home");
   const [ready, setReady] = useState(false);
   const [menu, setMenu] = useState(false);
-  const [toast, setToast] = useState("");
   const [gate, setGate] = useState<{ run: () => void; cancel: () => void; desc: string; cta: string } | null>(null);
   const rewarded = useRef<Rewarded | null>(null);
   const isLegal = screen === "terms" || screen === "privacy";
@@ -75,7 +100,7 @@ export function App() {
       if (!on) return;
       setSaved(s);
       setAccess(loadedAccess);
-      const fromLink = planFromQuery(entryQuery());
+      const fromLink = promotionEntry ? null : planFromQuery(entryQuery());
       const path = entryPath();
       const target: Screen | null = SCREENS.includes(path as Screen) && path !== "home" ? (path as Screen) : null;
       const requestedSavedId = readSavedId();
@@ -85,7 +110,7 @@ export function App() {
         setPlan(restored);
         loadedAccess.complete(restored, true);
       }
-      const requested = fromLink ? "result" : target ?? readHash() ?? (s.length ? "clock" : "home");
+      const requested = promotionEntry ? "home" : fromLink ? "result" : target ?? readHash() ?? (s.length ? "clock" : "home");
       const next = !fromLink && requested === "result" && requestedSavedId && !selected ? "clock" : screenForSelection(requested, !!restored?.holdings.length);
       history.replaceState(null, "", `#${next}${!fromLink && next === "result" && selected ? `?saved=${encodeURIComponent(selected.id)}` : ""}`);
       setScreen(next);
@@ -141,7 +166,6 @@ export function App() {
     window.scrollTo(0, 0);
   }, []);
   const back = useCallback(() => { if (history.length > 1) history.back(); else go("home"); }, [go]);
-  const showToast = useCallback((m: string) => { setToast(m); window.setTimeout(() => setToast(""), 2200); }, []);
   const refreshSaved = useCallback(async () => setSaved(await loadSavedClocks()), []);
   const needsRewardedAd = (p: Plan) => REWARDED_ADS_ENABLED && access.needsAd(p);
   const calculationLabel = (p: Plan) => needsRewardedAd(p) ? "광고 보고 무제한 계산" : "이 조건으로 계산하기";
@@ -168,6 +192,7 @@ export function App() {
       recordCompletedCalculation();
       analytics.click("calculate", { ticker: next.ticker, holdings: next.holdings.length, mode: next.mode, ad: reward });
       // 광고 뒤에는 롤링을 반복하지 않는다. 계산 자체에는 인위적인 지연을 넣지 않는다.
+      submittedPromotionPlan.current = conditionKey(next);
       setPlan(next); release(); go("result", undefined, needsAd || reward ? "quick" : "reveal");
     };
     const cancel = () => {
@@ -201,7 +226,7 @@ export function App() {
       body = <LegalScreen kind={screen as "terms" | "privacy"} back={back} {...common} />;
       break;
     case "result":
-      body = <ResultScreen plan={plan} entrance={nav.entrance} onCalculate={calculate} calculationLabel={calculationLabel} calculationNote={calculationNote} busy={busy} back={readSavedId() ? () => go("clock") : back} goCompare={() => go("compare")} onEdit={() => go("home")} goClock={async () => { await refreshSaved(); go("clock"); }} showToast={showToast} {...common} />;
+      body = <ResultScreen promotionActive={promotionEntry} onResultReady={onResultReady} plan={plan} entrance={nav.entrance} onCalculate={calculate} calculationLabel={calculationLabel} calculationNote={calculationNote} busy={busy} back={readSavedId() ? () => go("clock") : back} goCompare={() => go("compare")} onEdit={() => go("home")} goClock={async () => { await refreshSaved(); go("clock"); }} showToast={showToast} {...common} />;
       break;
     case "clock":
       body = <ClockScreen saved={saved} goHome={() => { setPlan({ ...DEFAULT_PLAN, ticker: "", holdings: [] }); go("home"); }} goResult={(item) => { analytics.click("saved_open", { ticker: item.plan.ticker, holdings: item.plan.holdings.length }); access.complete(item.plan, true); setPlan(item.plan); go("result", item.id); }} onRemove={async (id) => {

@@ -78,8 +78,10 @@ export function tickerTax(symbol: string): "us" | "kr-domestic" | "kr-foreign" {
   const i = tickerInfo(symbol);
   return i.tax ?? ((i.currency ?? "USD") === "KRW" ? "kr-domestic" : "us");
 }
-/** 미니앱에서 고를 수 있는 전체 종목(웹 숨김 포함). */
-export const TOSS_TICKERS: string[] = TICKERS.map((t) => t.symbol);
+/** 신규 선택·비교용 목록. 한국 개별주 메타데이터는 기존 저장·공유 조건 호환을 위해 보존한다. */
+export const TOSS_TICKERS: string[] = TICKERS
+  .filter((t) => !(t.kind === "stock" && t.currency === "KRW"))
+  .map((t) => t.symbol);
 
 export const DEFAULT_TICKER = "QLD";
 
